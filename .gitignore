@@ -1,0 +1,23 @@
+# Datos familiares (fotos del cuaderno): no se versionan
+imagenes/
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+android/app/build/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
