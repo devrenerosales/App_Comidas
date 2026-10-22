@@ -5,7 +5,7 @@
 | Propuesto | 2026-10-22 | Claude (arquitectura); requiere visto bueno del PO |
 
 ## Contexto
-En el supermercado la señal es mala. RNF-04 pide la lista de compras y el menú aprobado disponibles sin conexión y que los cambios se sincronicen al volver. Dos personas pueden marcar la misma lista desde teléfonos distintos (M07 CU-07.3 CA-30.3). El servidor en casa puede estar caído (RG-02).
+En el supermercado la señal es mala. RNF-04 pide la lista de compras y el menú aprobado disponibles sin conexión y que los cambios se sincronicen al volver. Dos personas pueden marcar la misma lista desde teléfonos distintos (M07 CU-07.3 CA-30.3). El servidor puede no estar disponible (RG-02).
 
 ## Decisión
 - **Alcance offline:** lista de compras (lectura/escritura) y menú aprobado (lectura). Lo demás requiere conexión.

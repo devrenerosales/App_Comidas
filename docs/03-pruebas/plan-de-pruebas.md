@@ -6,7 +6,7 @@
 | Versión | 1.1 (para aprobación del PO) |
 | Fecha | 2026-10-22 |
 | Estándar de referencia | IEEE 829 / ISO/IEC/IEEE 29119-3 (resumido) |
-| Base | SRS-MF-001 v1.3 · CUH-MF-001 v1.1 · ARQ-MF-001 v1.0 · Decisiones D-01 a D-09 |
+| Base | SRS-MF-001 v1.4 · CUH-MF-001 v1.1 · ARQ-MF-001 v1.1 · Decisiones D-01 a D-15 |
 | Fase del ciclo de vida | 5. Pruebas (se ejecuta dentro de cada sprint S1–S6) |
 | Documentos relacionados | [casos-de-prueba.md](casos-de-prueba.md) · [features/](features/) · [plantillas/](plantillas/) |
 
@@ -17,9 +17,9 @@ Verificar que cada historia cumple sus criterios de aceptación (`CA-nn.k`) y lo
 | Dentro del alcance | Fuera del alcance |
 |---|---|
 | 44 historias (HU-01 a HU-44), **186 casos `PF-Mx-nn.k`** generados de los Gherkin | Sitios de Walmart, Paiz y La Torre en vivo (se prueban con páginas grabadas) |
-| API NestJS, worker de precios, motor (`packages/shared`), PWA Ionic, APK Android | Infraestructura de Cloudflare, FCM y servicios SMTP (se usan dobles) |
+| API NestJS, worker de precios, motor (`packages/shared`), PWA Ionic, APK Android | Infraestructura de Oracle Cloud, DuckDNS, FCM y Gmail SMTP (se usan dobles) |
 | RNF-01 a RNF-13 (matriz §5) | Publicación en Google Play (PA-04: solo APK en v1) |
-| Migraciones Prisma, semillas, respaldo y restauración | Precisión del OCR más allá de los tickets de muestra |
+| Migraciones Drizzle, semillas, respaldo y restauración | Precisión del OCR más allá de los tickets de muestra |
 
 Trazabilidad: `RF-nn → CU-xx.y → HU-nn → CA-nn.k → PF-Mx-nn.k → features/HU-nn.feature`. El script [`scripts/extraer_casos.py`](scripts/extraer_casos.py) regenera los `.feature` y la tabla de casos; falla si hay IDs duplicados o faltantes, o si el número de casos no coincide con el de escenarios.
 
@@ -39,9 +39,9 @@ flowchart TB
 | Nivel | Qué cubre | Herramienta | Dónde vive | Cuándo corre |
 |---|---|---|---|---|
 | Unitaria | Motor (puntaje, RN-02 a RN-05), reparto RN-06, escalado RN-07, mediana/mínimo RF-36, componentes React, servicios con repositorios simulados | Vitest + Testing Library + fast-check; Jest en `apps/api` | `*.spec.ts` junto al código | Cada push y PR |
-| Integración | Endpoints con base real, validaciones, permisos RN-10, aislamiento RNF-06, importación CSV/XLSX, worker con sitio simulado | Jest + Supertest, PostgreSQL 16 y Redis 7 en Docker, Prisma `migrate reset` por suite | `apps/api/test/**/*.e2e-spec.ts`, `apps/worker/test` | Cada PR |
+| Integración | Endpoints con base real, validaciones, permisos RN-10, aislamiento RNF-06, importación CSV/XLSX, worker con sitio simulado | Jest + Supertest, PostgreSQL 16 y Redis 7 en Docker, base recreada con migraciones Drizzle por suite | `apps/api/test/**/*.e2e-spec.ts`, `apps/worker/test` | Cada PR |
 | E2E | Flujos de usuario de punta a punta en la PWA, offline, accesibilidad | Playwright (Chromium en PR; Chromium, Edge, WebKit nocturno) + `@axe-core/playwright` | `apps/web/e2e/` ejecutando `docs/03-pruebas/features` vía `playwright-bdd` | PR (etiqueta `@regresion`) y nocturno (todo) |
-| Aceptación (UAT) | RNF-07 y aceptación de historias por el PO | Guion de UAT + cronómetro | Servidor de casa (`staging`) | Revisión de cada sprint; UAT final en S6 |
+| Aceptación (UAT) | RNF-07 y aceptación de historias por el PO | Guion de UAT + cronómetro | Laptop del PO (`staging` local) | Revisión de cada sprint; UAT final en S6 |
 
 Mapeo Gherkin → código: cada `PF` se implementa en el nivel indicado en [casos-de-prueba.md](casos-de-prueba.md). Los de nivel unitario o integración usan el ID en el nombre del test (`it('PF-M5-20.3 …')`) para que el reporte se cruce con la tabla.
 
@@ -91,9 +91,9 @@ flowchart LR
 | Entorno | Composición | Datos | Uso |
 |---|---|---|---|
 | Local | `infra/compose.dev.yml`: PostgreSQL 16, Redis 7, API, worker, web (Vite) | Semilla de pruebas (§6) | Desarrollo y TDD |
-| Pruebas efímero | `compose.test.yml` o servicios de GitHub Actions; base recreada por suite (`prisma migrate reset --force`) | Semilla mínima + fábricas por prueba | Integración y E2E en CI |
-| Staging (servidor de casa) | Proyecto Compose `mf-staging` en el mismo servidor, base y Redis separados de producción, publicado por Cloudflare Tunnel en subdominio con acceso restringido | Copia anonimizada + 16 semanas del cuaderno | ZAP, k6, Lighthouse, UAT, revisión del sprint |
-| Producción (servidor de casa) | `infra/compose.yml` | Reales | Solo humo post-despliegue y monitoreo RNF-03 |
+| Pruebas efímero | `compose.test.yml` o servicios de GitHub Actions; base recreada por suite (esquema borrado + migraciones Drizzle) | Semilla mínima + fábricas por prueba | Integración y E2E en CI |
+| Staging (laptop del PO) | Proyecto Compose `mf-staging` en Docker Desktop con `DOMINIO=localhost` (Caddy con certificado local), base y Redis propios | Copia anonimizada + 16 semanas del cuaderno | ZAP, k6, Lighthouse, UAT, revisión del sprint |
+| Producción (VM Oracle Cloud ARM) | `docker-compose.yml` + `deploy/deploy.sh` | Reales | Solo humo post-despliegue y monitoreo RNF-03 |
 
 Reglas: las pruebas de rendimiento nunca corren contra producción; la zona horaria del entorno es `America/Guatemala` y las pruebas con fechas congelan el reloj (domingo 2026-10-25 08:00).
 
@@ -103,7 +103,7 @@ Reglas: las pruebas de rendimiento nunca corren contra producción; la zona hora
 |---|---|---|---|
 | RNF-01 Menú < 3 s | Benchmark del motor con 300 platillos + carga del endpoint (5 VU, 2 min) | Vitest bench, k6 | S3 (luego nocturno) |
 | RNF-02 Pantallas < 2 s 4G | LCP en perfil 4G de Inicio, Semana, Lista; performance ≥ 80 | k6 browser, Lighthouse CI | S1 base, S3, S4, S6 |
-| RNF-03 Disponibilidad 95 % | Monitor externo de la URL pública; informe mensual | Uptime Kuma + monitor externo | S6 (medición continua) |
+| RNF-03 Disponibilidad 99 % | Monitor externo de la URL pública; informe mensual | UptimeRobot | S6 (medición continua) |
 | RNF-04 Offline | Modo avión con lista y menú aprobado; sincronización y conflicto | Playwright `setOffline`, Android real | S4 (lista), S3 (menú aprobado) |
 | RNF-05 Seguridad de credenciales | Hash argon2id en BD, expiración JWT 15 min, refresh rotativo, HTTPS/HSTS, bloqueo de 5 intentos | Jest + Supertest, ZAP | S1 |
 | RNF-06 Aislamiento por hogar | Suite de autorización por endpoint con dos hogares (Rosales y López) | Jest + Supertest | S1 y cada sprint (endpoints nuevos) |
@@ -222,7 +222,7 @@ Se registran como GitHub Issues con la plantilla [reporte-defecto.md](plantillas
 | RP-01 | Capacidad: un solo desarrollador a medio tiempo frente a 804 h | Alta | Alto | Automatizar primero `@regresion`; pruebas S/C manuales si falta tiempo; replanificar tras S1 |
 | RP-02 | Pruebas E2E inestables (offline, service worker) | Media | Medio | Datos aislados por prueba, reloj congelado, reintento 1 vez con registro de inestabilidad |
 | RP-03 | Cambios en los sitios de supermercados | Alta | Medio | Páginas grabadas en CI; prueba de humo manual contra el sitio real antes de activar cada sitio (D-07) |
-| RP-04 | Corte de luz o internet en el servidor de casa deja sin staging | Media | Medio | CI no depende de staging; ZAP/k6 se reprograman; UPS (RG-02) |
+| RP-04 | La laptop del PO (staging) no está disponible en la revisión del sprint | Media | Medio | CI no depende de staging; ZAP/k6 se reprograman o se corren contra la VM fuera de horario |
 | RP-05 | Push, FCM y compartir nativo difíciles de automatizar (11 casos "Parcial") | Alta | Bajo | Dobles en CI + verificación manual en dispositivo en S4 y S6 |
 | RP-06 | Inconsistencias entre Gherkin y decisiones del PO | Media | Medio | Corregir los CA antes de automatizar (ver §14) |
 | RP-07 | Datos reales del cuaderno en pruebas | Baja | Medio | Solo montos y platillos; sin nombres ni correos reales en staging |

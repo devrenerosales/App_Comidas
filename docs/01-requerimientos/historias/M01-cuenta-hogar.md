@@ -147,7 +147,7 @@ Característica: Registro e inicio de sesión
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-01.1 | DB | Tabla USUARIO (correo único, hash, intentos, bloqueado_hasta) y migración Prisma | 2 |
+| ST-01.1 | DB | Tabla USUARIO (correo único, hash, intentos, bloqueado_hasta) y migración Drizzle | 2 |
 | ST-01.2 | BE | Endpoints POST /auth/registro y /auth/login con hash argon2 y bloqueo por intentos | 6 |
 | ST-01.3 | BE | Emisión y validación de JWT (guard NestJS) con hogar_id en el token | 3 |
 | ST-01.4 | FE | Pantallas de registro e inicio de sesión con validaciones y manejo de sesión | 5 |

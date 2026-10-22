@@ -40,7 +40,8 @@ corepack enable                          # activa pnpm 9.12.0 según package.jso
 cp .env.example .env                     # y completa secretos
 docker compose -f docker-compose.dev.yml up -d   # PostgreSQL 16 + Redis 7
 pnpm install
-pnpm --filter @menu/api prisma:generate  # genera el cliente Prisma
+pnpm db:migrate                          # aplica las migraciones a DATABASE_URL (.env)
+pnpm db:seed                             # supermercados, unidades y categorías (idempotente)
 pnpm dev                                 # api :3000, web :5173, worker
 ```
 
@@ -49,6 +50,30 @@ Antes de abrir el PR:
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
+
+## Base de datos (Drizzle ORM, ADR-010)
+
+El esquema vive en `packages/db/src/schema/*.ts` (fuente de verdad) y las migraciones SQL en `packages/db/drizzle/`.
+
+| Tarea | Comando |
+|---|---|
+| Aplicar migraciones pendientes | `pnpm db:migrate` |
+| Cargar la semilla | `pnpm db:seed` (`SEED_ADMIN_SISTEMA_CORREO` marca al administrador del sistema) |
+| Cambiar el esquema | Edite `packages/db/src/schema/<dominio>.ts` y ejecute `pnpm --filter @menu/db db:generate --name=hu35_vinculo_sku`; revise y versione el SQL generado |
+| SQL que el esquema no declara (CHECK, índices parciales, datos) | `pnpm --filter @menu/db db:generate --custom --name=<descripcion>` y escriba el SQL |
+| Explorar datos | `pnpm db:studio` |
+
+- Nunca edite una migración ya fusionada en `develop`/`main`, ni use `drizzle-kit push` (borraría las reglas de `0002_reglas_integridad`).
+- CI falla si el esquema cambió sin su migración.
+- **Pruebas de integración contra PostgreSQL real:** defina `TEST_DATABASE_URL` (usuario con permiso `CREATEDB`); cada suite crea y elimina su propia base. Sin la variable esas suites se omiten.
+
+```bash
+# Con el PostgreSQL de docker-compose.dev.yml:
+export TEST_DATABASE_URL=postgresql://menu:cambiar-esta-clave@localhost:5432/menu_familiar
+pnpm test
+```
+
+En la API use `test/utils/base-datos.ts`: `describeConBd`, `usarBaseDePruebas({ suite, sembrar, truncarEntrePruebas })`, `crearAppConBd(base)` y `enTransaccionRevertida(db, fn)`.
 
 ## Estándares
 

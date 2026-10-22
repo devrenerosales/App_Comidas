@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { validarEntorno } from './config/env.validation';
+import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
-import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -28,7 +28,7 @@ import { RedisModule } from './redis/redis.module';
         };
       },
     }),
-    PrismaModule,
+    DatabaseModule,
     RedisModule,
     HealthModule,
   ],

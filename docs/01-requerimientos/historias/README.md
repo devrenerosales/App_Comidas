@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | CUH-MF-001 |
-| Versión | 1.1 (decisiones D-01..D-09 y RF-43, RF-44) |
+| Versión | 1.1 (decisiones D-01..D-09 y RF-43, RF-44; D-11..D-15 agregadas el 2026-10-22) |
 | Fecha | 2026-10-22 |
 | Base | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Fase del ciclo de vida | 2. Requerimientos — análisis de casos de uso, historias y criterios de aceptación |
@@ -158,7 +158,12 @@ Los supuestos de mayor impacto quedaron cerrados por el PO el 2026-10-22. El reg
 | D-06 | Claude transcribe las 18 fotos del cuaderno a la plantilla CSV en S2 y el PO revisa; sin OCR de menús | M04 · HU-18 |
 | D-07 | Extracción automática de precios apagada por sitio hasta revisar términos de uso | M08 · HU-33 |
 | D-08 | Recordatorio de planificación el domingo a las 08:00 (hora de Guatemala) | M10 · HU-41 |
-| D-09 | Hosting en servidor propio en casa con Docker Compose, disponibilidad 95 % mensual | Diseño · RNF-03 |
+| D-09 | ~~Hosting en servidor propio en casa con Docker Compose, disponibilidad 95 % mensual~~ (reemplazada por D-11) | Diseño · RNF-03 |
+| D-11 | Producción en Oracle Cloud Always Free ARM con Docker Compose, disponibilidad 99 % mensual (ADR-009) | Diseño · R-05, RNF-03 |
+| D-12 | Dominio DuckDNS con HTTPS automático (Caddy + Let's Encrypt) | Diseño · S-03 |
+| D-13 | Correo con Gmail SMTP y contraseña de aplicación | HU-02, HU-04 · IE-03 |
+| D-14 | ADR-004 aprobado: acceso 15 min + refresh rotativo 30 días | HU-01 |
+| D-15 | Drizzle ORM en lugar de Prisma (ADR-010) | R-01 · subtareas DB |
 
 Siguen como propuestos, sin objeción del PO: las fórmulas de los factores del motor (M05, CU-05.2) y que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2). Los demás supuestos de detalle se mantienen en cada especificación.
 

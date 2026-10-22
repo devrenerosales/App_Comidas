@@ -7,7 +7,7 @@
 | Fecha | 2026-10-22 |
 | Fase del ciclo de vida | 3. Diseño |
 | Base | `https://<host>/api/v1` |
-| Fuente | SRS-MF-001 v1.3, historias M01–M10, [`modelo-datos.md`](modelo-datos.md), [`schema.prisma`](schema.prisma) |
+| Fuente | SRS-MF-001 v1.3, historias M01–M10, [`modelo-datos.md`](modelo-datos.md), [`packages/db/src/schema`](../../packages/db/src/schema/) (Drizzle, ADR-010) |
 
 La especificación OpenAPI 3.1 se generará desde los controladores NestJS (`@nestjs/swagger`) en S1 y debe coincidir con este contrato; las diferencias se resuelven actualizando este documento en la misma rama.
 

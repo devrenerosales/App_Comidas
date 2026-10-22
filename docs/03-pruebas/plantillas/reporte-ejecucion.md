@@ -7,7 +7,7 @@ Se copia como `docs/03-pruebas/reportes/RE-S_-AAAA-MM-DD.md` al cierre de cada s
 | ID del reporte | RE-S_-AAAA-MM-DD |
 | Sprint | S_ (del AAAA-MM-DD al AAAA-MM-DD) |
 | Versión probada | `vX.Y.Z` · commit `abc1234` |
-| Entorno | CI (GitHub Actions run #___) · Servidor de casa |
+| Entorno | CI (GitHub Actions run #___) · Laptop (staging) · Producción (Oracle Cloud) |
 | Elaborado por | |
 | Fecha | |
 

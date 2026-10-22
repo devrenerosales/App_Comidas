@@ -3,6 +3,8 @@
 #   docker build -f apps/worker/Dockerfile -t menu-worker .
 # Sprint 0: sin navegadores. Cuando HU-33 active la extracción, construir con
 #   --build-arg INSTALL_BROWSERS=true
+# Multi-arquitectura (linux/amd64 y linux/arm64 para Oracle Ampere A1, ADR-009):
+# Debian bookworm + Node oficiales son multi-arch y Playwright publica Chromium para Linux arm64.
 ARG NODE_VERSION=20.18.0
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
@@ -21,8 +23,9 @@ ARG INSTALL_BROWSERS=false
 ENV NODE_ENV=production TZ=America/Guatemala PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /app
 COPY --from=build /out ./
-RUN apt-get update && apt-get install -y --no-install-recommends tini tzdata \
- && if [ "$INSTALL_BROWSERS" = "true" ]; then ./node_modules/.bin/playwright install --with-deps chromium; fi \
+# procps aporta pgrep para el healthcheck.
+RUN apt-get update && apt-get install -y --no-install-recommends tini tzdata procps \
+ && if [ "$INSTALL_BROWSERS" = "true" ]; then npx --no-install playwright install --with-deps chromium; fi \
  && rm -rf /var/lib/apt/lists/* \
  && chown -R node:node /app
 USER node

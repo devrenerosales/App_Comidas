@@ -184,7 +184,7 @@ Característica: Consolidar ingredientes del menú aprobado
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-28.1 | DB | Tablas LISTA_COMPRAS, LISTA_ITEM (origen, cantidad requerida, cantidad a comprar, marca sin conversión) y LISTA_ITEM_ORIGEN (ítem ↔ detalle de menú) y migración Prisma | 3 |
+| ST-28.1 | DB | Tablas LISTA_COMPRAS, LISTA_ITEM (origen, cantidad requerida, cantidad a comprar, marca sin conversión) y LISTA_ITEM_ORIGEN (ítem ↔ detalle de menú) y migración Drizzle | 3 |
 | ST-28.2 | BE | Servicio de consolidación: escalado RN-07 con Σ factores, suma por producto y registro de las comidas que originan cada ítem | 6 |
 | ST-28.3 | BE | Conversión de unidades y redondeo a presentaciones; regeneración al reaprobar (8a) | 5 |
 | ST-28.4 | FE | Pantalla de lista generada con advertencias "Sin conversión" y aviso en rojo "Excede por Q__" (RN-11) | 5 |

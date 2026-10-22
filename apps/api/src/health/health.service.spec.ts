@@ -1,5 +1,5 @@
+import type { Db } from '@menu/db';
 import type Redis from 'ioredis';
-import type { PrismaService } from '../prisma/prisma.service';
 import { HealthService } from './health.service';
 
 function crear(opts: {
@@ -8,24 +8,27 @@ function crear(opts: {
   estadoRedis?: string;
 }) {
   const connect = jest.fn().mockResolvedValue(undefined);
-  const prisma = { $queryRaw: jest.fn(opts.bd ?? (() => Promise.resolve([{ '?column?': 1 }]))) };
+  const db = {
+    execute: jest.fn(opts.bd ?? (() => Promise.resolve({ rows: [{ '?column?': 1 }] }))),
+  };
   const redis = {
     status: opts.estadoRedis ?? 'ready',
     connect,
     ping: jest.fn(opts.ping ?? (() => Promise.resolve('PONG'))),
   };
-  const servicio = new HealthService(prisma as unknown as PrismaService, redis as unknown as Redis);
-  return { servicio, prisma, redis, connect };
+  const servicio = new HealthService(db as unknown as Db, redis as unknown as Redis);
+  return { servicio, db, redis, connect };
 }
 
 describe('HealthService', () => {
   it('reporta ok cuando BD y Redis responden', async () => {
-    const { servicio } = crear({});
+    const { servicio, db } = crear({});
     const r = await servicio.reporte();
     expect(r.status).toBe('ok');
     expect(r.checks.database.status).toBe('up');
     expect(r.checks.redis.status).toBe('up');
     expect(typeof r.timestamp).toBe('string');
+    expect(db.execute).toHaveBeenCalledTimes(1);
   });
 
   it('reporta degraded sin lanzar cuando la BD falla', async () => {
