@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-24 a RF-27 |
 | Caso de uso macro | CU-06 Ajustar y aprobar menú |
 | Sprint(s) | S3 (RF-24 a RF-26) · S4 (RF-27) |
@@ -169,13 +169,15 @@ Característica: Ajustar el menú propuesto
 | Prioridad / Sprint | M · S3 |
 | Precondiciones | Menú en estado Borrador con todos los espacios (día × tiempo activo) asignados. |
 | Disparador | El usuario toca "Aprobar menú". |
-| Flujo principal | 1. El usuario toca "Aprobar menú".<br>2. La app muestra resumen: costo estimado vs. presupuesto por tiempo.<br>3. El usuario confirma.<br>4. El sistema valida que no haya espacios vacíos.<br>5. En una transacción cambia el estado a Aprobado, registra usuario y fecha y crea la LISTA_COMPRAS de la semana (include CU-07).<br>6. Muestra el menú en solo lectura y el acceso a la lista de compras. |
-| Flujos alternos | 2a. El costo excede el presupuesto de algún tiempo → se muestra "Excede por Q__" y se pide confirmación explícita; el usuario puede aprobar igual o cancelar. |
+| Flujo principal | 1. La app muestra junto al botón "Aprobar menú" el costo estimado vs. presupuesto por tiempo (CU-06.3); si algún tiempo excede, el texto aparece en rojo "Excede por Q__" (RN-11).<br>2. El usuario toca "Aprobar menú" (sin diálogo adicional, D-03).<br>3. El sistema valida que no haya espacios vacíos.<br>4. En una transacción cambia el estado a Aprobado, registra usuario y fecha, congela presupuesto, tiempos y Σ factores (D-04), registra el exceso al aprobar (0 si está dentro del presupuesto) y crea la LISTA_COMPRAS de la semana (include CU-07).<br>5. Muestra el menú en solo lectura, el exceso en rojo si lo hay y el acceso a la lista de compras. |
+| Flujos alternos | 1a. El costo excede el presupuesto de algún tiempo → el menú se aprueba igual, sin confirmación extra; el exceso queda registrado y se muestra en rojo "Excede por Q__" en el menú, al aprobar y en la lista de compras (RN-11, D-03). |
 | Excepciones | E1. Hay espacios vacíos ("Sin sugerencia") → no se aprueba y se señalan los espacios.<br>E2. Falla la creación de la lista → se revierte la transacción y el menú sigue en Borrador.<br>E3. El menú ya fue aprobado por otro usuario → se informa y se muestra el aprobado. |
 | Postcondiciones | Menú en estado Aprobado (solo lectura salvo el gasto real, CU-06.4) y LISTA_COMPRAS creada para la semana. |
-| Reglas y RNF | RN-01, RN-05, RNF-04 (menú aprobado consultable sin conexión), RNF-06 |
+| Reglas y RNF | RN-01, RN-05, RN-11, RNF-04 (menú aprobado consultable sin conexión), RNF-06 |
 
-Supuesto: el SRS solo define los estados Borrador y Aprobado; en v1 un menú aprobado no se puede reabrir. Hay un único menú por hogar y semana. Aprobar con exceso de presupuesto se permite con confirmación. En S3 la aprobación crea la LISTA_COMPRAS y publica el evento `menu.aprobado`; la consolidación de ingredientes y la despensa (RF-28, RF-29) se completan en CU-07 durante S4.
+Decisión D-03: un menú que excede el presupuesto se puede aprobar; no se bloquea ni se pide diálogo de confirmación; el exceso se indica en rojo "Excede por Q__" en el menú, al aprobar y en la lista, y queda registrado.
+Decisión D-04: el menú aprobado guarda una copia de la configuración con que se aprobó (tiempos, presupuesto y Σ factores).
+Supuesto: el SRS solo define los estados Borrador y Aprobado; en v1 un menú aprobado no se puede reabrir. Hay un único menú por hogar y semana. En S3 la aprobación crea la LISTA_COMPRAS y publica el evento `menu.aprobado`; la consolidación de ingredientes y la despensa (RF-28, RF-29) se completan en CU-07 durante S4.
 
 #### Diagrama de estados del menú
 
@@ -196,19 +198,18 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-  INI(("Inicio")) --> A["Tocar Aprobar menú"]
-  A --> B["Mostrar costo vs. presupuesto por tiempo"]
+  INI(("Inicio")) --> B["Mostrar costo vs. presupuesto por tiempo"]
   B --> C{"¿Excede algún tiempo?"}
-  C -- Sí --> D{"¿Confirma aprobar con exceso?"}
-  D -- No --> FIN(("Fin"))
-  D -- Sí --> E{"¿Todos los espacios asignados?"}
-  C -- No --> E
-  E -- No --> X["Señalar espacios vacíos"] --> FIN
-  E -- Sí --> F["Cambiar estado a Aprobado"]
+  C -- Sí --> D["Mostrar en rojo Excede por Q__ (RN-11)"]
+  D --> A["Tocar Aprobar menú"]
+  C -- No --> A
+  A --> E{"¿Todos los espacios asignados?"}
+  E -- No --> X["Señalar espacios vacíos"] --> FIN(("Fin"))
+  E -- Sí --> F["Cambiar estado a Aprobado, congelar configuración y registrar exceso"]
   F --> G["Crear lista de compras (CU-07)"]
   G --> H{"¿Transacción exitosa?"}
   H -- No --> R["Revertir y mantener Borrador"] --> FIN
-  H -- Sí --> I["Mostrar menú en solo lectura y enlace a la lista"]
+  H -- Sí --> I["Mostrar menú en solo lectura, exceso en rojo si lo hay y enlace a la lista"]
   I --> FIN
 ```
 
@@ -220,9 +221,8 @@ sequenceDiagram
   participant APP as App Ionic
   participant API as API NestJS
   participant DB as PostgreSQL
+  APP-->>U: Costo vs. presupuesto, exceso en rojo si lo hay
   U->>APP: Aprobar menú semana 2026-11-01
-  APP-->>U: Resumen de costo vs. presupuesto
-  U->>APP: Confirmar
   APP->>API: POST /menus/ID/aprobar
   API->>DB: Leer menú y espacios
   alt Espacios vacíos o ya aprobado
@@ -230,13 +230,18 @@ sequenceDiagram
     APP-->>U: Mensaje y espacios señalados
   else Válido
     API->>DB: BEGIN
-    API->>DB: Actualizar estado Aprobado, aprobado_por, fecha
+    API->>DB: Actualizar estado Aprobado, aprobado_por, fecha y copia de configuración
+    API->>DB: Registrar exceso_al_aprobar (0 si cumple)
     API->>DB: Insertar LISTA_COMPRAS de la semana
     API->>DB: COMMIT
     API->>API: Publicar evento menu.aprobado para CU-07
-    API-->>APP: 200 menú aprobado y id de lista
+    API-->>APP: 200 menú aprobado, id de lista y excede
     APP->>APP: Guardar menú para uso sin conexión
-    APP-->>U: Menú aprobado y botón Ver lista de compras
+    alt Aprobado con exceso
+      APP-->>U: Menú aprobado con Excede por Q__ en rojo
+    else Dentro del presupuesto
+      APP-->>U: Menú aprobado y botón Ver lista de compras
+    end
   end
 ```
 
@@ -254,7 +259,7 @@ Característica: Aprobar el menú semanal
   Escenario: Aprobar un menú dentro del presupuesto
     Dado un menú "Borrador" de la semana 2026-11-01 con 7 almuerzos asignados y costo Q229.50
     Y un presupuesto de almuerzo de Q245.00
-    Cuando toco "Aprobar menú" y confirmo
+    Cuando toco "Aprobar menú"
     Entonces el menú pasa a estado "Aprobado" con mi usuario y la fecha
     Y se crea la lista de compras de la semana 2026-11-01
     Y la grilla queda en solo lectura
@@ -262,14 +267,17 @@ Característica: Aprobar el menú semanal
   # CA-25.2 Flujo alterno (aprobar con exceso)
   Escenario: Aprobar con presupuesto excedido
     Dado un menú "Borrador" con costo de almuerzo Q262.00 y presupuesto Q245.00
+    Y el botón "Aprobar menú" muestra en rojo "Almuerzo: Excede por Q17.00"
     Cuando toco "Aprobar menú"
-    Entonces veo "Almuerzo: excede por Q17.00. ¿Aprobar de todos modos?"
-    Y al confirmar el menú pasa a "Aprobado"
+    Entonces el menú pasa a "Aprobado" sin pedir confirmación adicional
+    Y el menú aprobado muestra en rojo "Excede por Q17.00"
+    Y la lista de compras de la semana muestra en rojo "Excede por Q17.00"
+    Y queda registrado un exceso al aprobar de Q17.00
 
   # CA-25.3 Validación de espacios vacíos
   Escenario: No se aprueba con espacios vacíos
     Dado un menú "Borrador" de almuerzo y cena con la cena del viernes "Sin sugerencia"
-    Cuando toco "Aprobar menú" y confirmo
+    Cuando toco "Aprobar menú"
     Entonces veo "Asigna un platillo a: viernes cena"
     Y el menú sigue en "Borrador" y no se crea lista de compras
 
@@ -277,7 +285,7 @@ Característica: Aprobar el menú semanal
   Escenario: Se revierte la aprobación si falla la lista
     Dado un menú "Borrador" completo
     Y la creación de la lista de compras falla
-    Cuando confirmo la aprobación
+    Cuando toco "Aprobar menú"
     Entonces el menú sigue en "Borrador"
     Y veo "No se pudo aprobar, intenta de nuevo"
 ```
@@ -287,9 +295,9 @@ Característica: Aprobar el menú semanal
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
 | ST-25.1 | DB | Campos estado, aprobado_por, fecha_aprobacion y restricción única (hogar, semana) en MENU_SEMANAL | 2 |
-| ST-25.2 | BE | Endpoint POST aprobar transaccional con validación de espacios y confirmación de exceso | 4 |
+| ST-25.2 | BE | Endpoint POST aprobar transaccional con validación de espacios, copia de configuración (D-04) y registro del exceso (RN-11) | 4 |
 | ST-25.3 | BE | Creación de LISTA_COMPRAS y publicación del evento menu.aprobado para CU-07 | 3 |
-| ST-25.4 | FE | Botón "Aprobar", diálogo de resumen, modo solo lectura y caché sin conexión del menú | 3 |
+| ST-25.4 | FE | Botón "Aprobar" con costo vs. presupuesto y exceso en rojo, modo solo lectura y caché sin conexión del menú | 3 |
 | ST-25.5 | QA | Casos PF-M6-25.1..4, prueba de reversión y prueba en modo avión (RNF-04) | 4 |
 | ST-25.6 | DOC | Manual de usuario: "Aprobar el menú y abrir la lista de compras" | 1 |
 
@@ -340,7 +348,7 @@ sequenceDiagram
   participant DB as PostgreSQL
   U->>APP: Abrir menú semana 2026-11-01
   APP->>API: GET /menus/ID/costos
-  API->>DB: Leer detalles, ingredientes, comensales, precios mediana y presupuesto
+  API->>DB: Leer detalles, ingredientes, Σ factores, precios mediana y presupuesto
   DB-->>API: Datos
   API->>API: Calcular costo por día, por tiempo y total
   alt Sin presupuesto configurado
@@ -415,7 +423,7 @@ Característica: Costo estimado vs. presupuesto
 | Precondiciones | Menú de la semana en estado Aprobado. |
 | Disparador | El usuario toca "Registrar gasto real" en el menú aprobado o al cerrar la lista de compras (CU-07). |
 | Flujo principal | 1. El usuario toca "Registrar gasto real".<br>2. Ingresa el monto total gastado en GTQ y una nota opcional.<br>3. El sistema valida el monto.<br>4. Guarda monto, usuario y fecha.<br>5. Muestra la diferencia contra el costo estimado y contra el presupuesto. |
-| Flujos alternos | 2a. Ya existe un gasto registrado → se muestra para corregirlo; se guarda el último valor con quién y cuándo lo cambió. |
+| Flujos alternos | 2a. Ya existe un gasto registrado → se muestra para corregirlo; se guarda el último valor con quién y cuándo lo cambió.<br>2b. No hay gasto registrado y en la lista se anotaron precios reales (CU-07.7, RF-44) → el monto aparece prellenado con la suma de esos precios y el usuario puede cambiarlo antes de guardar. |
 | Excepciones | E1. Monto vacío, cero, negativo o con más de 2 decimales → no se guarda.<br>E2. Menú en Borrador → la opción no está disponible. |
 | Postcondiciones | El menú Aprobado tiene gasto real registrado, disponible para reportes (RF-39). |
 | Reglas y RNF | RN-01, RNF-04, RNF-06 |

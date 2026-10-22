@@ -4,7 +4,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | SRS-MF-001 |
-| Versión | 1.1 |
+| Versión | 1.3 |
 | Fecha | 2026-10-22 |
 | Autor | Rene Rosales (Product Owner) · elaborado con Claude (arquitectura) |
 | Estándar de referencia | ISO/IEC/IEEE 29148:2018 (adaptado) |
@@ -18,6 +18,8 @@
 | 0.1 | 2026-10-20 | Claude | Análisis de la solución (Sprint 0) |
 | 1.0 | 2026-10-22 | Claude / Rene | SRS inicial con decisiones confirmadas: tiempos de comida parametrizables, compras = ingredientes + despensa, stack React+Ionic+NestJS, precio sugerido = mínimo y mediana |
 | 1.1 | 2026-10-22 | Claude / Rene | Aprobado. Se agrega CU-12 Recibir notificaciones; CU-08 pasa a "Registrar y vincular precios"; casos de uso detallados por RF en `historias/` |
+| 1.2 | 2026-10-22 | Claude / Rene | Decisiones del PO D-01 a D-09: reparto con desayuno, factor de porción por comensal, aprobación con exceso visible, hosting en servidor propio (RN-06, RN-07, RN-11, RNF-03, R-05, S-03, PA-01) |
+| 1.3 | 2026-10-22 | Claude / Rene | Nuevos RF-43 avance de compra por comida y RF-44 precio real y promedio de compra (RN-12, RN-13), solicitados por el PO |
 
 ---
 
@@ -121,11 +123,12 @@ Gestión del hogar · configuración · catálogo de platillos e ingredientes ·
 - **R-02** Moneda: quetzales (GTQ); zona horaria America/Guatemala; idioma español.
 - **R-03** La extracción de precios debe respetar los términos de uso de cada supermercado; si no se permite, se usa captura manual o ticket.
 - **R-04** Claude no hace push al repositorio: prepara cambios y mensaje de commit; el PO ejecuta `git push`.
+- **R-05** Hosting en servidor propio en casa del PO con Docker Compose (D-09, ADR-002).
 
 ### 2.5 Supuestos y dependencias
 - **S-01** El gasto semanal típico de almuerzos es Q224 – Q265 (dato del cuaderno), usado como presupuesto inicial sugerido.
 - **S-02** Los sitios de Walmart y Paiz publican precios consultables; La Torre después; Super Fresh solo manual o por ticket.
-- **S-03** Hosting a definir en la fase de diseño (opciones: VPS con Docker o PaaS).
+- **S-03** El servidor de casa tiene conexión a internet estable; el acceso externo se publica por túnel HTTPS sin abrir puertos (ADR-002).
 
 ---
 
@@ -199,6 +202,8 @@ Prioridad MoSCoW: **M** = Must, **S** = Should, **C** = Could. Sprint según pla
 | RF-30 | El usuario debe poder agregar, quitar y marcar productos como comprados (también sin conexión). | M | S4 |
 | RF-31 | La lista debe agruparse por supermercado sugerido (precio mínimo) y por categoría. | S | S5 |
 | RF-32 | El usuario debe poder compartir la lista (texto/WhatsApp). | C | S4 |
+| RF-43 | La lista de ingredientes con check debe mostrar el avance de compra de cada comida programada (ingredientes comprados de su total) y marcarla "Lista para preparar" al completarse; también el avance general de la semana. Un ingrediente se puede marcar "Ya lo tengo" sin comprarlo. | M | S4 |
+| RF-44 | Al marcar un producto como comprado, el usuario puede registrar el precio real pagado (opcional). El sistema debe calcular el precio promedio de compra por producto y prellenar el gasto real de la semana con la suma de precios reales. | M | S4 |
 
 ### 3.8 M8 — Precios
 
@@ -236,11 +241,14 @@ Prioridad MoSCoW: **M** = Must, **S** = Should, **C** = Could. Sprint según pla
 | RN-03 | No se repite un platillo dentro de la misma semana y tiempo de comida, salvo que el usuario lo fije. |
 | RN-04 | Novedad: un platillo preparado hace menos de 2 semanas recibe puntaje de novedad 0. |
 | RN-05 | Si el menú supera el presupuesto, el motor reemplaza el platillo de mayor costo por la mejor alternativa más barata hasta cumplir o hasta 3 intentos; si no cumple, avisa al usuario. |
-| RN-06 | Distribución por defecto del presupuesto: solo almuerzo = 100 %; almuerzo + cena = 60/40; tres tiempos = 20/50/30 (desayuno/almuerzo/cena). Editable. |
-| RN-07 | Las cantidades de ingredientes escalan según el número de comensales vs. porciones base del platillo. |
+| RN-06 | Distribución por defecto del presupuesto: solo almuerzo = 100 %; almuerzo + cena = 60/40; tres tiempos = 20/50/30 (desayuno/almuerzo/cena); desayuno + almuerzo = 29/71; desayuno + cena = 40/60. Editable (D-01). |
+| RN-07 | Las cantidades escalan con la suma de factores de porción de los comensales: cantidad = cantidad base × Σ factores ÷ porciones base. Cada comensal tiene factor sugerido 1.0, editable de 0.25 a 2.0 en pasos de 0.25 (D-02). |
 | RN-08 | La sugerencia de compra usa el precio mínimo vigente (máx. 14 días de antigüedad); si no hay precio vigente se muestra el último con advertencia. |
 | RN-09 | La semana va de domingo a sábado salvo configuración distinta (RF-08). |
 | RN-10 | Solo el administrador cambia presupuesto, tiempos de comida y pesos del motor. |
+| RN-11 | Un menú que excede el presupuesto se puede aprobar; el exceso se muestra en rojo con el texto "Excede por Q__" en el menú, al aprobar y en la lista de compras, y queda registrado (D-03). |
+| RN-12 | Precio promedio de compra de un producto = promedio de los precios reales pagados por el hogar, normalizados a la presentación del catálogo, en las últimas 12 semanas. Se muestra junto a la mediana y sirve de respaldo cuando no hay precio de mercado vigente (RN-08). |
+| RN-13 | Una comida programada está "Lista para preparar" cuando todos sus ingredientes en la lista están marcados como comprados o "Ya lo tengo". Un producto compartido por varias comidas cuenta para todas al marcarse. |
 
 ---
 
@@ -250,7 +258,7 @@ Prioridad MoSCoW: **M** = Must, **S** = Should, **C** = Could. Sprint según pla
 |---|---|---|---|
 | RNF-01 | Rendimiento | Generar el menú semanal en menos de 3 s. | p95 < 3 s con 300 platillos |
 | RNF-02 | Rendimiento | Pantallas principales cargan en menos de 2 s en 4G. | Lighthouse ≥ 80 performance |
-| RNF-03 | Disponibilidad | API disponible 99 % mensual. | Monitoreo de uptime |
+| RNF-03 | Disponibilidad | API disponible 95 % mensual (servidor en casa, D-09); la lista y el menú aprobado siguen disponibles sin conexión (RNF-04). | Monitoreo de uptime externo |
 | RNF-04 | Offline | Lista de compras y menú aprobado consultables sin conexión; sincroniza al reconectar. | Prueba en modo avión |
 | RNF-05 | Seguridad | Contraseñas con hash bcrypt/argon2; JWT con expiración; HTTPS obligatorio. | Revisión de código, prueba |
 | RNF-06 | Seguridad | Cada hogar solo ve sus datos (aislamiento por `hogar_id`). | Pruebas de autorización |
@@ -380,10 +388,10 @@ flowchart LR
 |---|---|
 | Actor | Miembro del hogar |
 | Precondición | Menú aprobado |
-| Flujo principal | 1. Abre la lista. 2. El sistema muestra ingredientes consolidados + despensa de la semana, agrupados por supermercado sugerido. 3. El usuario marca productos comprados. 4. Registra el gasto real al terminar. |
+| Flujo principal | 1. Abre la lista. 2. El sistema muestra ingredientes consolidados + despensa de la semana, agrupados por supermercado sugerido. 3. El usuario marca productos comprados (o "Ya lo tengo"), anota el precio real si quiere y ve el avance de cada comida hasta "Lista para preparar". 4. Registra el gasto real al terminar. |
 | Flujo alterno | 3a. Sin conexión → los cambios se guardan localmente y se sincronizan después. |
 | Postcondición | Lista cerrada con gasto real registrado. |
-| Requerimientos | RF-27 a RF-32, RN-07, RN-08 |
+| Requerimientos | RF-27 a RF-32, RF-43, RF-44, RN-07, RN-08, RN-11, RN-12, RN-13 |
 
 **CU-09 Actualizar precios automáticos**
 
@@ -442,7 +450,7 @@ Escenario: Menú excede el presupuesto
 | M4 Carga histórica | RF-15 a RF-18 | CU-04.1–04.4 | S2 | PF-M4-xx |
 | M5 Motor | RF-19 a RF-23 | CU-05.1–05.5 | S3 | PF-M5-xx + unitarias del motor |
 | M6 Plan semanal | RF-24 a RF-27 | CU-06.1–06.4 | S3 / S4 | PF-M6-xx |
-| M7 Lista de compras | RF-28 a RF-32 | CU-07.1–07.5 | S4 / S5 | PF-M7-xx |
+| M7 Lista de compras | RF-28 a RF-32, RF-43, RF-44 | CU-07.1–07.7 | S4 / S5 | PF-M7-xx |
 | M8 Precios | RF-33 a RF-38 | CU-08.1–08.3, CU-09.1–09.3 | S5 | PF-M8-xx |
 | M9 Reportes | RF-39, RF-40 | CU-10.1–10.2 | S6 | PF-M9-xx |
 | M10 Notificaciones | RF-41, RF-42 | CU-12.1–12.2 | S6 | PF-M10-xx |
@@ -459,7 +467,7 @@ Cada sprint ejecuta además la suite de regresión acumulada de los módulos ant
 | S1 | Hogar, configuración y catálogo | RF-01–08, RF-11–13 | Diseño M1–M3, código, pruebas, manual cap. 1–2 |
 | S2 | Carga inicial | RF-15–18 | Plantilla de importación, 16 semanas cargadas |
 | S3 | Menú | RF-10, RF-14, RF-19–26 | Motor + plan semanal, pruebas del motor |
-| S4 | Compras | RF-27–30, RF-32 | Lista offline, manual cap. compras |
+| S4 | Compras | RF-27–30, RF-32, RF-43, RF-44 | Lista offline, manual cap. compras |
 | S5 | Precios y marcas | RF-09, RF-31, RF-33–38 | Worker, vinculación de productos |
 | S6 | Android y cierre | RF-39–42 | APK, reportes, UAT, manual completo |
 
@@ -469,11 +477,12 @@ Cada sprint ejecuta además la suite de regresión acumulada de los módulos ant
 
 | ID | Tema | Estado |
 |---|---|---|
-| PA-01 | Hosting definitivo (VPS vs PaaS) | Se decide en diseño (S0) |
-| PA-02 | Términos de uso de Walmart/Paiz/La Torre para extracción automática | Revisar antes de S5 |
+| PA-01 | Hosting definitivo | Cerrada: servidor propio en casa (D-09, ADR-002) |
+| PA-02 | Términos de uso de Walmart/Paiz/La Torre para extracción automática | Revisar antes de S5; extracción apagada por sitio hasta revisarlos (D-07) |
 | PA-03 | Frecuencia de cada producto de despensa (semanal, quincenal, mensual) | Confirmar con la lista de Q814 en S2 |
 | PA-04 | Publicar en Google Play o solo APK | APK en v1; reevaluar en S6 |
 | RG-01 | Cambios en la estructura de los sitios rompen el worker | Mitigación: RF-38 + alertas + captura manual |
+| RG-02 | Cortes de luz o internet en casa dejan la app sin servicio | Mitigación: UPS, modo offline (RNF-04), respaldo cifrado fuera de casa (RNF-11) |
 
 ---
 

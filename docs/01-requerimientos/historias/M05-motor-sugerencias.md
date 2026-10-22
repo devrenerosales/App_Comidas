@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-19 a RF-23 |
 | Caso de uso macro | CU-05 Generar menú semanal |
 | Sprint(s) | S3 |
@@ -310,7 +310,7 @@ Característica: Puntaje de platillos
 | Prioridad / Sprint | M · S3 |
 | Precondiciones | Propuesta completa con costo estimado por platillo. Presupuesto por tiempo configurado (RN-01, RN-06). |
 | Disparador | Paso 6 de CU-05.1. |
-| Flujo principal | 1. Para cada tiempo activo calcula su presupuesto = presupuesto semanal × % del tiempo (RN-01).<br>2. Calcula el costo de cada platillo = Σ (cantidad del ingrediente × comensales / porciones base (RN-07)) × precio mediana.<br>3. Suma el costo de los 7 días del tiempo.<br>4. Si costo ≤ presupuesto, el tiempo cumple. |
+| Flujo principal | 1. Para cada tiempo activo calcula su presupuesto = presupuesto semanal × % del tiempo (RN-01).<br>2. Calcula el costo de cada platillo = Σ (cantidad del ingrediente × Σ factores de porción / porciones base (RN-07, D-02)) × precio mediana.<br>3. Suma el costo de los 7 días del tiempo.<br>4. Si costo ≤ presupuesto, el tiempo cumple. |
 | Flujos alternos | 4a. Costo > presupuesto (RN-05): reemplaza el platillo no fijado de mayor costo por el candidato de mayor puntaje con costo menor que cumpla RN-02 y RN-03; recalcula; repite hasta cumplir o hasta 3 intentos por tiempo. |
 | Excepciones | E1. Tras 3 intentos sigue excedido → guarda el borrador y muestra "Excede por Q__" en ese tiempo con hasta 3 alternativas más baratas por día.<br>E2. No existe candidato más barato válido → cuenta como intento fallido y pasa al siguiente más caro. |
 | Postcondiciones | Cada tiempo queda marcado "Dentro del presupuesto" o "Excede por Q__". |
@@ -323,7 +323,7 @@ Supuesto: el control de presupuesto y los 3 intentos se aplican por tiempo de co
 ```mermaid
 flowchart TD
   INI(("Inicio")) --> A["Presupuesto del tiempo = semanal × %"]
-  A --> B["Costo de platillos con precio mediana y escala por comensales"]
+  A --> B["Costo de platillos con precio mediana y escala por Σ factores"]
   B --> C["Sumar 7 días del tiempo"]
   C --> D{"¿Costo ≤ presupuesto?"}
   D -- Sí --> OK["Marcar dentro del presupuesto"] --> FIN(("Fin"))
@@ -345,7 +345,7 @@ sequenceDiagram
   participant API as API NestJS
   participant MOT as Motor de sugerencias
   participant DB as PostgreSQL
-  API->>DB: Leer presupuesto, % por tiempo, comensales y precios mediana
+  API->>DB: Leer presupuesto, % por tiempo, Σ factores y precios mediana
   DB-->>API: Datos de presupuesto y precios
   API->>MOT: ajustarPresupuesto(propuesta, presupuestos)
   loop Hasta cumplir o 3 intentos por tiempo
@@ -404,7 +404,7 @@ Característica: Menú dentro del presupuesto
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-21.1 | BE | Cálculo de costo por platillo: escala por comensales (RN-07) × precio mediana, marca "Costo incompleto" | 4 |
+| ST-21.1 | BE | Cálculo de costo por platillo: escala por Σ factores de porción (RN-07) × precio mediana, marca "Costo incompleto" | 4 |
 | ST-21.2 | BE | Ciclo de reemplazo RN-05 por tiempo (máx. 3 intentos) y cálculo del exceso | 5 |
 | ST-21.3 | FE | Indicador por tiempo y aviso "Excede por Q__" con alternativas más baratas | 3 |
 | ST-21.4 | QA | Casos PF-M5-21.1..4 y pruebas unitarias del ajuste con montos de este documento | 4 |

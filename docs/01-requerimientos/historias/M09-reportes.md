@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-39 a RF-40 |
 | Caso de uso macro | CU-10 Consultar reportes de gasto |
 | Sprint(s) | S6 |

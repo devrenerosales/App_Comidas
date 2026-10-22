@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-15 a RF-18 |
 | Caso de uso macro | CU-04 |
 | Sprint(s) | S2 |

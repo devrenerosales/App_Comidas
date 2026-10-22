@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) · CU-12 se incorpora en v1.1 |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) · CU-12 se incorpora en v1.1 |
 | Requerimientos | RF-41 a RF-42 |
 | Caso de uso macro | CU-12 Recibir notificaciones (nuevo) |
 | Sprint(s) | S6 |

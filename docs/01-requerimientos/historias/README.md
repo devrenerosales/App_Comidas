@@ -3,29 +3,29 @@
 | Campo | Valor |
 |---|---|
 | Documento | CUH-MF-001 |
-| Versión | 1.0 (para aprobación del PO) |
+| Versión | 1.1 (decisiones D-01..D-09 y RF-43, RF-44) |
 | Fecha | 2026-10-22 |
-| Base | SRS-MF-001 v1.1 (aprobado 2026-10-22) |
+| Base | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Fase del ciclo de vida | 2. Requerimientos — análisis de casos de uso, historias y criterios de aceptación |
 | Prototipo de referencia | [Prototipo App Menús Familiares](https://claude.ai/artifact/E5BNpQxh3ianZUmYpBmSLz) (2026-10-21) |
 
-La especificación cubre los 42 requerimientos funcionales del SRS. Cada uno tiene su caso de uso detallado, una historia de usuario con criterios de aceptación en Gherkin y sus subtareas estimadas. En total son **42 casos de uso, 42 historias, 228 puntos y 757 horas estimadas**, con 99 diagramas Mermaid validados (todos renderizan sin errores).
+La especificación cubre los 44 requerimientos funcionales del SRS v1.3 (RF-43 y RF-44 se agregaron a pedido del PO). Cada uno tiene su caso de uso detallado, una historia de usuario con criterios de aceptación en Gherkin y sus subtareas estimadas. En total son **44 casos de uso, 44 historias, 243 puntos y 804 horas estimadas**, con 101 diagramas Mermaid validados (todos renderizan sin errores).
 
 ## 1. Índice de documentos
 
 | Archivo | Módulo | RF | Casos de uso | Sprint(s) | Puntos | Horas |
 |---|---|---|---|---|---|---|
-| [M01-cuenta-hogar.md](M01-cuenta-hogar.md) | Cuenta y hogar | RF-01–04 | CU-01.1–01.4 | S1 | 19 | 73 |
+| [M01-cuenta-hogar.md](M01-cuenta-hogar.md) | Cuenta y hogar | RF-01–04 | CU-01.1–01.4 | S1 | 21 | 76 |
 | [M02-configuracion.md](M02-configuracion.md) | Configuración | RF-05–10 | CU-02.1–02.6 | S1, S3, S5 | 30 | 96 |
 | [M03-catalogo.md](M03-catalogo.md) | Catálogo de platillos | RF-11–14 | CU-03.1–03.3, CU-11.1 | S1, S3 | 18 | 74 |
 | [M04-carga-historica.md](M04-carga-historica.md) | Carga histórica | RF-15–18 | CU-04.1–04.4 | S2 | 26 | 85 |
 | [M05-motor-sugerencias.md](M05-motor-sugerencias.md) | Motor de sugerencias | RF-19–23 | CU-05.1–05.5 | S3 | 24 | 92 |
 | [M06-plan-semanal.md](M06-plan-semanal.md) | Plan semanal | RF-24–27 | CU-06.1–06.4 | S3, S4 | 21 | 65 |
-| [M07-lista-compras.md](M07-lista-compras.md) | Lista de compras | RF-28–32 | CU-07.1–07.5 | S4, S5 | 28 | 82 |
+| [M07-lista-compras.md](M07-lista-compras.md) | Lista de compras | RF-28–32, RF-43–44 | CU-07.1–07.7 | S4, S5 | 41 | 126 |
 | [M08-precios.md](M08-precios.md) | Precios | RF-33–38 | CU-08.1–08.3, CU-09.1–09.3 | S5 | 41 | 121 |
 | [M09-reportes.md](M09-reportes.md) | Reportes | RF-39–40 | CU-10.1–10.2 | S6 | 8 | 31 |
 | [M10-notificaciones.md](M10-notificaciones.md) | Notificaciones | RF-41–42 | CU-12.1–12.2 | S6 | 13 | 38 |
-| **Total** | | **42** | **42** | | **228** | **757** |
+| **Total** | | **44** | **44** | | **243** | **804** |
 
 [_PLANTILLA.md](_PLANTILLA.md) define la estructura, los IDs y las reglas Mermaid que siguen todos los módulos.
 
@@ -87,24 +87,24 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  S1["S1 · 11 HU · 54 pts<br>Hogar, configuración, catálogo"] --> S2["S2 · 4 HU · 26 pts<br>Carga inicial"]
+  S1["S1 · 11 HU · 56 pts<br>Hogar, configuración, catálogo"] --> S2["S2 · 4 HU · 26 pts<br>Carga inicial"]
   S2 --> S3["S3 · 10 HU · 50 pts<br>Motor y plan semanal"]
-  S3 --> S4["S4 · 5 HU · 26 pts<br>Lista de compras"]
+  S3 --> S4["S4 · 7 HU · 39 pts<br>Lista de compras, avance y precio real"]
   S4 --> S5["S5 · 8 HU · 51 pts<br>Precios y marcas"]
   S5 --> S6["S6 · 4 HU · 21 pts<br>Reportes, notificaciones, APK"]
 ```
 
 | Sprint | Historias | Puntos | Horas |
 |---|---|---|---|
-| S1 | HU-01, 02, 03, 04, 05, 06, 07, 08, 11, 12, 13 | 54 | 199 |
+| S1 | HU-01, 02, 03, 04, 05, 06, 07, 08, 11, 12, 13 | 56 | 202 |
 | S2 | HU-15, 16, 17, 18 | 26 | 85 |
 | S3 | HU-10, 14, 19, 20, 21, 22, 23, 24, 25, 26 | 50 | 173 |
-| S4 | HU-27, 28, 29, 30, 32 | 26 | 80 |
+| S4 | HU-27, 28, 29, 30, 32, 43, 44 | 39 | 124 |
 | S5 | HU-09, 31, 33, 34, 35, 36, 37, 38 | 51 | 151 |
 | S6 | HU-39, 40, 41, 42 | 21 | 69 |
-| **Total** | **42** | **228** | **757** |
+| **Total** | **44** | **243** | **804** |
 
-**Riesgo de capacidad:** S1, S3 y S5 superan 150 h en 2 semanas. Si el equipo es una sola persona a medio tiempo (~40 h por sprint), hay que medir la velocidad real en S1 y replanificar: mover las HU "S" y "C" (HU-04, 08, 22, 32, 37, 40) a sprints posteriores o alargar el plan.
+**Riesgo de capacidad:** S1, S3 y S5 superan 150 h en 2 semanas y S4 sube a 124 h con RF-43 y RF-44. Si el equipo es una sola persona a medio tiempo (~40 h por sprint), hay que medir la velocidad real en S1 y replanificar: mover las HU "S" y "C" (HU-04, 08, 22, 32, 37, 40) a sprints posteriores o alargar el plan.
 
 ## 5. Definición de listo (DoR)
 
@@ -114,7 +114,7 @@ Una historia entra al sprint cuando:
 - [ ] Tiene al menos 3 criterios de aceptación en Gherkin con datos concretos.
 - [ ] Está estimada en puntos y dividida en subtareas de máximo 8 h.
 - [ ] Sus dependencias están terminadas o planificadas en el mismo sprint.
-- [ ] El PO validó los supuestos marcados en su especificación.
+- [ ] El PO validó los supuestos marcados en su especificación y es consistente con las decisiones D-01..D-09.
 
 ## 6. Definición de terminado (DoD)
 
@@ -132,9 +132,10 @@ Una historia se cierra cuando:
 | Pantalla del prototipo | Historias que cubre | Brecha a diseñar en fase 3 |
 |---|---|---|
 | Móvil · Login | HU-01 | Registro y recuperación de contraseña (HU-04) |
-| Móvil · Inicio (personas, presupuesto ±Q10) | HU-03, HU-06 | Selector de tiempos de comida y vista previa del reparto (HU-05, HU-07) |
-| Móvil · Semana (fijar, cambiar con alternativas) | HU-19, HU-23, HU-24 | Motivo de la sugerencia (HU-22), aprobar con exceso de presupuesto (HU-25) |
+| Móvil · Inicio (personas, presupuesto ±Q10) | HU-03, HU-06 | Factor de porción por comensal 0.25–2.0 (HU-03, D-02); selector de tiempos de comida y vista previa del reparto (HU-05, HU-07) |
+| Móvil · Semana (fijar, cambiar con alternativas) | HU-19, HU-23, HU-24 | Motivo de la sugerencia (HU-22), aprobar con exceso en rojo "Excede por Q__" sin diálogo extra (HU-25, D-03) |
 | Móvil · Lista de compras con checks | HU-28, HU-30 | Despensa (HU-29), agrupación por supermercado (HU-31), compartir (HU-32) |
+| Móvil · `Lista-progreso.dc.html` · Avance de compra y precio real (nueva) | HU-30, HU-43, HU-44 | Pestaña "Por comida" con avance y "Lista para preparar", estado "Ya lo tengo", campo "Precio pagado" al marcar comprado y promedio de compra junto a la mediana |
 | Móvil · Platillos | HU-11 | Ingredientes por porción (HU-12), calificación (HU-14) |
 | Web · Semana (costo vs presupuesto, Cambiar, Aceptar y generar lista) | HU-25, HU-26 | Vista de 2 o 3 tiempos por día |
 | Web · Precios por tienda (mínimo y mediana) | HU-36 | Registro manual o por ticket (HU-34), vinculación (HU-35), histórico (HU-37) |
@@ -143,21 +144,23 @@ Una historia se cierra cuando:
 
 El prototipo muestra solo almuerzos. Con la configuración de tiempos de comida (HU-05), la vista semanal debe poder mostrar 2 o 3 tiempos por día.
 
-## 8. Supuestos que requieren validación del PO
+## 8. Decisiones del PO
 
-Cada módulo lista sus supuestos bajo cada especificación. Estos son los que más cambian el diseño:
+Los supuestos de mayor impacto quedaron cerrados por el PO el 2026-10-22. El registro completo está en [docs/00-planificacion/decisiones-po.md](../../00-planificacion/decisiones-po.md); cada módulo las cita como "Decisión D-0n" en la especificación afectada.
 
-| # | Supuesto | Módulo |
+| ID | Decisión | Módulos e historias |
 |---|---|---|
-| 1 | Reparto para dos tiempos no cubiertos por RN-06: desayuno + almuerzo = 29/71, desayuno + cena = 40/60 | M02 |
-| 2 | Un menú aprobado guarda una copia de la configuración; cambiarla después no lo altera | M02, M06 |
-| 3 | Fórmulas de los factores del motor (preferencia, novedad, ahorro, afinidad) definidas en M05 §CU-05.2 | M05 |
-| 4 | Se permite aprobar un menú que excede el presupuesto, con confirmación | M06 |
-| 5 | Cada comensal cuenta como una porción (sin factor adulto/niño) | M03, M07 |
-| 6 | El catálogo de productos y los precios automáticos son comunes a todos los hogares; los precios manuales son del hogar | M03, M08 |
-| 7 | La extracción por sitio queda apagada hasta que el administrador revise los términos de uso (PA-02) | M08 |
-| 8 | Las fotos del cuaderno se transcriben a mano a la plantilla (sin OCR); la despensa entra con frecuencia mensual provisional (PA-03) | M04 |
-| 9 | Recordatorio de planificación a las 08:00 del domingo; la alerta del 10 % es sobre el total semanal | M10 |
+| D-01 | Reparto con desayuno proporcional a 20/50/30: desayuno + almuerzo = 29/71, desayuno + cena = 40/60, editable | M02 · HU-06, HU-07 |
+| D-02 | Cada comensal tiene factor de porción sugerido 1.0, editable de 0.25 a 2.0 en pasos de 0.25; las cantidades escalan con Σ factores | M01, M03, M05, M07 · HU-03, HU-12, HU-21, HU-28 |
+| D-03 | Un menú que excede el presupuesto se aprueba sin diálogo extra; el exceso se muestra en rojo "Excede por Q__" en el menú, al aprobar y en la lista, y queda registrado | M06, M07 · HU-25, HU-26, HU-28 |
+| D-04 | El menú aprobado guarda copia de la configuración con que se aprobó | M02, M06 · HU-07, HU-25, HU-39 |
+| D-05 | Catálogo de productos y precios automáticos comunes; platillos y precios manuales por hogar | M03, M08 · HU-13, HU-34, HU-35 |
+| D-06 | Claude transcribe las 18 fotos del cuaderno a la plantilla CSV en S2 y el PO revisa; sin OCR de menús | M04 · HU-18 |
+| D-07 | Extracción automática de precios apagada por sitio hasta revisar términos de uso | M08 · HU-33 |
+| D-08 | Recordatorio de planificación el domingo a las 08:00 (hora de Guatemala) | M10 · HU-41 |
+| D-09 | Hosting en servidor propio en casa con Docker Compose, disponibilidad 95 % mensual | Diseño · RNF-03 |
+
+Siguen como propuestos, sin objeción del PO: las fórmulas de los factores del motor (M05, CU-05.2) y que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2). Los demás supuestos de detalle se mantienen en cada especificación.
 
 ## 9. Siguiente fase
 

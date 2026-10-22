@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-33 a RF-38 |
 | Caso de uso macro | CU-08 (Registrar precio manual o ticket) · CU-09 (Actualizar precios automáticos) |
 | Sprint(s) | S5 |

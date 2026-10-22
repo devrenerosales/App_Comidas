@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-05 a RF-10 |
 | Caso de uso macro | CU-02 Configurar tiempos y presupuesto |
 | Sprint(s) | S1 (RF-05 a RF-08) · S3 (RF-10) · S5 (RF-09) |

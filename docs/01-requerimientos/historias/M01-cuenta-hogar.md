@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-01 a RF-04 |
 | Caso de uso macro | CU-01 Gestionar cuenta y hogar |
 | Sprint(s) | S1 |
@@ -300,31 +300,34 @@ Característica: Crear hogar e invitar miembros
 | Prioridad / Sprint | M · S1 |
 | Precondiciones | Sesión iniciada; hogar creado. |
 | Disparador | El administrador abre "Comensales" en Configuración del hogar. |
-| Flujo principal | 1. El sistema lista los comensales activos y el total por tipo.<br>2. El administrador elige "Agregar".<br>3. Ingresa nombre y tipo (adulto / niño).<br>4. El sistema valida y guarda.<br>5. Actualiza el total de comensales usado para escalar cantidades (RN-07). |
-| Flujos alternos | 2a. Editar: cambia nombre o tipo y guarda.<br>2b. Quitar: el sistema pide confirmación e inactiva el comensal. |
-| Excepciones | E1. Nombre vacío o repetido en el hogar → muestra error y no guarda.<br>E2. Intento de quitar el último comensal activo → se bloquea, debe existir al menos uno. |
-| Postcondiciones | Comensales del hogar actualizados; los menús siguientes escalan con el nuevo total. |
+| Flujo principal | 1. El sistema lista los comensales activos con su factor de porción y la suma de factores del hogar (Σ factores).<br>2. El administrador elige "Agregar".<br>3. Ingresa nombre, etiqueta opcional (adulto / niño) y factor de porción; el sistema lo sugiere en 1.0.<br>4. El sistema valida (factor entre 0.25 y 2.0, en pasos de 0.25) y guarda.<br>5. Actualiza la Σ factores usada para escalar cantidades (RN-07). |
+| Flujos alternos | 2a. Editar: cambia nombre, etiqueta o factor y guarda; la Σ factores se recalcula.<br>2b. Quitar: el sistema pide confirmación e inactiva el comensal. |
+| Excepciones | E1. Nombre vacío o repetido en el hogar → muestra error y no guarda.<br>E2. Intento de quitar el último comensal activo → se bloquea, debe existir al menos uno.<br>E3. Factor fuera de 0.25–2.0 o que no es múltiplo de 0.25 → muestra "El factor debe estar entre 0.25 y 2.0 en pasos de 0.25" y no guarda. |
+| Postcondiciones | Comensales del hogar actualizados; los menús siguientes escalan con la nueva Σ factores. |
 | Reglas y RNF | RN-07, RN-10, RNF-06 |
 
+Decisión D-02: cada comensal tiene un factor de porción sugerido en 1.0 y editable de 0.25 a 2.0 en pasos de 0.25; las cantidades escalan con la suma de factores. La etiqueta adulto / niño es solo informativa y no cambia el cálculo.
 Supuesto: solo el administrador gestiona comensales (el perfil Miembro del SRS §2.3 no incluye configuración del hogar).
-Supuesto: quitar un comensal lo inactiva (no se borra) y no altera menús ya aprobados. El factor de porción adulto/niño lo define el diseño de M6/M7; en este módulo solo se registra el tipo.
+Supuesto: quitar un comensal lo inactiva (no se borra) y no altera menús ya aprobados (D-04).
 
 #### Diagrama de actividad
 
 ```mermaid
 flowchart TD
-  INI(("Inicio")) --> A["Listar comensales activos"]
+  INI(("Inicio")) --> A["Listar comensales activos y Σ factores"]
   A --> B{"¿Acción?"}
-  B -- "Agregar o editar" --> C["Ingresar nombre y tipo adulto/niño"]
+  B -- "Agregar o editar" --> C["Ingresar nombre, etiqueta y factor (sugerido 1.0)"]
   C --> D{"¿Nombre válido y no repetido?"}
-  D -- "No" --> D1["Mostrar error"] --> C
-  D -- "Sí" --> E["Guardar comensal"]
+  D -- "No" --> D1["Mostrar error de nombre"] --> C
+  D -- "Sí" --> D2{"¿Factor entre 0.25 y 2.0 en pasos de 0.25?"}
+  D2 -- "No" --> D3["Mostrar error de rango"] --> C
+  D2 -- "Sí" --> E["Guardar comensal"]
   B -- "Quitar" --> F{"¿Es el último activo?"}
   F -- "Sí" --> F1["Bloquear y avisar"] --> A
   F -- "No" --> G{"¿Confirma?"}
   G -- "No" --> A
   G -- "Sí" --> H["Inactivar comensal"]
-  E --> I["Recalcular total de comensales"]
+  E --> I["Recalcular Σ factores"]
   H --> I
   I --> FIN(("Fin"))
 ```
@@ -337,23 +340,24 @@ sequenceDiagram
   participant APP as App Ionic
   participant API as API NestJS
   participant DB as PostgreSQL
-  ADM->>APP: Agregar comensal "Sofía" tipo niño
+  ADM->>APP: Agregar comensal "Sofía" etiqueta niño factor 0.5
+  APP->>APP: Validar rango 0.25 a 2.0 en pasos de 0.25
   APP->>API: POST /hogares/{id}/comensales
-  API->>API: Verificar rol Administrador
+  API->>API: Verificar rol Administrador y rango del factor
   API->>DB: Buscar nombre repetido en el hogar
   alt Nombre disponible
-    API->>DB: Insertar COMENSAL activo
-    API-->>APP: 201 Comensal y totales
-    APP-->>ADM: Lista actualizada con 2 adultos y 2 niños
+    API->>DB: Insertar COMENSAL activo con factorPorcion 0.5
+    API-->>APP: 201 Comensal y Σ factores
+    APP-->>ADM: Lista actualizada con Σ factores 3.5
   else Nombre repetido
     API-->>APP: 409 Nombre ya registrado
     APP-->>ADM: Mostrar error
   end
 ```
 
-#### Historia de usuario HU-03 · 3 puntos
+#### Historia de usuario HU-03 · 5 puntos
 
-> **Como** administrador, **quiero** registrar quiénes comen en casa indicando si son adultos o niños, **para** que las cantidades del menú y de la lista de compras se ajusten a mi familia.
+> **Como** administrador, **quiero** registrar quiénes comen en casa con un factor de porción para cada uno, **para** que las cantidades del menú y de la lista de compras se ajusten a lo que realmente come mi familia.
 
 #### Criterios de aceptación
 
@@ -362,10 +366,11 @@ sequenceDiagram
 Característica: Registrar comensales del hogar
 
   # CA-03.1 Flujo principal
-  Escenario: Agregar un comensal niño
-    Dado que el hogar "Familia Rosales" tiene los comensales "Rene" adulto, "Ana" adulto y "Diego" niño
-    Cuando agrego a "Sofía" como niño
-    Entonces el hogar tiene 4 comensales: 2 adultos y 2 niños
+  Escenario: Agregar un comensal con el factor sugerido
+    Dado que el hogar "Familia Rosales" tiene los comensales "Rene" 1.0, "Ana" 1.0 y "Diego" 1.0
+    Cuando agrego a "Abuela Carmen" sin cambiar el factor
+    Entonces "Abuela Carmen" queda con factor de porción 1.0
+    Y el hogar tiene 4 comensales con Σ factores 4.0
 
   # CA-03.2 Flujo alterno
   Escenario: Quitar un comensal
@@ -386,17 +391,37 @@ Característica: Registrar comensales del hogar
     Dado que inicié sesión como Miembro del hogar
     Cuando intento agregar el comensal "Abuela Carmen"
     Entonces el sistema rechaza la acción con "Solo el administrador puede modificar comensales"
+
+  # CA-03.5 Factor de porción reducido
+  Escenario: Comensal pequeño con factor 0.5
+    Dado que el hogar tiene "Rene" 1.0, "Ana" 1.0 y "Diego" 1.0
+    Cuando agrego a "Sofía" con etiqueta niño y factor de porción 0.5
+    Entonces el hogar tiene Σ factores 3.5
+    Y la etiqueta "niño" no cambia el cálculo de cantidades
+
+  # CA-03.6 Validación del rango del factor
+  Esquema del escenario: Factor fuera de rango o fuera de paso
+    Dado que edito el comensal "Diego"
+    Cuando cambio su factor de porción a <factor>
+    Entonces veo "El factor debe estar entre 0.25 y 2.0 en pasos de 0.25"
+    Y "Diego" conserva su factor 1.0
+
+    Ejemplos:
+      | factor |
+      | 0      |
+      | 2.25   |
+      | 0.3    |
 ```
 
 #### Subtareas
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-03.1 | DB | Tabla COMENSAL (nombre, tipo, activo, hogar_id) con índice único por hogar | 2 |
-| ST-03.2 | BE | CRUD /hogares/{id}/comensales con validaciones e inactivación | 3 |
-| ST-03.3 | FE | Pantalla de comensales: lista, agregar, editar y quitar | 4 |
-| ST-03.4 | QA | Casos de prueba PF-M1-03.1..4 y prueba automatizada | 3 |
-| ST-03.5 | DOC | Manual de usuario: "Registrar comensales" | 1 |
+| ST-03.1 | DB | Tabla COMENSAL (nombre, etiqueta, factorPorcion decimal 1.0, activo, hogar_id) con índice único por hogar y CHECK de rango | 2 |
+| ST-03.2 | BE | CRUD /hogares/{id}/comensales con validaciones, rango y paso del factor, inactivación y cálculo de Σ factores | 4 |
+| ST-03.3 | FE | Pantalla de comensales: lista con Σ factores, agregar, editar (selector de factor en pasos de 0.25) y quitar | 5 |
+| ST-03.4 | QA | Casos de prueba PF-M1-03.1..6 y prueba automatizada | 4 |
+| ST-03.5 | DOC | Manual de usuario: "Registrar comensales y su factor de porción" | 1 |
 
 ---
 
@@ -516,6 +541,6 @@ Característica: Recuperar contraseña
 |---|---|---|---|---|---|---|
 | HU-01 Registro e inicio de sesión | RF-01 | CU-01.1 | M | S1 | 5 | 21 |
 | HU-02 Crear hogar e invitar | RF-02 | CU-01.2 | M | S1 | 8 | 27 |
-| HU-03 Registrar comensales | RF-03 | CU-01.3 | M | S1 | 3 | 13 |
+| HU-03 Registrar comensales | RF-03 | CU-01.3 | M | S1 | 5 | 16 |
 | HU-04 Recuperar contraseña | RF-04 | CU-01.4 | S | S1 | 3 | 12 |
-| **Total** | | | | | **19** | **73** |
+| **Total** | | | | | **21** | **76** |

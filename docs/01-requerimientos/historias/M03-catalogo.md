@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| SRS | SRS-MF-001 v1.0 (aprobado 2026-10-22) |
+| SRS | SRS-MF-001 v1.3 (aprobado 2026-10-22) |
 | Requerimientos | RF-11 a RF-14 |
 | Caso de uso macro | CU-03 (RF-11 a RF-13) · CU-11 (RF-14) |
 | Sprint(s) | S1 (RF-11 a RF-13) · S3 (RF-14) |
@@ -160,7 +160,7 @@ Característica: Gestionar platillos del hogar
 | Prioridad / Sprint | M · S1 |
 | Precondiciones | Platillo existente (CU-03.1); productos en el catálogo (CU-03.3) |
 | Disparador | El usuario abre la pestaña "Ingredientes" de un platillo |
-| Flujo principal | 1. El sistema muestra las porciones base y los ingredientes actuales.<br>2. El usuario define las porciones base.<br>3. Busca un producto del catálogo y lo agrega.<br>4. Indica cantidad y unidad.<br>5. Repite 3–4 por cada ingrediente.<br>6. Guarda.<br>7. El sistema valida y muestra la vista previa escalada al número de comensales del hogar (RN-07). |
+| Flujo principal | 1. El sistema muestra las porciones base y los ingredientes actuales.<br>2. El usuario define las porciones base.<br>3. Busca un producto del catálogo y lo agrega.<br>4. Indica cantidad y unidad.<br>5. Repite 3–4 por cada ingrediente.<br>6. Guarda.<br>7. El sistema valida y muestra la vista previa escalada a la suma de factores de porción de los comensales activos del hogar (Σ factores, RN-07). |
 | Flujos alternos | 3a. El producto no existe → el usuario lo crea desde el mismo buscador (CU-03.3) y continúa.<br>4a. Editar o quitar un ingrediente ya asociado. |
 | Excepciones | E1. Cantidad ≤ 0 o vacía → no guarda.<br>E2. Unidad de otra magnitud que la presentación del producto (p. ej. ml para un producto en lb) → no guarda.<br>E3. Producto repetido en el mismo platillo → el sistema propone sumar la cantidad. |
 | Postcondiciones | Platillo con lista de ingredientes y porciones base guardadas. |
@@ -168,7 +168,7 @@ Característica: Gestionar platillos del hogar
 
 Supuesto: porciones base por defecto = 4; entero entre 1 y 20.
 Supuesto: unidades agrupadas por magnitud — masa (g, kg, oz, lb), volumen (ml, l, taza, cucharada), conteo (unidad, manojo, diente); solo se permiten unidades de la misma magnitud que la presentación del producto. La conversión a unidad de compra se usa en RF-28 (S4).
-Supuesto: escalado RN-07 = cantidad × comensales ÷ porciones base; cada comensal cuenta como 1 porción (sin factor adulto/niño en v1).
+Decisión D-02: escalado RN-07 = cantidad base × Σ factores de porción de los comensales activos ÷ porciones base. Cada comensal tiene factor sugerido 1.0, editable de 0.25 a 2.0 en pasos de 0.25 (CU-01.3); la etiqueta adulto / niño no interviene. Ejemplo: comensales 1.0 + 1.0 + 0.5 = 2.5 porciones; "Pechuga de pollo" 2 lb para 4 porciones base → 2 × 2.5 ÷ 4 = 1.25 lb.
 Supuesto: un platillo sin ingredientes se puede guardar, pero se marca "Incompleto" (no tiene costo estimado).
 
 #### Diagrama de actividad
@@ -186,7 +186,7 @@ flowchart TD
   G -- "Sí" --> I{"¿Agregar otro?"}
   I -- "Sí" --> C
   I -- "No" --> J["Guardar ingredientes"]
-  J --> K["Mostrar vista previa escalada a comensales"] --> FIN(("Fin"))
+  J --> K["Mostrar vista previa escalada a Σ factores"] --> FIN(("Fin"))
 ```
 
 #### Diagrama de secuencia
@@ -210,8 +210,8 @@ sequenceDiagram
     APP-->>U: Marca el ítem con error
   else Datos válidos
     API->>DB: Reemplazar platillo_ingrediente en transacción
-    API->>DB: Leer número de comensales del hogar
-    API->>API: Escalar cantidades según RN-07
+    API->>DB: Leer factores de porción de los comensales activos
+    API->>API: Escalar cantidades según RN-07 con Σ factores
     API-->>APP: 200 ingredientes y vista previa escalada
     APP-->>U: Muestra cantidades para el hogar
   end
@@ -229,7 +229,7 @@ Característica: Ingredientes del platillo por porciones base
 
   # CA-12.1 Flujo principal
   Escenario: Registrar ingredientes y ver el escalado
-    Dado que el hogar tiene 6 comensales
+    Dado que el hogar tiene 6 comensales con factor 1.0 cada uno, Σ factores 6.0
     Y el platillo "Pollo en crema" tiene 4 porciones base
     Cuando agrego "Pechuga de pollo" 2 lb y "Crema" 250 ml y guardo
     Entonces el platillo queda con 2 ingredientes
@@ -252,6 +252,13 @@ Característica: Ingredientes del platillo por porciones base
   Escenario: Cantidad cero
     Cuando agrego "Arroz" con cantidad 0 a "Tortitas de carne"
     Entonces el sistema no guarda y muestra "La cantidad debe ser mayor que 0"
+
+  # CA-12.5 Escalado con factores de porción
+  Escenario: Vista previa con Σ factores fraccionaria
+    Dado que el hogar tiene "Rene" 1.0, "Ana" 1.0 y "Sofía" 0.5, Σ factores 2.5
+    Y el platillo "Pollo en crema" tiene 4 porciones base con "Pechuga de pollo" 2 lb y "Crema" 250 ml
+    Cuando abro la vista previa de ingredientes
+    Entonces veo "Pechuga de pollo" 1.25 lb y "Crema" 156.25 ml
 ```
 
 #### Subtareas
@@ -260,9 +267,9 @@ Característica: Ingredientes del platillo por porciones base
 |---|---|---|---|
 | ST-12.1 | DB | Tabla `platillo_ingrediente` y campo `porciones_base` en `platillo` | 2 |
 | ST-12.2 | BE | Endpoint PUT `/platillos/:id/ingredientes` con validación de magnitud y duplicados | 5 |
-| ST-12.3 | BE | Servicio de escalado RN-07 reutilizable (M7) con pruebas unitarias | 3 |
+| ST-12.3 | BE | Servicio de escalado RN-07 con Σ factores de porción, reutilizable (M5, M6, M7), con pruebas unitarias | 3 |
 | ST-12.4 | FE | Editor de ingredientes con autocompletado de productos y vista previa escalada | 5 |
-| ST-12.5 | QA | Casos de prueba PF-M3-12.1..4 y prueba automatizada | 3 |
+| ST-12.5 | QA | Casos de prueba PF-M3-12.1..5 y prueba automatizada | 3 |
 | ST-12.6 | DOC | Manual de usuario: "Ingredientes y porciones" | 1 |
 
 ---
