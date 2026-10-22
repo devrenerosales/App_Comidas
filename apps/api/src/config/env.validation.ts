@@ -46,6 +46,11 @@ export class VariablesEntorno {
   @MinLength(32)
   JWT_REFRESH_SECRET!: string;
 
+  /** Solicitudes por minuto e IP a /auth/* (api-contrato §1.6). */
+  @IsInt()
+  @Min(1)
+  AUTH_LIMITE_POR_MINUTO: number = 10;
+
   /** Uno o varios orígenes separados por coma. */
   @IsString()
   CORS_ORIGIN: string = 'http://localhost:5173';
