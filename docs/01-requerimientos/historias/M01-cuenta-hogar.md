@@ -57,7 +57,7 @@ flowchart LR
 | Reglas y RNF | RNF-05, RNF-06, RNF-13 |
 
 Supuesto: contraseña de mínimo 8 caracteres con al menos una letra y un número.
-Supuesto: JWT de acceso con vigencia de 24 h; el bloqueo tras 5 intentos fallidos en 15 min es la medida anti fuerza bruta.
+Supuesto: JWT de acceso con vigencia de 24 h; el bloqueo tras 5 intentos fallidos en 15 min es la medida anti fuerza bruta. *(La vigencia de 24 h la reemplaza ADR-004, D-14: acceso de 15 min + refresh rotativo de 30 días.)*
 
 #### Diagrama de actividad
 
@@ -153,6 +153,19 @@ Característica: Registro e inicio de sesión
 | ST-01.4 | FE | Pantallas de registro e inicio de sesión con validaciones y manejo de sesión | 5 |
 | ST-01.5 | QA | Casos de prueba PF-M1-01.1..4 y prueba e2e automatizada | 4 |
 | ST-01.6 | DOC | Manual de usuario: "Crear cuenta e iniciar sesión" | 1 |
+
+> **Implementado en `feature/HU-01-registro-login`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-01.1 | Hecha (sin migración nueva: `usuario` y `refresh_token` ya estaban en `0001_init`) | `packages/db/src/schema/hogar-config.ts` |
+> | ST-01.2 | Hecha | `apps/api/src/auth/` (`auth.controller.ts`, `auth.service.ts`, `bloqueo.ts`, `contrasenas.service.ts`) |
+> | ST-01.3 | Hecha: JWT de 15 min + refresh rotativo según ADR-004 (reemplaza el supuesto de 24 h) | `apps/api/src/auth/tokens.service.ts`, `jwt-auth.guard.ts` |
+> | ST-01.4 | Hecha | `apps/web/src/pages/IniciarSesion.tsx`, `CrearCuenta.tsx`, `apps/web/src/auth/`, `apps/web/src/api/` |
+> | ST-01.5 | Hecha: CA-01.1..4 automatizados (integración API + Testing Library) | `apps/api/test/auth.e2e-spec.ts`, `apps/web/src/pages/*.test.tsx` |
+> | ST-01.6 | Hecha (faltan capturas) | `docs/05-manual-usuario/01-primeros-pasos.md` |
+>
+> Decisiones de implementación: CA-01.2 sí informa "Este correo ya tiene cuenta" al **registrarse** (lo pide el criterio); el **inicio de sesión** nunca revela si el correo existe. "Crear hogar" es una pantalla provisional hasta HU-02.
 
 ---
 
