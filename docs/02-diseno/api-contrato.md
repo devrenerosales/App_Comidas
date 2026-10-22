@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | DIS-MF-003 |
-| Versión | 1.2 (HU-01: auth según ADR-004) |
+| Versión | 1.3 (HU-02: hogar e invitaciones) |
 | Fecha | 2026-10-22 |
 | Fase del ciclo de vida | 3. Diseño |
 | Base | `https://<host>/api/v1` |
@@ -101,14 +101,14 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 | POST | `/auth/recuperar` | Público | RF-04 · HU-04 | `{correo}` → 202 mensaje neutro siempre | 429 |
 | POST | `/auth/restablecer` | Público | RF-04 · HU-04 | `{token, contrasena, confirmacion}` → 200; invalida sesiones previas | 410 `ENLACE_NO_VALIDO` · 422 |
 | GET | `/usuarios/yo` | Auth | RF-01 | → 200 `{id, nombre, correo, esAdminSistema, hogar \| null}` | 401 |
-| POST | `/hogares` | Auth (sin hogar) | RF-02 · HU-02 | `{nombre}` → 201 `{hogar, rol: "ADMIN", configuracion}` + nuevo `accessToken` con `hogarId` | 409 `YA_TIENE_HOGAR` · 422 |
-| GET | `/hogar` | MIEMBRO | RF-02 | → 200 `{id, nombre, miembros: [{usuarioId, nombre, rol}]}` | 401 |
-| PATCH | `/hogar` | ADMIN | RF-02 | `{nombre}` → 200 | 403 · 422 |
-| POST | `/hogar/invitaciones` | ADMIN | RF-02 · HU-02 | `{medio: CORREO\|ENLACE, correo?}` → 201 `{id, enlace, venceEn, correoEnviado}` | 403 · 409 `YA_ES_MIEMBRO` · 422 |
-| GET | `/hogar/invitaciones` | ADMIN | RF-02 | → 200 vigentes y usadas | 403 |
-| DELETE | `/hogar/invitaciones/{id}` | ADMIN | RF-02 | → 204 (revoca) | 403 · 404 |
-| GET | `/invitaciones/{token}` | Público | RF-02 · HU-02 | → 200 `{hogarNombre, venceEn}` | 410 `INVITACION_NO_VALIDA` |
-| POST | `/invitaciones/{token}/aceptar` | Auth | RF-02 · HU-02 | → 200 `{hogar, rol: "MIEMBRO"}` + nuevo `accessToken` | 409 `YA_TIENE_HOGAR` · 410 |
+| POST | `/hogares` | Auth (sin hogar) | RF-02 · HU-02 | `{nombre}` (1–80, espacios recortados) → 201 `{hogar: {id, nombre, rol}, rol: "ADMIN", configuracion: {version, presupuestoSemanal, diaInicioSemana, diaPlanificacion, horaPlanificacion, tiempos: [{tiempo, activo, porcentaje}]}, accessToken, expiraEn}`; el nuevo `accessToken` lleva `hogarId` y `rol` | 409 `YA_TIENE_HOGAR` · 422 `NOMBRE_HOGAR_INVALIDO` |
+| GET | `/hogar` | MIEMBRO | RF-02 | → 200 `{id, nombre, miembros: [{usuarioId, nombre, correo, rol, desde}]}` (ADMIN primero) | 401 · 403 `SIN_HOGAR` |
+| PATCH | `/hogar` | ADMIN | RF-02 | `{nombre}` → 200 `{id, nombre}` | 403 `SOLO_ADMINISTRADOR` · 422 `NOMBRE_HOGAR_INVALIDO` |
+| POST | `/hogar/invitaciones` | ADMIN | RF-02 · HU-02 | `{medio: CORREO\|ENLACE, correo?}` → 201 `{id, medio, correo, estado, enlace, venceEn, creadaEn, correoEnviado, usadaEn, usadaPor}`; `enlace` = `APP_URL/invitacion/{token}` solo en esta respuesta. Por correo revoca las vigentes al mismo correo; si el SMTP falla responde 201 con `correoEnviado: false` (CU-01.2 E2) | 400 `VALIDACION` (medio) · 403 · 409 `YA_ES_MIEMBRO` · 422 `CORREO_INVALIDO` |
+| GET | `/hogar/invitaciones` | ADMIN | RF-02 | → 200 `[{id, medio, correo, estado: VIGENTE\|USADA\|REVOCADA\|VENCIDA, venceEn, creadaEn, correoEnviado, usadaEn, usadaPor}]` (las 50 más recientes, sin `enlace`) | 403 |
+| DELETE | `/hogar/invitaciones/{id}` | ADMIN | RF-02 | → 204 (revoca; repetir no es error) | 403 · 404 (no existe, otro hogar o id mal formado) · 409 `INVITACION_USADA` |
+| GET | `/invitaciones/{token}` | Público | RF-02 · HU-02 | → 200 `{hogarNombre, invitadoPor, medio, correo (enmascarado o null), venceEn}` | 410 `INVITACION_NO_VALIDA` · 429 |
+| POST | `/invitaciones/{token}/aceptar` | Auth | RF-02 · HU-02 | → 200 `{hogar: {id, nombre, rol}, rol: "MIEMBRO", accessToken, expiraEn}` | 403 `INVITACION_DE_OTRO_CORREO` · 409 `YA_TIENE_HOGAR` · 410 `INVITACION_NO_VALIDA` · 429 |
 | GET | `/hogar/comensales` | MIEMBRO | RF-03 · HU-03 | `?incluirInactivos=` → 200 `{comensales: [{id, nombre, tipo, factorPorcion, activo}], totales: {adultos, ninos, sumaFactores}}` | — |
 | POST | `/hogar/comensales` | ADMIN | RF-03 · HU-03 | `{nombre, tipo, factorPorcion?}` → 201 comensal + totales | 403 · 409 `NOMBRE_REPETIDO` · 422 `FACTOR_INVALIDO` |
 | PATCH | `/hogar/comensales/{id}` | ADMIN | RF-03 · D-02 | `{nombre?, tipo?, factorPorcion?}` → 200 | 403 · 404 · 409 · 422 |
@@ -448,6 +448,14 @@ Respuesta 200 (el mismo cuerpo se devuelve si la solicitud se repite con la mism
 `promedioCompra` = (26.50 + 27.00 + 28.10) ÷ 3 = 27.20 (RN-12; la compra del 12/07/2026 queda fuera de las 12 semanas). `gastoSugerido` = suma de `precioReal` de la lista; la app lo usa para prellenar `PUT /menus/{id}/gasto-real` si todavía no hay gasto registrado (RF-27).
 
 ## 4. Diferencias con las rutas de las historias
+
+Cambios de la versión 1.3 (HU-02):
+- `POST /hogares` y `POST /invitaciones/{token}/aceptar` devuelven `hogar` con `rol` (además de `rol` suelto) y `expiraEn` del nuevo token.
+- `GET /hogar` agrega `correo` y `desde` a cada miembro; sin hogar, las rutas `/hogar/…` responden 403 `SIN_HOGAR`.
+- `HogarGuard` toma `hogarId` y `rol` de `miembro_hogar` en cada solicitud (no del token): un token anterior a unirse o a un cambio de rol no da más ni menos acceso. RN-10 responde 403 `SOLO_ADMINISTRADOR`.
+- Invitaciones: respuesta completa con `estado`; `GET /invitaciones/{token}` agrega `invitadoPor`, `medio` y `correo` enmascarado; la invitación por correo solo la acepta la cuenta de ese correo (403 `INVITACION_DE_OTRO_CORREO`); `DELETE` de una ya usada → 409 `INVITACION_USADA`. 410 se usa para vencida, usada, revocada o inexistente.
+- Validación del nombre del hogar y del correo invitado como 422 con código propio (`NOMBRE_HOGAR_INVALIDO`, `CORREO_INVALIDO`).
+- `/invitaciones/*` comparte el límite por IP de `/auth/*` (10/min). El token es de 32 bytes base64url; se guarda su HMAC-SHA256.
 
 Cambios de la versión 1.2 (HU-01): vigencia del acceso de 15 min; `refreshToken` en el cuerpo solo para Android (`X-Cliente: android`), cookie HttpOnly en la PWA; `refresh` y `logout` aceptan el refresh del cuerpo o de la cookie; `refresh` devuelve también `usuario` y `hogar`; `expiraEn` es el instante ISO 8601 UTC de vencimiento del acceso; los 429 incluyen `Retry-After`.
 
