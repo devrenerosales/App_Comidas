@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { crearApiAuth } from './auth';
+import { crearApiHogar } from './hogar';
 import { ClienteHttp } from './cliente';
 
 export { ClienteHttp } from './cliente';
@@ -17,3 +18,4 @@ export const cliente = new ClienteHttp({
 });
 
 export const apiAuth = crearApiAuth(cliente);
+export const apiHogar = crearApiHogar(cliente);

@@ -1,0 +1,118 @@
+/* Hogar e invitaciones (HU-02) — mismo estilo del prototipo que las pantallas de acceso. */
+.mf-hogar {
+  --background: var(--mf-fondo);
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.mf-hogar h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.mf-hogar section + section {
+  margin-top: 16px;
+}
+
+.mf-hogar .mf-tarjeta p {
+  margin: 0 0 12px;
+}
+
+.mf-texto-suave {
+  color: var(--mf-texto-suave);
+}
+
+.mf-aviso {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #e8f1ec;
+  color: var(--mf-verde-oscuro);
+  font-weight: 600;
+}
+
+.mf-aviso p {
+  margin: 0;
+}
+
+.mf-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mf-lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mf-borde);
+}
+
+.mf-lista li:last-child {
+  border-bottom: none;
+}
+
+.mf-lista__datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mf-lista__datos strong,
+.mf-lista__datos span {
+  overflow-wrap: anywhere;
+}
+
+.mf-lista__datos span {
+  font-size: 0.9rem;
+  color: var(--mf-texto-suave);
+}
+
+.mf-etiqueta {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e8f1ec;
+  color: var(--mf-verde-oscuro);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mf-etiqueta--miembro {
+  background: #efece6;
+  color: var(--mf-texto-suave);
+}
+
+.mf-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mf-acciones .mf-boton {
+  flex: 1 1 160px;
+}
+
+.mf-separador {
+  margin: 16px 0;
+  text-align: center;
+  color: var(--mf-texto-suave);
+  font-size: 0.9rem;
+}
+
+.mf-enlace-invitacion input {
+  font-size: 0.9rem;
+}
+
+.mf-boton--peligro {
+  min-height: 44px;
+  background: #ffffff;
+  color: var(--mf-error);
+  border-color: var(--mf-error);
+}

@@ -1,5 +1,6 @@
 /* Pantallas de acceso (HU-01) — estilo del prototipo (docs/02-diseno/pantallas.md). */
-.mf-acceso {
+.mf-acceso,
+.mf-hogar {
   --mf-verde: var(--ion-color-primary, #2f6b4f);
   --mf-verde-oscuro: #1f4d38;
   --mf-fondo: #f7f4ee;
@@ -175,4 +176,10 @@
   gap: 12px;
   min-height: 100vh;
   color: var(--ion-color-medium, #5b665f);
+}
+
+.mf-acceso__nota {
+  margin: 16px 0 0;
+  color: var(--mf-texto-suave);
+  font-size: 0.95rem;
 }

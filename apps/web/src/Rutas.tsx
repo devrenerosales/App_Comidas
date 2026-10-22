@@ -1,11 +1,15 @@
-import { Switch } from 'react-router-dom';
+import { Route, Switch } from 'react-router-dom';
 import { RutaProtegida, RutaVisitante } from './auth/RutaProtegida';
+import AceptarInvitacion from './pages/AceptarInvitacion';
 import CrearCuenta from './pages/CrearCuenta';
 import CrearHogar from './pages/CrearHogar';
 import IniciarSesion from './pages/IniciarSesion';
 import { Pestanas } from './Pestanas';
 
-/** Rutas de la app: acceso público (login, registro) y el resto protegido. */
+/**
+ * Rutas de la app: acceso público (login, registro), "Aceptar invitación" (con o sin sesión),
+ * "Crear hogar" (con sesión y sin hogar) y el resto (con sesión y hogar).
+ */
 export function Rutas() {
   return (
     <Switch>
@@ -15,10 +19,13 @@ export function Rutas() {
       <RutaVisitante exact path="/registro">
         <CrearCuenta />
       </RutaVisitante>
-      <RutaProtegida exact path="/crear-hogar">
+      <Route exact path="/invitacion/:token">
+        <AceptarInvitacion />
+      </Route>
+      <RutaProtegida exact path="/crear-hogar" hogar="prohibido">
         <CrearHogar />
       </RutaProtegida>
-      <RutaProtegida path="/">
+      <RutaProtegida path="/" hogar="requerido">
         <Pestanas />
       </RutaProtegida>
     </Switch>

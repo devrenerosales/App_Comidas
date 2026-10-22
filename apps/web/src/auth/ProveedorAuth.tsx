@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { apiAuth as apiPorDefecto, cliente as clientePorDefecto } from '../api';
 import type { ApiAuth, DatosRegistro } from '../api/auth';
 import type { ClienteHttp } from '../api/cliente';
-import type { Sesion } from '../api/tipos';
+import type { HogarDeSesion, Sesion } from '../api/tipos';
 import { ContextoAuth, type EstadoSesion, type ValorAuth } from './contexto';
 
 interface Props {
@@ -67,6 +67,12 @@ export function ProveedorAuth({
     aplicar(null);
   }, [api, aplicar]);
 
+  const entrarAlHogar = useCallback((hogar: HogarDeSesion) => {
+    setEstado((previo) =>
+      previo.sesion ? { ...previo, sesion: { ...previo.sesion, hogar } } : previo,
+    );
+  }, []);
+
   const valor = useMemo<ValorAuth>(
     () => ({
       estado,
@@ -75,8 +81,9 @@ export function ProveedorAuth({
       iniciarSesion,
       registrar,
       cerrarSesion,
+      entrarAlHogar,
     }),
-    [estado, sesion, iniciarSesion, registrar, cerrarSesion],
+    [estado, sesion, iniciarSesion, registrar, cerrarSesion, entrarAlHogar],
   );
 
   return <ContextoAuth.Provider value={valor}>{children}</ContextoAuth.Provider>;
