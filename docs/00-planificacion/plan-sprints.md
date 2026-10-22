@@ -34,12 +34,12 @@ gantt
 
 ## 2. Sprint 1 — planificación
 
-**Objetivo:** que el administrador cree su hogar con comensales y factores de porción, configure tiempos de comida y presupuesto con vista previa, y registre platillos con ingredientes del catálogo, todo desplegado en el servidor de casa.
+**Objetivo:** que el administrador cree su hogar con comensales y factores de porción, configure tiempos de comida y presupuesto con vista previa, y registre platillos con ingredientes del catálogo, todo desplegado en la VM de Oracle Cloud (D-11, ADR-009).
 
 | Orden | HU | Historia | Puntos | Depende de |
 |---|---|---|---|---|
 | 1 | HU-01 | Registro e inicio de sesión | 5 | Base técnica S0 |
-| 2 | HU-02 | Crear hogar e invitar | 8 | HU-01 · correo (PO-03) |
+| 2 | HU-02 | Crear hogar e invitar | 8 | HU-01 · correo Gmail SMTP (D-13) |
 | 3 | HU-03 | Comensales con factor de porción | 5 | HU-02 |
 | 4 | HU-05 | Tiempos de comida parametrizables | 5 | HU-02 |
 | 5 | HU-06 | Presupuesto y distribución | 5 | HU-05 |
@@ -51,10 +51,10 @@ gantt
 
 **Tareas técnicas del sprint (heredadas de S0):**
 
-- [ ] Primera corrida de CI en GitHub: `prisma generate` y migración inicial contra PostgreSQL de servicio.
+- [ ] Primera corrida de CI en GitHub: migración inicial con Drizzle ORM (D-15) contra PostgreSQL de servicio.
 - [ ] Datos semilla: supermercados, unidades, categorías y reparto RN-06.
 - [ ] Guard de aislamiento por hogar (RNF-06) con pruebas de autorización.
-- [ ] Puesta en marcha del servidor de casa según `docs/02-diseno/despliegue.md` (depende de PO-01 y PO-02).
+- [ ] Puesta en marcha de la VM Oracle Cloud Always Free ARM según el checklist de `docs/02-diseno/despliegue.md` §13 (DuckDNS, Caddy, `deploy/deploy.sh`; D-11, D-12).
 
 **Flujo de trabajo:** una rama `feature/HU-nn-descripcion` por historia desde `develop`. Claude prepara los commits y tú haces el push y el merge a `develop`. Al cierre del sprint se hace merge a `main` y se etiqueta `v0.1.0`.
 

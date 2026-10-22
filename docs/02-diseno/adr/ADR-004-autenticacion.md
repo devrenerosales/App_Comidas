@@ -2,7 +2,7 @@
 
 | Estado | Fecha | Decisores |
 |---|---|---|
-| Propuesto | 2026-10-22 | Claude (arquitectura); requiere visto bueno del PO |
+| Aceptado (D-14, visto bueno del PO 2026-10-22) | 2026-10-22 | Claude (arquitectura), Rene Rosales (PO) |
 
 ## Contexto
 RNF-05 exige hash fuerte, JWT con expiración y HTTPS; RNF-06 exige aislamiento por hogar. La familia usa la app en el teléfono a diario y no quiere iniciar sesión seguido. M01 suponía un JWT de 24 h, lo que deja una ventana larga si el token se filtra. Hay dos clientes: PWA (mismo origen que la API) y Android Capacitor (origen local).

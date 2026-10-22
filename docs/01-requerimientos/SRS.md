@@ -4,7 +4,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | SRS-MF-001 |
-| Versión | 1.3 |
+| Versión | 1.4 |
 | Fecha | 2026-10-22 |
 | Autor | Rene Rosales (Product Owner) · elaborado con Claude (arquitectura) |
 | Estándar de referencia | ISO/IEC/IEEE 29148:2018 (adaptado) |
@@ -20,6 +20,7 @@
 | 1.1 | 2026-10-22 | Claude / Rene | Aprobado. Se agrega CU-12 Recibir notificaciones; CU-08 pasa a "Registrar y vincular precios"; casos de uso detallados por RF en `historias/` |
 | 1.2 | 2026-10-22 | Claude / Rene | Decisiones del PO D-01 a D-09: reparto con desayuno, factor de porción por comensal, aprobación con exceso visible, hosting en servidor propio (RN-06, RN-07, RN-11, RNF-03, R-05, S-03, PA-01) |
 | 1.3 | 2026-10-22 | Claude / Rene | Nuevos RF-43 avance de compra por comida y RF-44 precio real y promedio de compra (RN-12, RN-13), solicitados por el PO |
+| 1.4 | 2026-10-22 | Claude / Rene | D-11 a D-15: Oracle Cloud ARM, DuckDNS, Gmail SMTP, ADR-004 aprobado, Drizzle ORM (R-01, R-05, S-03, RNF-03, IE-03, PA-01, RG-02) |
 
 ---
 
@@ -119,16 +120,16 @@ Gestión del hogar · configuración · catálogo de platillos e ingredientes ·
 | Sistema (worker) | Proceso automático de precios | Escribir precios |
 
 ### 2.4 Restricciones
-- **R-01** Stack: React + Ionic + Capacitor (frontend), NestJS (API), PostgreSQL + Prisma, BullMQ/Redis, Playwright, Docker, GitHub Actions.
+- **R-01** Stack: React + Ionic + Capacitor (frontend), NestJS (API), PostgreSQL + Drizzle ORM (D-15, ADR-010), BullMQ/Redis, Playwright, Docker, GitHub Actions.
 - **R-02** Moneda: quetzales (GTQ); zona horaria America/Guatemala; idioma español.
 - **R-03** La extracción de precios debe respetar los términos de uso de cada supermercado; si no se permite, se usa captura manual o ticket.
 - **R-04** Claude no hace push al repositorio: prepara cambios y mensaje de commit; el PO ejecuta `git push`.
-- **R-05** Hosting en servidor propio en casa del PO con Docker Compose (D-09, ADR-002).
+- **R-05** Hosting en **Oracle Cloud Always Free ARM** (VM Ampere A1, arm64, Ubuntu) con Docker Compose; la laptop del PO se usa para desarrollo y pruebas (D-11, ADR-009; reemplaza D-09/ADR-002).
 
 ### 2.5 Supuestos y dependencias
 - **S-01** El gasto semanal típico de almuerzos es Q224 – Q265 (dato del cuaderno), usado como presupuesto inicial sugerido.
 - **S-02** Los sitios de Walmart y Paiz publican precios consultables; La Torre después; Super Fresh solo manual o por ticket.
-- **S-03** El servidor de casa tiene conexión a internet estable; el acceso externo se publica por túnel HTTPS sin abrir puertos (ADR-002).
+- **S-03** La VM de Oracle Cloud tiene una **IP pública reservada**; el acceso externo se publica en un subdominio gratuito **DuckDNS** con HTTPS automático (Caddy + Let's Encrypt), con solo los puertos 80/443 abiertos (D-12, ADR-009).
 
 ---
 
@@ -258,7 +259,7 @@ Prioridad MoSCoW: **M** = Must, **S** = Should, **C** = Could. Sprint según pla
 |---|---|---|---|
 | RNF-01 | Rendimiento | Generar el menú semanal en menos de 3 s. | p95 < 3 s con 300 platillos |
 | RNF-02 | Rendimiento | Pantallas principales cargan en menos de 2 s en 4G. | Lighthouse ≥ 80 performance |
-| RNF-03 | Disponibilidad | API disponible 95 % mensual (servidor en casa, D-09); la lista y el menú aprobado siguen disponibles sin conexión (RNF-04). | Monitoreo de uptime externo |
+| RNF-03 | Disponibilidad | API disponible **99 % mensual** (Oracle Cloud, D-11); la lista y el menú aprobado siguen disponibles sin conexión (RNF-04). | Monitoreo de uptime externo |
 | RNF-04 | Offline | Lista de compras y menú aprobado consultables sin conexión; sincroniza al reconectar. | Prueba en modo avión |
 | RNF-05 | Seguridad | Contraseñas con hash bcrypt/argon2; JWT con expiración; HTTPS obligatorio. | Revisión de código, prueba |
 | RNF-06 | Seguridad | Cada hogar solo ve sus datos (aislamiento por `hogar_id`). | Pruebas de autorización |
@@ -307,7 +308,7 @@ erDiagram
 |---|---|---|
 | IE-01 | Usuario | App Ionic responsiva (móvil primero), español, tema claro/oscuro. |
 | IE-02 | Supermercados | Sitios web de Walmart, Paiz y La Torre consultados por Playwright. |
-| IE-03 | Correo | Servicio SMTP/transaccional para invitaciones y recuperación de contraseña. |
+| IE-03 | Correo | **Gmail SMTP** (`smtp.gmail.com:587`, STARTTLS) con contraseña de aplicación para invitaciones y recuperación de contraseña; cambiable por configuración (D-13). |
 | IE-04 | Notificaciones | Web Push (PWA) y Firebase Cloud Messaging (Android). |
 | IE-05 | Archivos | Importación CSV/XLSX; exportación de lista en texto. |
 
@@ -477,12 +478,12 @@ Cada sprint ejecuta además la suite de regresión acumulada de los módulos ant
 
 | ID | Tema | Estado |
 |---|---|---|
-| PA-01 | Hosting definitivo | Cerrada: servidor propio en casa (D-09, ADR-002) |
+| PA-01 | Hosting definitivo | Cerrada: Oracle Cloud Always Free ARM (D-11, ADR-009; reemplaza D-09/ADR-002) |
 | PA-02 | Términos de uso de Walmart/Paiz/La Torre para extracción automática | Revisar antes de S5; extracción apagada por sitio hasta revisarlos (D-07) |
 | PA-03 | Frecuencia de cada producto de despensa (semanal, quincenal, mensual) | Confirmar con la lista de Q814 en S2 |
 | PA-04 | Publicar en Google Play o solo APK | APK en v1; reevaluar en S6 |
 | RG-01 | Cambios en la estructura de los sitios rompen el worker | Mitigación: RF-38 + alertas + captura manual |
-| RG-02 | Cortes de luz o internet en casa dejan la app sin servicio | Mitigación: UPS, modo offline (RNF-04), respaldo cifrado fuera de casa (RNF-11) |
+| RG-02 | Oracle reclama la instancia Always Free por inactividad, suspende la cuenta o hay caída de OCI, y la app queda sin servicio | Mitigación: cuenta Pay As You Go con presupuesto (sin reclamo por inactividad), respaldos diarios fuera de la VM (Object Storage y laptop del PO, RNF-11), script de reconstrucción (`deploy/deploy.sh` + checklist, RTO 4 h), imágenes multi-arquitectura para mover a otro servidor, modo offline (RNF-04) |
 
 ---
 

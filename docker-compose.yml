@@ -1,16 +1,50 @@
-# Producción en casa (D-09, ADR-002). Un comando: docker compose up -d
-# Con túnel HTTPS de Cloudflare: docker compose --profile tunnel up -d
+# Producción en Oracle Cloud Always Free ARM (D-11, ADR-009). Guía: docs/02-diseno/despliegue.md
+#   Primer arranque / actualización:  ./deploy/deploy.sh <versión>
+#   Arranque manual:                  docker compose up -d
+#   Actualizador DuckDNS (opcional):  docker compose --profile duckdns up -d
+# Solo Caddy publica puertos (80/443). Postgres y Redis no tienen puertos al host.
 name: menu-familiar
 
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
 services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3
+    environment:
+      DOMINIO: ${DOMINIO:?Defina DOMINIO en .env (p. ej. menufamiliar.duckdns.org)}
+      TZ: America/Guatemala
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:2019/config/ >/dev/null || exit 1']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   web:
     image: ghcr.io/devrenerosales/app_comidas-web:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
-    ports:
-      - '${WEB_PORT:-8080}:80'
+    logging: *logging
     depends_on:
       api:
         condition: service_healthy
@@ -26,6 +60,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
+    logging: *logging
     env_file: .env
     environment:
       NODE_ENV: production
@@ -51,6 +86,7 @@ services:
       context: .
       dockerfile: apps/worker/Dockerfile
     restart: unless-stopped
+    logging: *logging
     env_file: .env
     environment:
       NODE_ENV: production
@@ -71,6 +107,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-menu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env}
@@ -88,6 +125,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *logging
     command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
     volumes:
       - redisdata:/data
@@ -97,17 +135,28 @@ services:
       timeout: 5s
       retries: 5
 
-  cloudflared:
-    image: cloudflare/cloudflared:2024.10.1
-    profiles: ['tunnel']
+  # Opcional: mantiene el registro DuckDNS apuntando a la IP pública de la VM (cada 5 min).
+  # La IP reservada de OCI no cambia; esto cubre una VM recreada o una IP efímera.
+  duckdns:
+    image: curlimages/curl:8.10.1
+    profiles: ['duckdns']
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
+    logging: *logging
     environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-} # obligatorio con --profile tunnel
-    depends_on:
-      web:
-        condition: service_healthy
+      DOMINIO: ${DOMINIO:-}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        sub="$${DOMINIO%%.duckdns.org}"
+        while true; do
+          r=$$(curl -fsS "https://www.duckdns.org/update?domains=$${sub}&token=$${DUCKDNS_TOKEN}&ip=" || echo ERROR)
+          echo "$$(date -Iseconds) duckdns $${sub}: $${r}"
+          sleep 300
+        done
 
 volumes:
   pgdata:
   redisdata:
+  caddy_data:
+  caddy_config:

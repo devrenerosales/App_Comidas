@@ -159,7 +159,7 @@ Característica: Generar propuesta de menú semanal
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-19.1 | DB | Migración Prisma de MENU_SEMANAL (semana, estado, pesos usados) y MENU_DETALLE (día, tiempo, platillo, costo, factores, fijado) | 3 |
+| ST-19.1 | DB | Migración Drizzle de MENU_SEMANAL (semana, estado, pesos usados) y MENU_DETALLE (día, tiempo, platillo, costo, factores, fijado) | 3 |
 | ST-19.2 | BE | Servicio del motor: asignación por día y tiempo activo con RN-02, RN-03, exclusiones RF-10 y desempate | 8 |
 | ST-19.3 | BE | Endpoint POST /menus/sugerencias: precondiciones, bloqueo de aprobados, regeneración que conserva fijados | 5 |
 | ST-19.4 | FE | Pantalla "Sugerir menú": selector de semana, grilla día × tiempo, estados de carga y error | 6 |
