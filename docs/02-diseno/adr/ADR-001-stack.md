@@ -2,7 +2,7 @@
 
 | Estado | Fecha | Decisores |
 |---|---|---|
-| Aceptado | 2026-10-22 | Rene Rosales (PO), Claude (arquitectura) |
+| Aceptado (persistencia reemplazada por [ADR-010](ADR-010-drizzle-orm.md)) | 2026-10-22 | Rene Rosales (PO), Claude (arquitectura) |
 
 ## Contexto
 Se necesita una app web instalable y una app Android (RNF-08) con una sola persona desarrollando a medio tiempo. El SRS fija el stack en R-01. Hay lógica de negocio rica (motor, escalado, precios), trabajo en segundo plano (scraping, notificaciones) y un solo servidor en casa.

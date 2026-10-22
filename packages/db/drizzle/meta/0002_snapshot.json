@@ -1,0 +1,6884 @@
+{
+  "id": "7f64c844-a25c-47f1-a02c-e6ff0ac96f28",
+  "prevId": "f99a398e-be81-426a-9e0a-3eb76123159f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.clave_idempotencia": {
+      "name": "clave_idempotencia",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clave": {
+          "name": "clave",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metodo": {
+          "name": "metodo",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ruta": {
+          "name": "ruta",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash_solicitud": {
+          "name": "hash_solicitud",
+          "type": "char(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado_respuesta": {
+          "name": "estado_respuesta",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cuerpo_respuesta": {
+          "name": "cuerpo_respuesta",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vence_en": {
+          "name": "vence_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "clave_idempotencia_usuario_id_clave_key": {
+          "name": "clave_idempotencia_usuario_id_clave_key",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "clave",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "clave_idempotencia_vence_en_idx": {
+          "name": "clave_idempotencia_vence_en_idx",
+          "columns": [
+            {
+              "expression": "vence_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "clave_idempotencia_usuario_id_fkey": {
+          "name": "clave_idempotencia_usuario_id_fkey",
+          "tableFrom": "clave_idempotencia",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.comensal": {
+      "name": "comensal",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_normalizado": {
+          "name": "nombre_normalizado",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_comensal",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "factor_porcion": {
+          "name": "factor_porcion",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'1.00'"
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "comensal_hogar_id_nombre_normalizado_key": {
+          "name": "comensal_hogar_id_nombre_normalizado_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "comensal_hogar_id_activo_idx": {
+          "name": "comensal_hogar_id_activo_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "comensal_hogar_id_fkey": {
+          "name": "comensal_hogar_id_fkey",
+          "tableFrom": "comensal",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.configuracion": {
+      "name": "configuracion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presupuesto_semanal": {
+          "name": "presupuesto_semanal",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'250.00'"
+        },
+        "dia_inicio_semana": {
+          "name": "dia_inicio_semana",
+          "type": "dia_semana",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DOMINGO'"
+        },
+        "dia_planificacion": {
+          "name": "dia_planificacion",
+          "type": "dia_semana",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DOMINGO'"
+        },
+        "hora_planificacion": {
+          "name": "hora_planificacion",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 8
+        },
+        "peso_preferencia": {
+          "name": "peso_preferencia",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.40'"
+        },
+        "peso_novedad": {
+          "name": "peso_novedad",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.25'"
+        },
+        "peso_ahorro": {
+          "name": "peso_ahorro",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.20'"
+        },
+        "peso_afinidad": {
+          "name": "peso_afinidad",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.15'"
+        },
+        "umbral_similitud": {
+          "name": "umbral_similitud",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0.80'"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "actualizado_por_id": {
+          "name": "actualizado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "configuracion_hogar_id_key": {
+          "name": "configuracion_hogar_id_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "configuracion_hogar_id_fkey": {
+          "name": "configuracion_hogar_id_fkey",
+          "tableFrom": "configuracion",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "configuracion_actualizado_por_id_fkey": {
+          "name": "configuracion_actualizado_por_id_fkey",
+          "tableFrom": "configuracion",
+          "columnsFrom": [
+            "actualizado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hogar": {
+      "name": "hogar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hogar_supermercado": {
+      "name": "hogar_supermercado",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supermercado_id": {
+          "name": "supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preferido": {
+          "name": "preferido",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "hogar_supermercado_hogar_id_supermercado_id_key": {
+          "name": "hogar_supermercado_hogar_id_supermercado_id_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "hogar_supermercado_hogar_id_fkey": {
+          "name": "hogar_supermercado_hogar_id_fkey",
+          "tableFrom": "hogar_supermercado",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "hogar_supermercado_supermercado_id_fkey": {
+          "name": "hogar_supermercado_supermercado_id_fkey",
+          "tableFrom": "hogar_supermercado",
+          "columnsFrom": [
+            "supermercado_id"
+          ],
+          "tableTo": "supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ingrediente_excluido": {
+      "name": "ingrediente_excluido",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ingrediente_excluido_hogar_id_producto_id_key": {
+          "name": "ingrediente_excluido_hogar_id_producto_id_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "ingrediente_excluido_hogar_id_fkey": {
+          "name": "ingrediente_excluido_hogar_id_fkey",
+          "tableFrom": "ingrediente_excluido",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "ingrediente_excluido_producto_id_fkey": {
+          "name": "ingrediente_excluido_producto_id_fkey",
+          "tableFrom": "ingrediente_excluido",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invitacion": {
+      "name": "invitacion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creada_por_id": {
+          "name": "creada_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medio": {
+          "name": "medio",
+          "type": "medio_invitacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "correo": {
+          "name": "correo",
+          "type": "varchar(254)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "char(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vence_en": {
+          "name": "vence_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usada_en": {
+          "name": "usada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usada_por_id": {
+          "name": "usada_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revocada_en": {
+          "name": "revocada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "correo_enviado": {
+          "name": "correo_enviado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "invitacion_token_hash_key": {
+          "name": "invitacion_token_hash_key",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "invitacion_hogar_id_vence_en_idx": {
+          "name": "invitacion_hogar_id_vence_en_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "vence_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "invitacion_hogar_id_fkey": {
+          "name": "invitacion_hogar_id_fkey",
+          "tableFrom": "invitacion",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "invitacion_creada_por_id_fkey": {
+          "name": "invitacion_creada_por_id_fkey",
+          "tableFrom": "invitacion",
+          "columnsFrom": [
+            "creada_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "invitacion_usada_por_id_fkey": {
+          "name": "invitacion_usada_por_id_fkey",
+          "tableFrom": "invitacion",
+          "columnsFrom": [
+            "usada_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.marca_preferida": {
+      "name": "marca_preferida",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "marca": {
+          "name": "marca",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "marca_normalizada": {
+          "name": "marca_normalizada",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "marca_preferida_hogar_id_producto_id_key": {
+          "name": "marca_preferida_hogar_id_producto_id_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "marca_preferida_hogar_id_fkey": {
+          "name": "marca_preferida_hogar_id_fkey",
+          "tableFrom": "marca_preferida",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "marca_preferida_producto_id_fkey": {
+          "name": "marca_preferida_producto_id_fkey",
+          "tableFrom": "marca_preferida",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.miembro_hogar": {
+      "name": "miembro_hogar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rol": {
+          "name": "rol",
+          "type": "rol_hogar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MIEMBRO'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "miembro_hogar_usuario_id_key": {
+          "name": "miembro_hogar_usuario_id_key",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "miembro_hogar_hogar_id_rol_idx": {
+          "name": "miembro_hogar_hogar_id_rol_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rol",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "miembro_hogar_hogar_id_fkey": {
+          "name": "miembro_hogar_hogar_id_fkey",
+          "tableFrom": "miembro_hogar",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "miembro_hogar_usuario_id_fkey": {
+          "name": "miembro_hogar_usuario_id_fkey",
+          "tableFrom": "miembro_hogar",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.refresh_token": {
+      "name": "refresh_token",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "char(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "familia": {
+          "name": "familia",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dispositivo": {
+          "name": "dispositivo",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vence_en": {
+          "name": "vence_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revocado_en": {
+          "name": "revocado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reemplazado_por_id": {
+          "name": "reemplazado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refresh_token_token_hash_key": {
+          "name": "refresh_token_token_hash_key",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "refresh_token_reemplazado_por_id_key": {
+          "name": "refresh_token_reemplazado_por_id_key",
+          "columns": [
+            {
+              "expression": "reemplazado_por_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "refresh_token_usuario_id_revocado_en_idx": {
+          "name": "refresh_token_usuario_id_revocado_en_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "revocado_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "refresh_token_familia_idx": {
+          "name": "refresh_token_familia_idx",
+          "columns": [
+            {
+              "expression": "familia",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "refresh_token_usuario_id_fkey": {
+          "name": "refresh_token_usuario_id_fkey",
+          "tableFrom": "refresh_token",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "refresh_token_reemplazado_por_id_fkey": {
+          "name": "refresh_token_reemplazado_por_id_fkey",
+          "tableFrom": "refresh_token",
+          "columnsFrom": [
+            "reemplazado_por_id"
+          ],
+          "tableTo": "refresh_token",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tiempo_comida_config": {
+      "name": "tiempo_comida_config",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "configuracion_id": {
+          "name": "configuracion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tiempo": {
+          "name": "tiempo",
+          "type": "tiempo_comida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "porcentaje": {
+          "name": "porcentaje",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tiempo_comida_config_configuracion_id_tiempo_key": {
+          "name": "tiempo_comida_config_configuracion_id_tiempo_key",
+          "columns": [
+            {
+              "expression": "configuracion_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tiempo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "tiempo_comida_config_configuracion_id_fkey": {
+          "name": "tiempo_comida_config_configuracion_id_fkey",
+          "tableFrom": "tiempo_comida_config",
+          "columnsFrom": [
+            "configuracion_id"
+          ],
+          "tableTo": "configuracion",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.token_recuperacion": {
+      "name": "token_recuperacion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "char(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "vence_en": {
+          "name": "vence_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usado_en": {
+          "name": "usado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "token_recuperacion_token_hash_key": {
+          "name": "token_recuperacion_token_hash_key",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "token_recuperacion_usuario_id_idx": {
+          "name": "token_recuperacion_usuario_id_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "token_recuperacion_usuario_id_fkey": {
+          "name": "token_recuperacion_usuario_id_fkey",
+          "tableFrom": "token_recuperacion",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.usuario": {
+      "name": "usuario",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "correo": {
+          "name": "correo",
+          "type": "varchar(254)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash_contrasena": {
+          "name": "hash_contrasena",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intentos_fallidos": {
+          "name": "intentos_fallidos",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "primer_intento_fallido_en": {
+          "name": "primer_intento_fallido_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bloqueado_hasta": {
+          "name": "bloqueado_hasta",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sesiones_invalidas_antes_de": {
+          "name": "sesiones_invalidas_antes_de",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "es_admin_sistema": {
+          "name": "es_admin_sistema",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "usuario_correo_key": {
+          "name": "usuario_correo_key",
+          "columns": [
+            {
+              "expression": "correo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.calificacion": {
+      "name": "calificacion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_detalle_id": {
+          "name": "menu_detalle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "valor": {
+          "name": "valor",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "calificacion_menu_detalle_id_key": {
+          "name": "calificacion_menu_detalle_id_key",
+          "columns": [
+            {
+              "expression": "menu_detalle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "calificacion_platillo_id_idx": {
+          "name": "calificacion_platillo_id_idx",
+          "columns": [
+            {
+              "expression": "platillo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "calificacion_menu_detalle_id_fkey": {
+          "name": "calificacion_menu_detalle_id_fkey",
+          "tableFrom": "calificacion",
+          "columnsFrom": [
+            "menu_detalle_id"
+          ],
+          "tableTo": "menu_detalle",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "calificacion_platillo_id_fkey": {
+          "name": "calificacion_platillo_id_fkey",
+          "tableFrom": "calificacion",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "calificacion_usuario_id_fkey": {
+          "name": "calificacion_usuario_id_fkey",
+          "tableFrom": "calificacion",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.categoria": {
+      "name": "categoria",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "orden": {
+          "name": "orden",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "categoria_codigo_key": {
+          "name": "categoria_codigo_key",
+          "columns": [
+            {
+              "expression": "codigo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.etiqueta": {
+      "name": "etiqueta",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_normalizado": {
+          "name": "nombre_normalizado",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "etiqueta_hogar_id_nombre_normalizado_key": {
+          "name": "etiqueta_hogar_id_nombre_normalizado_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "etiqueta_hogar_id_fkey": {
+          "name": "etiqueta_hogar_id_fkey",
+          "tableFrom": "etiqueta",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.importacion": {
+      "name": "importacion",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_importacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ARCHIVO'"
+        },
+        "nombre_archivo": {
+          "name": "nombre_archivo",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "formato": {
+          "name": "formato",
+          "type": "formato_archivo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tamano_bytes": {
+          "name": "tamano_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_importacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_filas": {
+          "name": "total_filas",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "filas_con_error": {
+          "name": "filas_con_error",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "reporte": {
+          "name": "reporte",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmada_en": {
+          "name": "confirmada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "importacion_hogar_id_created_at_idx": {
+          "name": "importacion_hogar_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "importacion_hogar_id_fkey": {
+          "name": "importacion_hogar_id_fkey",
+          "tableFrom": "importacion",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "importacion_usuario_id_fkey": {
+          "name": "importacion_usuario_id_fkey",
+          "tableFrom": "importacion",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.importacion_fila": {
+      "name": "importacion_fila",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "importacion_id": {
+          "name": "importacion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hoja": {
+          "name": "hoja",
+          "type": "hoja_importacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "numero_fila": {
+          "name": "numero_fila",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datos": {
+          "name": "datos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "errores": {
+          "name": "errores",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valida": {
+          "name": "valida",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "semana_inicio": {
+          "name": "semana_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "importacion_fila_importacion_id_hoja_numero_fila_key": {
+          "name": "importacion_fila_importacion_id_hoja_numero_fila_key",
+          "columns": [
+            {
+              "expression": "importacion_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hoja",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "numero_fila",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "importacion_fila_importacion_id_fkey": {
+          "name": "importacion_fila_importacion_id_fkey",
+          "tableFrom": "importacion_fila",
+          "columnsFrom": [
+            "importacion_id"
+          ],
+          "tableTo": "importacion",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.importacion_platillo": {
+      "name": "importacion_platillo",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "importacion_id": {
+          "name": "importacion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_original": {
+          "name": "nombre_original",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_normalizado": {
+          "name": "nombre_normalizado",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platillo_sugerido_id": {
+          "name": "platillo_sugerido_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "similitud": {
+          "name": "similitud",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decision": {
+          "name": "decision",
+          "type": "decision_platillo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDIENTE'"
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nombre_final": {
+          "name": "nombre_final",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proteina_principal": {
+          "name": "proteina_principal",
+          "type": "proteina_principal",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "importacion_platillo_importacion_id_nombre_normalizado_key": {
+          "name": "importacion_platillo_importacion_id_nombre_normalizado_key",
+          "columns": [
+            {
+              "expression": "importacion_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "importacion_platillo_importacion_id_fkey": {
+          "name": "importacion_platillo_importacion_id_fkey",
+          "tableFrom": "importacion_platillo",
+          "columnsFrom": [
+            "importacion_id"
+          ],
+          "tableTo": "importacion",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "importacion_platillo_platillo_sugerido_id_fkey": {
+          "name": "importacion_platillo_platillo_sugerido_id_fkey",
+          "tableFrom": "importacion_platillo",
+          "columnsFrom": [
+            "platillo_sugerido_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "importacion_platillo_platillo_id_fkey": {
+          "name": "importacion_platillo_platillo_id_fkey",
+          "tableFrom": "importacion_platillo",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.importacion_semana": {
+      "name": "importacion_semana",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "importacion_id": {
+          "name": "importacion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "semana_inicio": {
+          "name": "semana_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ya_existe": {
+          "name": "ya_existe",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "decision": {
+          "name": "decision",
+          "type": "decision_semana",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'CREAR'"
+        },
+        "gasto_semana": {
+          "name": "gasto_semana",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "importacion_semana_importacion_id_semana_inicio_key": {
+          "name": "importacion_semana_importacion_id_semana_inicio_key",
+          "columns": [
+            {
+              "expression": "importacion_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "semana_inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "importacion_semana_importacion_id_fkey": {
+          "name": "importacion_semana_importacion_id_fkey",
+          "tableFrom": "importacion_semana",
+          "columnsFrom": [
+            "importacion_id"
+          ],
+          "tableTo": "importacion",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.menu_alternativa_mostrada": {
+      "name": "menu_alternativa_mostrada",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_detalle_id": {
+          "name": "menu_detalle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "menu_alternativa_mostrada_menu_detalle_id_platillo_id_key": {
+          "name": "menu_alternativa_mostrada_menu_detalle_id_platillo_id_key",
+          "columns": [
+            {
+              "expression": "menu_detalle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "platillo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "menu_alternativa_mostrada_menu_detalle_id_fkey": {
+          "name": "menu_alternativa_mostrada_menu_detalle_id_fkey",
+          "tableFrom": "menu_alternativa_mostrada",
+          "columnsFrom": [
+            "menu_detalle_id"
+          ],
+          "tableTo": "menu_detalle",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "menu_alternativa_mostrada_platillo_id_fkey": {
+          "name": "menu_alternativa_mostrada_platillo_id_fkey",
+          "tableFrom": "menu_alternativa_mostrada",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.menu_detalle": {
+      "name": "menu_detalle",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_id": {
+          "name": "menu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha": {
+          "name": "fecha",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tiempo": {
+          "name": "tiempo",
+          "type": "tiempo_comida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fijado": {
+          "name": "fijado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_asignacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MOTOR'"
+        },
+        "puntaje": {
+          "name": "puntaje",
+          "type": "numeric(6, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_preferencia": {
+          "name": "factor_preferencia",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_novedad": {
+          "name": "factor_novedad",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_ahorro": {
+          "name": "factor_ahorro",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "factor_afinidad": {
+          "name": "factor_afinidad",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "costo_estimado": {
+          "name": "costo_estimado",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "costo_incompleto": {
+          "name": "costo_incompleto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "reglas_aplicadas": {
+          "name": "reglas_aplicadas",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "notas": {
+          "name": "notas",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modificado_por_id": {
+          "name": "modificado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modificado_en": {
+          "name": "modificado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "menu_detalle_menu_id_fecha_tiempo_key": {
+          "name": "menu_detalle_menu_id_fecha_tiempo_key",
+          "columns": [
+            {
+              "expression": "menu_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tiempo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "menu_detalle_platillo_id_fecha_idx": {
+          "name": "menu_detalle_platillo_id_fecha_idx",
+          "columns": [
+            {
+              "expression": "platillo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "menu_detalle_menu_id_fkey": {
+          "name": "menu_detalle_menu_id_fkey",
+          "tableFrom": "menu_detalle",
+          "columnsFrom": [
+            "menu_id"
+          ],
+          "tableTo": "menu_semanal",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "menu_detalle_platillo_id_fkey": {
+          "name": "menu_detalle_platillo_id_fkey",
+          "tableFrom": "menu_detalle",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "menu_detalle_modificado_por_id_fkey": {
+          "name": "menu_detalle_modificado_por_id_fkey",
+          "tableFrom": "menu_detalle",
+          "columnsFrom": [
+            "modificado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.menu_semanal": {
+      "name": "menu_semanal",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_inicio": {
+          "name": "fecha_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_fin": {
+          "name": "fecha_fin",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "es_transicion": {
+          "name": "es_transicion",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_menu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'BORRADOR'"
+        },
+        "desactualizado": {
+          "name": "desactualizado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_menu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MOTOR'"
+        },
+        "configuracion_version": {
+          "name": "configuracion_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "presupuesto_semanal": {
+          "name": "presupuesto_semanal",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "suma_factores_porcion": {
+          "name": "suma_factores_porcion",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peso_preferencia": {
+          "name": "peso_preferencia",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peso_novedad": {
+          "name": "peso_novedad",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peso_ahorro": {
+          "name": "peso_ahorro",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "peso_afinidad": {
+          "name": "peso_afinidad",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "costo_estimado": {
+          "name": "costo_estimado",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "costo_incompleto": {
+          "name": "costo_incompleto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "generado_en": {
+          "name": "generado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprobado_por_id": {
+          "name": "aprobado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aprobado_en": {
+          "name": "aprobado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exceso_al_aprobar": {
+          "name": "exceso_al_aprobar",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estado_alerta_presupuesto": {
+          "name": "estado_alerta_presupuesto",
+          "type": "estado_alerta_presupuesto",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NORMAL'"
+        },
+        "gasto_real": {
+          "name": "gasto_real",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nota_gasto": {
+          "name": "nota_gasto",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gasto_registrado_por_id": {
+          "name": "gasto_registrado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gasto_registrado_en": {
+          "name": "gasto_registrado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "importacion_id": {
+          "name": "importacion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notas": {
+          "name": "notas",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "menu_semanal_hogar_id_fecha_inicio_key": {
+          "name": "menu_semanal_hogar_id_fecha_inicio_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha_inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "menu_semanal_hogar_id_estado_fecha_inicio_idx": {
+          "name": "menu_semanal_hogar_id_estado_fecha_inicio_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha_inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "menu_semanal_hogar_id_fkey": {
+          "name": "menu_semanal_hogar_id_fkey",
+          "tableFrom": "menu_semanal",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "menu_semanal_aprobado_por_id_fkey": {
+          "name": "menu_semanal_aprobado_por_id_fkey",
+          "tableFrom": "menu_semanal",
+          "columnsFrom": [
+            "aprobado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "menu_semanal_gasto_registrado_por_id_fkey": {
+          "name": "menu_semanal_gasto_registrado_por_id_fkey",
+          "tableFrom": "menu_semanal",
+          "columnsFrom": [
+            "gasto_registrado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "menu_semanal_importacion_id_fkey": {
+          "name": "menu_semanal_importacion_id_fkey",
+          "tableFrom": "menu_semanal",
+          "columnsFrom": [
+            "importacion_id"
+          ],
+          "tableTo": "importacion",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.menu_tiempo": {
+      "name": "menu_tiempo",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "menu_id": {
+          "name": "menu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tiempo": {
+          "name": "tiempo",
+          "type": "tiempo_comida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "porcentaje": {
+          "name": "porcentaje",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presupuesto": {
+          "name": "presupuesto",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "costo_estimado": {
+          "name": "costo_estimado",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exceso": {
+          "name": "exceso",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "intentos_ajuste": {
+          "name": "intentos_ajuste",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "menu_tiempo_menu_id_tiempo_key": {
+          "name": "menu_tiempo_menu_id_tiempo_key",
+          "columns": [
+            {
+              "expression": "menu_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tiempo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "menu_tiempo_menu_id_fkey": {
+          "name": "menu_tiempo_menu_id_fkey",
+          "tableFrom": "menu_tiempo",
+          "columnsFrom": [
+            "menu_id"
+          ],
+          "tableTo": "menu_semanal",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platillo": {
+      "name": "platillo",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_normalizado": {
+          "name": "nombre_normalizado",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "proteina_principal": {
+          "name": "proteina_principal",
+          "type": "proteina_principal",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OTRA'"
+        },
+        "porciones_base": {
+          "name": "porciones_base",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 4
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "favorito": {
+          "name": "favorito",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "incompleto": {
+          "name": "incompleto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "calificacion_promedio": {
+          "name": "calificacion_promedio",
+          "type": "numeric(3, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calificacion_conteo": {
+          "name": "calificacion_conteo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "platillo_hogar_id_nombre_normalizado_key": {
+          "name": "platillo_hogar_id_nombre_normalizado_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "platillo_hogar_id_activo_proteina_principal_idx": {
+          "name": "platillo_hogar_id_activo_proteina_principal_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "proteina_principal",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "platillo_nombre_trgm_idx": {
+          "name": "platillo_nombre_trgm_idx",
+          "columns": [
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "platillo_hogar_id_fkey": {
+          "name": "platillo_hogar_id_fkey",
+          "tableFrom": "platillo",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platillo_alias": {
+      "name": "platillo_alias",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias": {
+          "name": "alias",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alias_normalizado": {
+          "name": "alias_normalizado",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_alias",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'IMPORTACION'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "platillo_alias_hogar_id_alias_normalizado_key": {
+          "name": "platillo_alias_hogar_id_alias_normalizado_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "alias_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "platillo_alias_platillo_id_idx": {
+          "name": "platillo_alias_platillo_id_idx",
+          "columns": [
+            {
+              "expression": "platillo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "platillo_alias_hogar_id_fkey": {
+          "name": "platillo_alias_hogar_id_fkey",
+          "tableFrom": "platillo_alias",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "platillo_alias_platillo_id_fkey": {
+          "name": "platillo_alias_platillo_id_fkey",
+          "tableFrom": "platillo_alias",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platillo_etiqueta": {
+      "name": "platillo_etiqueta",
+      "schema": "",
+      "columns": {
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "etiqueta_id": {
+          "name": "etiqueta_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "platillo_etiqueta_etiqueta_id_idx": {
+          "name": "platillo_etiqueta_etiqueta_id_idx",
+          "columns": [
+            {
+              "expression": "etiqueta_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "platillo_etiqueta_platillo_id_fkey": {
+          "name": "platillo_etiqueta_platillo_id_fkey",
+          "tableFrom": "platillo_etiqueta",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "platillo_etiqueta_etiqueta_id_fkey": {
+          "name": "platillo_etiqueta_etiqueta_id_fkey",
+          "tableFrom": "platillo_etiqueta",
+          "columnsFrom": [
+            "etiqueta_id"
+          ],
+          "tableTo": "etiqueta",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "platillo_etiqueta_pkey": {
+          "name": "platillo_etiqueta_pkey",
+          "columns": [
+            "platillo_id",
+            "etiqueta_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platillo_ingrediente": {
+      "name": "platillo_ingrediente",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cantidad": {
+          "name": "cantidad",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unidad_id": {
+          "name": "unidad_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "platillo_ingrediente_platillo_id_producto_id_key": {
+          "name": "platillo_ingrediente_platillo_id_producto_id_key",
+          "columns": [
+            {
+              "expression": "platillo_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "platillo_ingrediente_producto_id_idx": {
+          "name": "platillo_ingrediente_producto_id_idx",
+          "columns": [
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "platillo_ingrediente_platillo_id_fkey": {
+          "name": "platillo_ingrediente_platillo_id_fkey",
+          "tableFrom": "platillo_ingrediente",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "platillo_ingrediente_producto_id_fkey": {
+          "name": "platillo_ingrediente_producto_id_fkey",
+          "tableFrom": "platillo_ingrediente",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "platillo_ingrediente_unidad_id_fkey": {
+          "name": "platillo_ingrediente_unidad_id_fkey",
+          "tableFrom": "platillo_ingrediente",
+          "columnsFrom": [
+            "unidad_id"
+          ],
+          "tableTo": "unidad",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.platillo_tiempo": {
+      "name": "platillo_tiempo",
+      "schema": "",
+      "columns": {
+        "platillo_id": {
+          "name": "platillo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tiempo": {
+          "name": "tiempo",
+          "type": "tiempo_comida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "platillo_tiempo_tiempo_idx": {
+          "name": "platillo_tiempo_tiempo_idx",
+          "columns": [
+            {
+              "expression": "tiempo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "platillo_tiempo_platillo_id_fkey": {
+          "name": "platillo_tiempo_platillo_id_fkey",
+          "tableFrom": "platillo_tiempo",
+          "columnsFrom": [
+            "platillo_id"
+          ],
+          "tableTo": "platillo",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "platillo_tiempo_pkey": {
+          "name": "platillo_tiempo_pkey",
+          "columns": [
+            "platillo_id",
+            "tiempo"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.producto": {
+      "name": "producto",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_normalizado": {
+          "name": "nombre_normalizado",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_producto",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "categoria_id": {
+          "name": "categoria_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unidad_compra": {
+          "name": "unidad_compra",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presentacion_cantidad": {
+          "name": "presentacion_cantidad",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presentacion_unidad_id": {
+          "name": "presentacion_unidad_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "producto_nombre_normalizado_presentacion_key": {
+          "name": "producto_nombre_normalizado_presentacion_key",
+          "columns": [
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "presentacion_cantidad",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "presentacion_unidad_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "producto_tipo_categoria_id_activo_idx": {
+          "name": "producto_tipo_categoria_id_activo_idx",
+          "columns": [
+            {
+              "expression": "tipo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "categoria_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "producto_nombre_trgm_idx": {
+          "name": "producto_nombre_trgm_idx",
+          "columns": [
+            {
+              "expression": "nombre_normalizado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "producto_categoria_id_fkey": {
+          "name": "producto_categoria_id_fkey",
+          "tableFrom": "producto",
+          "columnsFrom": [
+            "categoria_id"
+          ],
+          "tableTo": "categoria",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "producto_presentacion_unidad_id_fkey": {
+          "name": "producto_presentacion_unidad_id_fkey",
+          "tableFrom": "producto",
+          "columnsFrom": [
+            "presentacion_unidad_id"
+          ],
+          "tableTo": "unidad",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.producto_equivalencia": {
+      "name": "producto_equivalencia",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unidad_id": {
+          "name": "unidad_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "factor": {
+          "name": "factor",
+          "type": "numeric(14, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "producto_equivalencia_producto_id_unidad_id_key": {
+          "name": "producto_equivalencia_producto_id_unidad_id_key",
+          "columns": [
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "unidad_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "producto_equivalencia_producto_id_fkey": {
+          "name": "producto_equivalencia_producto_id_fkey",
+          "tableFrom": "producto_equivalencia",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "producto_equivalencia_unidad_id_fkey": {
+          "name": "producto_equivalencia_unidad_id_fkey",
+          "tableFrom": "producto_equivalencia",
+          "columnsFrom": [
+            "unidad_id"
+          ],
+          "tableTo": "unidad",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.unidad": {
+      "name": "unidad",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "magnitud": {
+          "name": "magnitud",
+          "type": "magnitud_unidad",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "factor_base": {
+          "name": "factor_base",
+          "type": "numeric(14, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "unidad_codigo_key": {
+          "name": "unidad_codigo_key",
+          "columns": [
+            {
+              "expression": "codigo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.despensa_item": {
+      "name": "despensa_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cantidad": {
+          "name": "cantidad",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "frecuencia": {
+          "name": "frecuencia",
+          "type": "frecuencia_despensa",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MENSUAL'"
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "ultima_inclusion_semana": {
+          "name": "ultima_inclusion_semana",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultima_inclusion_lista_id": {
+          "name": "ultima_inclusion_lista_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precio_referencia": {
+          "name": "precio_referencia",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notas": {
+          "name": "notas",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "despensa_item_hogar_id_producto_id_key": {
+          "name": "despensa_item_hogar_id_producto_id_key",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "despensa_item_hogar_id_activo_idx": {
+          "name": "despensa_item_hogar_id_activo_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "despensa_item_hogar_id_fkey": {
+          "name": "despensa_item_hogar_id_fkey",
+          "tableFrom": "despensa_item",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "despensa_item_producto_id_fkey": {
+          "name": "despensa_item_producto_id_fkey",
+          "tableFrom": "despensa_item",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "despensa_item_ultima_inclusion_lista_id_fkey": {
+          "name": "despensa_item_ultima_inclusion_lista_id_fkey",
+          "tableFrom": "despensa_item",
+          "columnsFrom": [
+            "ultima_inclusion_lista_id"
+          ],
+          "tableTo": "lista_compras",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lista_compras": {
+      "name": "lista_compras",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "menu_id": {
+          "name": "menu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "generada_en": {
+          "name": "generada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lista_compras_menu_id_key": {
+          "name": "lista_compras_menu_id_key",
+          "columns": [
+            {
+              "expression": "menu_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "lista_compras_hogar_id_idx": {
+          "name": "lista_compras_hogar_id_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "lista_compras_hogar_id_fkey": {
+          "name": "lista_compras_hogar_id_fkey",
+          "tableFrom": "lista_compras",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "lista_compras_menu_id_fkey": {
+          "name": "lista_compras_menu_id_fkey",
+          "tableFrom": "lista_compras",
+          "columnsFrom": [
+            "menu_id"
+          ],
+          "tableTo": "menu_semanal",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lista_item": {
+      "name": "lista_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "lista_id": {
+          "name": "lista_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "texto_libre": {
+          "name": "texto_libre",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_item_lista",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cantidad_requerida": {
+          "name": "cantidad_requerida",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unidad_requerida_id": {
+          "name": "unidad_requerida_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cantidad_comprar": {
+          "name": "cantidad_comprar",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sin_conversion": {
+          "name": "sin_conversion",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_item_lista",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PENDIENTE'"
+        },
+        "comprado_en": {
+          "name": "comprado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comprado_por_id": {
+          "name": "comprado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precio_real": {
+          "name": "precio_real",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contenido_comprado": {
+          "name": "contenido_comprado",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precio_normalizado": {
+          "name": "precio_normalizado",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eliminado": {
+          "name": "eliminado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "modificado_en_dispositivo": {
+          "name": "modificado_en_dispositivo",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lista_item_lista_id_producto_id_key": {
+          "name": "lista_item_lista_id_producto_id_key",
+          "columns": [
+            {
+              "expression": "lista_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "lista_item_lista_id_eliminado_idx": {
+          "name": "lista_item_lista_id_eliminado_idx",
+          "columns": [
+            {
+              "expression": "lista_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "eliminado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "lista_item_producto_id_comprado_en_idx": {
+          "name": "lista_item_producto_id_comprado_en_idx",
+          "columns": [
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "comprado_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "lista_item_lista_id_fkey": {
+          "name": "lista_item_lista_id_fkey",
+          "tableFrom": "lista_item",
+          "columnsFrom": [
+            "lista_id"
+          ],
+          "tableTo": "lista_compras",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "lista_item_producto_id_fkey": {
+          "name": "lista_item_producto_id_fkey",
+          "tableFrom": "lista_item",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "lista_item_unidad_requerida_id_fkey": {
+          "name": "lista_item_unidad_requerida_id_fkey",
+          "tableFrom": "lista_item",
+          "columnsFrom": [
+            "unidad_requerida_id"
+          ],
+          "tableTo": "unidad",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "lista_item_comprado_por_id_fkey": {
+          "name": "lista_item_comprado_por_id_fkey",
+          "tableFrom": "lista_item",
+          "columnsFrom": [
+            "comprado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lista_item_origen": {
+      "name": "lista_item_origen",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "lista_item_id": {
+          "name": "lista_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "menu_detalle_id": {
+          "name": "menu_detalle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cantidad_requerida": {
+          "name": "cantidad_requerida",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lista_item_origen_lista_item_id_menu_detalle_id_key": {
+          "name": "lista_item_origen_lista_item_id_menu_detalle_id_key",
+          "columns": [
+            {
+              "expression": "lista_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "menu_detalle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "lista_item_origen_menu_detalle_id_idx": {
+          "name": "lista_item_origen_menu_detalle_id_idx",
+          "columns": [
+            {
+              "expression": "menu_detalle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "lista_item_origen_lista_item_id_fkey": {
+          "name": "lista_item_origen_lista_item_id_fkey",
+          "tableFrom": "lista_item_origen",
+          "columnsFrom": [
+            "lista_item_id"
+          ],
+          "tableTo": "lista_item",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "lista_item_origen_menu_detalle_id_fkey": {
+          "name": "lista_item_origen_menu_detalle_id_fkey",
+          "tableFrom": "lista_item_origen",
+          "columnsFrom": [
+            "menu_detalle_id"
+          ],
+          "tableTo": "menu_detalle",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sync_cambio": {
+      "name": "sync_cambio",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "lista_id": {
+          "name": "lista_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operacion": {
+          "name": "operacion",
+          "type": "operacion_sync",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datos": {
+          "name": "datos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "marca_tiempo_dispositivo": {
+          "name": "marca_tiempo_dispositivo",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "resultado_sync",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "motivo": {
+          "name": "motivo",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recibido_en": {
+          "name": "recibido_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sync_cambio_lista_id_recibido_en_idx": {
+          "name": "sync_cambio_lista_id_recibido_en_idx",
+          "columns": [
+            {
+              "expression": "lista_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recibido_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "sync_cambio_lista_id_fkey": {
+          "name": "sync_cambio_lista_id_fkey",
+          "tableFrom": "sync_cambio",
+          "columnsFrom": [
+            "lista_id"
+          ],
+          "tableTo": "lista_compras",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "sync_cambio_usuario_id_fkey": {
+          "name": "sync_cambio_usuario_id_fkey",
+          "tableFrom": "sync_cambio",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.aviso": {
+      "name": "aviso",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_aviso",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mensaje": {
+          "name": "mensaje",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datos": {
+          "name": "datos",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "corrida_id": {
+          "name": "corrida_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "leido_en": {
+          "name": "leido_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "leido_por_id": {
+          "name": "leido_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "aviso_hogar_id_leido_en_idx": {
+          "name": "aviso_hogar_id_leido_en_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "leido_en",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "aviso_hogar_id_fkey": {
+          "name": "aviso_hogar_id_fkey",
+          "tableFrom": "aviso",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "aviso_corrida_id_fkey": {
+          "name": "aviso_corrida_id_fkey",
+          "tableFrom": "aviso",
+          "columnsFrom": [
+            "corrida_id"
+          ],
+          "tableTo": "corrida",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "aviso_leido_por_id_fkey": {
+          "name": "aviso_leido_por_id_fkey",
+          "tableFrom": "aviso",
+          "columnsFrom": [
+            "leido_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.corrida": {
+      "name": "corrida",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "disparo": {
+          "name": "disparo",
+          "type": "disparo_corrida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PROGRAMADA'"
+        },
+        "programada_para": {
+          "name": "programada_para",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "iniciada_en": {
+          "name": "iniciada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finalizada_en": {
+          "name": "finalizada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_corrida",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EN_CURSO'"
+        },
+        "total_consultados": {
+          "name": "total_consultados",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_actualizados": {
+          "name": "total_actualizados",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_fallidos": {
+          "name": "total_fallidos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "corrida_estado_programada_para_idx": {
+          "name": "corrida_estado_programada_para_idx",
+          "columns": [
+            {
+              "expression": "estado",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "programada_para",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.corrida_error": {
+      "name": "corrida_error",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "corrida_sitio_id": {
+          "name": "corrida_sitio_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "producto_supermercado_id": {
+          "name": "producto_supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_error_extraccion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mensaje": {
+          "name": "mensaje",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intentos": {
+          "name": "intentos",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "ocurrido_en": {
+          "name": "ocurrido_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "corrida_error_corrida_sitio_id_idx": {
+          "name": "corrida_error_corrida_sitio_id_idx",
+          "columns": [
+            {
+              "expression": "corrida_sitio_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "corrida_error_producto_supermercado_id_idx": {
+          "name": "corrida_error_producto_supermercado_id_idx",
+          "columns": [
+            {
+              "expression": "producto_supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "corrida_error_corrida_sitio_id_fkey": {
+          "name": "corrida_error_corrida_sitio_id_fkey",
+          "tableFrom": "corrida_error",
+          "columnsFrom": [
+            "corrida_sitio_id"
+          ],
+          "tableTo": "corrida_sitio",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "corrida_error_producto_supermercado_id_fkey": {
+          "name": "corrida_error_producto_supermercado_id_fkey",
+          "tableFrom": "corrida_error",
+          "columnsFrom": [
+            "producto_supermercado_id"
+          ],
+          "tableTo": "producto_supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.corrida_sitio": {
+      "name": "corrida_sitio",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "corrida_id": {
+          "name": "corrida_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supermercado_id": {
+          "name": "supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_corrida_sitio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EN_CURSO'"
+        },
+        "total_vinculos": {
+          "name": "total_vinculos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_ok": {
+          "name": "total_ok",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_fallidos": {
+          "name": "total_fallidos",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "detenido_por_estructura": {
+          "name": "detenido_por_estructura",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "iniciada_en": {
+          "name": "iniciada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finalizada_en": {
+          "name": "finalizada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "corrida_sitio_corrida_id_supermercado_id_key": {
+          "name": "corrida_sitio_corrida_id_supermercado_id_key",
+          "columns": [
+            {
+              "expression": "corrida_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "corrida_sitio_corrida_id_fkey": {
+          "name": "corrida_sitio_corrida_id_fkey",
+          "tableFrom": "corrida_sitio",
+          "columnsFrom": [
+            "corrida_id"
+          ],
+          "tableTo": "corrida",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "corrida_sitio_supermercado_id_fkey": {
+          "name": "corrida_sitio_supermercado_id_fkey",
+          "tableFrom": "corrida_sitio",
+          "columnsFrom": [
+            "supermercado_id"
+          ],
+          "tableTo": "supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notificacion_enviada": {
+      "name": "notificacion_enviada",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "tipo_notificacion",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "semana_inicio": {
+          "name": "semana_inicio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "menu_id": {
+          "name": "menu_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "clave_deduplicacion": {
+          "name": "clave_deduplicacion",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "resultado_envio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "destinatarios": {
+          "name": "destinatarios",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "entregados": {
+          "name": "entregados",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "contenido": {
+          "name": "contenido",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enviada_en": {
+          "name": "enviada_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notificacion_enviada_clave_deduplicacion_key": {
+          "name": "notificacion_enviada_clave_deduplicacion_key",
+          "columns": [
+            {
+              "expression": "clave_deduplicacion",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "notificacion_enviada_hogar_id_tipo_semana_inicio_idx": {
+          "name": "notificacion_enviada_hogar_id_tipo_semana_inicio_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tipo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "semana_inicio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "notificacion_enviada_hogar_id_fkey": {
+          "name": "notificacion_enviada_hogar_id_fkey",
+          "tableFrom": "notificacion_enviada",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "notificacion_enviada_menu_id_fkey": {
+          "name": "notificacion_enviada_menu_id_fkey",
+          "tableFrom": "notificacion_enviada",
+          "columnsFrom": [
+            "menu_id"
+          ],
+          "tableTo": "menu_semanal",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.precio": {
+      "name": "precio",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "producto_supermercado_id": {
+          "name": "producto_supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origen": {
+          "name": "origen",
+          "type": "origen_precio",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "precio": {
+          "name": "precio",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "precio_normalizado": {
+          "name": "precio_normalizado",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_precio": {
+          "name": "fecha_precio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "corrida_id": {
+          "name": "corrida_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ticket_linea_id": {
+          "name": "ticket_linea_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registrado_por_id": {
+          "name": "registrado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "precio_ticket_linea_id_key": {
+          "name": "precio_ticket_linea_id_key",
+          "columns": [
+            {
+              "expression": "ticket_linea_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "precio_producto_supermercado_id_fecha_precio_idx": {
+          "name": "precio_producto_supermercado_id_fecha_precio_idx",
+          "columns": [
+            {
+              "expression": "producto_supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha_precio",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "precio_hogar_id_fecha_precio_idx": {
+          "name": "precio_hogar_id_fecha_precio_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fecha_precio",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "precio_corrida_id_idx": {
+          "name": "precio_corrida_id_idx",
+          "columns": [
+            {
+              "expression": "corrida_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "precio_producto_supermercado_id_fkey": {
+          "name": "precio_producto_supermercado_id_fkey",
+          "tableFrom": "precio",
+          "columnsFrom": [
+            "producto_supermercado_id"
+          ],
+          "tableTo": "producto_supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "precio_hogar_id_fkey": {
+          "name": "precio_hogar_id_fkey",
+          "tableFrom": "precio",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "precio_corrida_id_fkey": {
+          "name": "precio_corrida_id_fkey",
+          "tableFrom": "precio",
+          "columnsFrom": [
+            "corrida_id"
+          ],
+          "tableTo": "corrida",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "precio_ticket_linea_id_fkey": {
+          "name": "precio_ticket_linea_id_fkey",
+          "tableFrom": "precio",
+          "columnsFrom": [
+            "ticket_linea_id"
+          ],
+          "tableTo": "ticket_linea",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "precio_registrado_por_id_fkey": {
+          "name": "precio_registrado_por_id_fkey",
+          "tableFrom": "precio",
+          "columnsFrom": [
+            "registrado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.precio_resumen": {
+      "name": "precio_resumen",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "precio_mediana": {
+          "name": "precio_mediana",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "precio_minimo": {
+          "name": "precio_minimo",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supermercado_minimo_id": {
+          "name": "supermercado_minimo_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_precio_minimo": {
+          "name": "fecha_precio_minimo",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cantidad_precios": {
+          "name": "cantidad_precios",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "desactualizado": {
+          "name": "desactualizado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "fecha_precio_mas_antiguo": {
+          "name": "fecha_precio_mas_antiguo",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calculado_en": {
+          "name": "calculado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "precio_resumen_producto_id_hogar_id_key": {
+          "name": "precio_resumen_producto_id_hogar_id_key",
+          "columns": [
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "precio_resumen_hogar_id_idx": {
+          "name": "precio_resumen_hogar_id_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "precio_resumen_producto_id_fkey": {
+          "name": "precio_resumen_producto_id_fkey",
+          "tableFrom": "precio_resumen",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "precio_resumen_hogar_id_fkey": {
+          "name": "precio_resumen_hogar_id_fkey",
+          "tableFrom": "precio_resumen",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "precio_resumen_supermercado_minimo_id_fkey": {
+          "name": "precio_resumen_supermercado_minimo_id_fkey",
+          "tableFrom": "precio_resumen",
+          "columnsFrom": [
+            "supermercado_minimo_id"
+          ],
+          "tableTo": "supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.producto_supermercado": {
+      "name": "producto_supermercado",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "producto_id": {
+          "name": "producto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supermercado_id": {
+          "name": "supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_tienda": {
+          "name": "nombre_tienda",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "marca": {
+          "name": "marca",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "marca_normalizada": {
+          "name": "marca_normalizada",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "presentacion_cantidad": {
+          "name": "presentacion_cantidad",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "presentacion_unidad_id": {
+          "name": "presentacion_unidad_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "factor": {
+          "name": "factor",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sku": {
+          "name": "sku",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "inactivado_en": {
+          "name": "inactivado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creado_por_hogar_id": {
+          "name": "creado_por_hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creado_por_usuario_id": {
+          "name": "creado_por_usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "producto_supermercado_producto_id_supermercado_id_activo_idx": {
+          "name": "producto_supermercado_producto_id_supermercado_id_activo_idx",
+          "columns": [
+            {
+              "expression": "producto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "producto_supermercado_supermercado_id_activo_idx": {
+          "name": "producto_supermercado_supermercado_id_activo_idx",
+          "columns": [
+            {
+              "expression": "supermercado_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "activo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "producto_supermercado_producto_id_fkey": {
+          "name": "producto_supermercado_producto_id_fkey",
+          "tableFrom": "producto_supermercado",
+          "columnsFrom": [
+            "producto_id"
+          ],
+          "tableTo": "producto",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "producto_supermercado_supermercado_id_fkey": {
+          "name": "producto_supermercado_supermercado_id_fkey",
+          "tableFrom": "producto_supermercado",
+          "columnsFrom": [
+            "supermercado_id"
+          ],
+          "tableTo": "supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "producto_supermercado_presentacion_unidad_id_fkey": {
+          "name": "producto_supermercado_presentacion_unidad_id_fkey",
+          "tableFrom": "producto_supermercado",
+          "columnsFrom": [
+            "presentacion_unidad_id"
+          ],
+          "tableTo": "unidad",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "producto_supermercado_creado_por_hogar_id_fkey": {
+          "name": "producto_supermercado_creado_por_hogar_id_fkey",
+          "tableFrom": "producto_supermercado",
+          "columnsFrom": [
+            "creado_por_hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        },
+        "producto_supermercado_creado_por_usuario_id_fkey": {
+          "name": "producto_supermercado_creado_por_usuario_id_fkey",
+          "tableFrom": "producto_supermercado",
+          "columnsFrom": [
+            "creado_por_usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.supermercado": {
+      "name": "supermercado",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "codigo": {
+          "name": "codigo",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre": {
+          "name": "nombre",
+          "type": "varchar(40)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dominio": {
+          "name": "dominio",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "soporta_extraccion": {
+          "name": "soporta_extraccion",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "habilitado": {
+          "name": "habilitado",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "extraccion_permitida": {
+          "name": "extraccion_permitida",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "permiso_revisado_por_id": {
+          "name": "permiso_revisado_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "permiso_revisado_en": {
+          "name": "permiso_revisado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nota_terminos": {
+          "name": "nota_terminos",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "solicitudes_por_segundo": {
+          "name": "solicitudes_por_segundo",
+          "type": "numeric(4, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'1.00'"
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "supermercado_codigo_key": {
+          "name": "supermercado_codigo_key",
+          "columns": [
+            {
+              "expression": "codigo",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "supermercado_permiso_revisado_por_id_fkey": {
+          "name": "supermercado_permiso_revisado_por_id_fkey",
+          "tableFrom": "supermercado",
+          "columnsFrom": [
+            "permiso_revisado_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.suscripcion_push": {
+      "name": "suscripcion_push",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "usuario_id": {
+          "name": "usuario_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canal": {
+          "name": "canal",
+          "type": "canal_push",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "p256dh": {
+          "name": "p256dh",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auth": {
+          "name": "auth",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispositivo": {
+          "name": "dispositivo",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_envio_en": {
+          "name": "ultimo_envio_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "suscripcion_push_endpoint_key": {
+          "name": "suscripcion_push_endpoint_key",
+          "columns": [
+            {
+              "expression": "endpoint",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "suscripcion_push_usuario_id_idx": {
+          "name": "suscripcion_push_usuario_id_idx",
+          "columns": [
+            {
+              "expression": "usuario_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "suscripcion_push_usuario_id_fkey": {
+          "name": "suscripcion_push_usuario_id_fkey",
+          "tableFrom": "suscripcion_push",
+          "columnsFrom": [
+            "usuario_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ticket": {
+      "name": "ticket",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hogar_id": {
+          "name": "hogar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supermercado_id": {
+          "name": "supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fecha_compra": {
+          "name": "fecha_compra",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "archivo_ruta": {
+          "name": "archivo_ruta",
+          "type": "varchar(300)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "archivo_mime": {
+          "name": "archivo_mime",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "archivo_bytes": {
+          "name": "archivo_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_ticket",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PROCESANDO'"
+        },
+        "texto_ocr": {
+          "name": "texto_ocr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subido_por_id": {
+          "name": "subido_por_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "confirmado_en": {
+          "name": "confirmado_en",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ticket_hogar_id_created_at_idx": {
+          "name": "ticket_hogar_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "hogar_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "ticket_hogar_id_fkey": {
+          "name": "ticket_hogar_id_fkey",
+          "tableFrom": "ticket",
+          "columnsFrom": [
+            "hogar_id"
+          ],
+          "tableTo": "hogar",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "ticket_supermercado_id_fkey": {
+          "name": "ticket_supermercado_id_fkey",
+          "tableFrom": "ticket",
+          "columnsFrom": [
+            "supermercado_id"
+          ],
+          "tableTo": "supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "restrict"
+        },
+        "ticket_subido_por_id_fkey": {
+          "name": "ticket_subido_por_id_fkey",
+          "tableFrom": "ticket",
+          "columnsFrom": [
+            "subido_por_id"
+          ],
+          "tableTo": "usuario",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ticket_linea": {
+      "name": "ticket_linea",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "ticket_id": {
+          "name": "ticket_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "orden": {
+          "name": "orden",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descripcion": {
+          "name": "descripcion",
+          "type": "varchar(150)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "precio": {
+          "name": "precio",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "producto_supermercado_id": {
+          "name": "producto_supermercado_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "similitud": {
+          "name": "similitud",
+          "type": "numeric(5, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estado": {
+          "name": "estado",
+          "type": "estado_linea_ticket",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SIN_ASIGNAR'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ticket_linea_ticket_id_orden_key": {
+          "name": "ticket_linea_ticket_id_orden_key",
+          "columns": [
+            {
+              "expression": "ticket_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "orden",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "ticket_linea_ticket_id_fkey": {
+          "name": "ticket_linea_ticket_id_fkey",
+          "tableFrom": "ticket_linea",
+          "columnsFrom": [
+            "ticket_id"
+          ],
+          "tableTo": "ticket",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "cascade"
+        },
+        "ticket_linea_producto_supermercado_id_fkey": {
+          "name": "ticket_linea_producto_supermercado_id_fkey",
+          "tableFrom": "ticket_linea",
+          "columnsFrom": [
+            "producto_supermercado_id"
+          ],
+          "tableTo": "producto_supermercado",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "cascade",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.canal_push": {
+      "name": "canal_push",
+      "schema": "public",
+      "values": [
+        "WEB_PUSH",
+        "FCM"
+      ]
+    },
+    "public.decision_platillo": {
+      "name": "decision_platillo",
+      "schema": "public",
+      "values": [
+        "PENDIENTE",
+        "ASOCIAR",
+        "CREAR"
+      ]
+    },
+    "public.decision_semana": {
+      "name": "decision_semana",
+      "schema": "public",
+      "values": [
+        "CREAR",
+        "OMITIR",
+        "REEMPLAZAR"
+      ]
+    },
+    "public.dia_semana": {
+      "name": "dia_semana",
+      "schema": "public",
+      "values": [
+        "DOMINGO",
+        "LUNES",
+        "MARTES",
+        "MIERCOLES",
+        "JUEVES",
+        "VIERNES",
+        "SABADO"
+      ]
+    },
+    "public.disparo_corrida": {
+      "name": "disparo_corrida",
+      "schema": "public",
+      "values": [
+        "PROGRAMADA",
+        "MANUAL"
+      ]
+    },
+    "public.estado_alerta_presupuesto": {
+      "name": "estado_alerta_presupuesto",
+      "schema": "public",
+      "values": [
+        "NORMAL",
+        "ALERTADO"
+      ]
+    },
+    "public.estado_corrida": {
+      "name": "estado_corrida",
+      "schema": "public",
+      "values": [
+        "EN_CURSO",
+        "COMPLETADA",
+        "PARCIAL",
+        "FALLIDA",
+        "OMITIDA"
+      ]
+    },
+    "public.estado_corrida_sitio": {
+      "name": "estado_corrida_sitio",
+      "schema": "public",
+      "values": [
+        "EN_CURSO",
+        "COMPLETADA",
+        "PARCIAL",
+        "FALLIDA",
+        "BLOQUEADO",
+        "NO_HABILITADO",
+        "DETENIDO"
+      ]
+    },
+    "public.estado_importacion": {
+      "name": "estado_importacion",
+      "schema": "public",
+      "values": [
+        "CON_ERRORES",
+        "VISTA_PREVIA",
+        "CONFIRMADA",
+        "CANCELADA"
+      ]
+    },
+    "public.estado_item_lista": {
+      "name": "estado_item_lista",
+      "schema": "public",
+      "values": [
+        "PENDIENTE",
+        "COMPRADO",
+        "YA_LO_TENGO"
+      ]
+    },
+    "public.estado_linea_ticket": {
+      "name": "estado_linea_ticket",
+      "schema": "public",
+      "values": [
+        "SIN_ASIGNAR",
+        "PROPUESTA",
+        "ASIGNADA",
+        "DESCARTADA"
+      ]
+    },
+    "public.estado_menu": {
+      "name": "estado_menu",
+      "schema": "public",
+      "values": [
+        "BORRADOR",
+        "APROBADO",
+        "HISTORICO"
+      ]
+    },
+    "public.estado_ticket": {
+      "name": "estado_ticket",
+      "schema": "public",
+      "values": [
+        "PROCESANDO",
+        "PENDIENTE_CONFIRMACION",
+        "SIN_LECTURA",
+        "CONFIRMADO",
+        "DESCARTADO"
+      ]
+    },
+    "public.formato_archivo": {
+      "name": "formato_archivo",
+      "schema": "public",
+      "values": [
+        "CSV",
+        "XLSX"
+      ]
+    },
+    "public.frecuencia_despensa": {
+      "name": "frecuencia_despensa",
+      "schema": "public",
+      "values": [
+        "SEMANAL",
+        "QUINCENAL",
+        "MENSUAL"
+      ]
+    },
+    "public.hoja_importacion": {
+      "name": "hoja_importacion",
+      "schema": "public",
+      "values": [
+        "MENUS",
+        "LISTAS"
+      ]
+    },
+    "public.magnitud_unidad": {
+      "name": "magnitud_unidad",
+      "schema": "public",
+      "values": [
+        "MASA",
+        "VOLUMEN",
+        "CONTEO"
+      ]
+    },
+    "public.medio_invitacion": {
+      "name": "medio_invitacion",
+      "schema": "public",
+      "values": [
+        "CORREO",
+        "ENLACE"
+      ]
+    },
+    "public.operacion_sync": {
+      "name": "operacion_sync",
+      "schema": "public",
+      "values": [
+        "AGREGAR",
+        "ACTUALIZAR",
+        "MARCAR_COMPRADO",
+        "MARCAR_YA_LO_TENGO",
+        "DESMARCAR_COMPRADO",
+        "REGISTRAR_PRECIO",
+        "ELIMINAR"
+      ]
+    },
+    "public.origen_alias": {
+      "name": "origen_alias",
+      "schema": "public",
+      "values": [
+        "IMPORTACION",
+        "MANUAL"
+      ]
+    },
+    "public.origen_asignacion": {
+      "name": "origen_asignacion",
+      "schema": "public",
+      "values": [
+        "MOTOR",
+        "REEMPLAZO_PRESUPUESTO",
+        "ALTERNATIVA",
+        "USUARIO",
+        "HISTORICO"
+      ]
+    },
+    "public.origen_importacion": {
+      "name": "origen_importacion",
+      "schema": "public",
+      "values": [
+        "ARCHIVO",
+        "CUADERNO"
+      ]
+    },
+    "public.origen_item_lista": {
+      "name": "origen_item_lista",
+      "schema": "public",
+      "values": [
+        "MENU",
+        "DESPENSA",
+        "MENU_Y_DESPENSA",
+        "MANUAL"
+      ]
+    },
+    "public.origen_menu": {
+      "name": "origen_menu",
+      "schema": "public",
+      "values": [
+        "MOTOR",
+        "CAPTURA_MANUAL",
+        "IMPORTACION",
+        "CUADERNO"
+      ]
+    },
+    "public.origen_precio": {
+      "name": "origen_precio",
+      "schema": "public",
+      "values": [
+        "AUTOMATICO",
+        "MANUAL",
+        "TICKET"
+      ]
+    },
+    "public.proteina_principal": {
+      "name": "proteina_principal",
+      "schema": "public",
+      "values": [
+        "POLLO",
+        "RES",
+        "CERDO",
+        "PESCADO",
+        "HUEVO",
+        "EMBUTIDO",
+        "VEGETARIANA",
+        "OTRA"
+      ]
+    },
+    "public.resultado_envio": {
+      "name": "resultado_envio",
+      "schema": "public",
+      "values": [
+        "ENVIADA",
+        "PARCIAL",
+        "SIN_DESTINATARIOS",
+        "FALLIDA"
+      ]
+    },
+    "public.resultado_sync": {
+      "name": "resultado_sync",
+      "schema": "public",
+      "values": [
+        "APLICADO",
+        "OBSOLETO",
+        "RECHAZADO"
+      ]
+    },
+    "public.rol_hogar": {
+      "name": "rol_hogar",
+      "schema": "public",
+      "values": [
+        "ADMIN",
+        "MIEMBRO"
+      ]
+    },
+    "public.tiempo_comida": {
+      "name": "tiempo_comida",
+      "schema": "public",
+      "values": [
+        "DESAYUNO",
+        "ALMUERZO",
+        "CENA"
+      ]
+    },
+    "public.tipo_aviso": {
+      "name": "tipo_aviso",
+      "schema": "public",
+      "values": [
+        "CORRIDA_PARCIAL",
+        "CORRIDA_FALLIDA",
+        "SITIO_BLOQUEADO",
+        "PRESUPUESTO_NO_CONFIGURADO"
+      ]
+    },
+    "public.tipo_comensal": {
+      "name": "tipo_comensal",
+      "schema": "public",
+      "values": [
+        "ADULTO",
+        "NINO"
+      ]
+    },
+    "public.tipo_error_extraccion": {
+      "name": "tipo_error_extraccion",
+      "schema": "public",
+      "values": [
+        "TIEMPO_AGOTADO",
+        "HTTP",
+        "ESTRUCTURA",
+        "PRECIO_INVALIDO",
+        "ROBOTS",
+        "OTRO"
+      ]
+    },
+    "public.tipo_notificacion": {
+      "name": "tipo_notificacion",
+      "schema": "public",
+      "values": [
+        "RECORDATORIO_PLANIFICACION",
+        "ALERTA_PRESUPUESTO"
+      ]
+    },
+    "public.tipo_producto": {
+      "name": "tipo_producto",
+      "schema": "public",
+      "values": [
+        "INGREDIENTE",
+        "DESPENSA",
+        "AMBOS"
+      ]
+    }
+  },
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

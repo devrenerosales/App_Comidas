@@ -1,8 +1,11 @@
-// Esquema Prisma — Menú Familiar (apps/api)
-// Copia del esquema de diseño docs/02-diseno/schema.prisma (fuente de verdad).
-// Diferencia: binaryTargets para la imagen Docker Alpine (musl) del API.
-// Cambie primero el diseño y luego copie aquí; genere la migración con
-// `npm run prisma:migrate` y agregue el SQL manual de modelo-datos.md §6.1.
+// =============================================================================
+// HISTÓRICO — NO SE USA DESDE 2026-10-22 (D-15, ADR-010).
+// El modelo de datos vive ahora en packages/db/src/schema/*.ts (Drizzle ORM) y las
+// migraciones en packages/db/drizzle/. Este archivo se conserva como referencia del
+// diseño v1.1; la prueba packages/db/test/fidelidad-prisma.test.ts verifica que el
+// esquema Drizzle mantiene sus tablas, columnas, nulabilidad, enums, índices y llaves.
+// =============================================================================
+
 // =============================================================================
 // Menú Familiar — Esquema de datos v1 (PostgreSQL 16 + Prisma 5.22)
 // Documento: docs/02-diseno/modelo-datos.md · SRS-MF-001 v1.3 · D-01..D-09 · RF-43, RF-44
@@ -16,7 +19,6 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
