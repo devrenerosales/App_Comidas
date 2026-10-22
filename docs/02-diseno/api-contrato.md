@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Documento | DIS-MF-003 |
-| Versión | 1.1 (RF-43, RF-44) |
+| Versión | 1.2 (HU-01: auth según ADR-004) |
 | Fecha | 2026-10-22 |
 | Fase del ciclo de vida | 3. Diseño |
 | Base | `https://<host>/api/v1` |
@@ -15,7 +15,9 @@ La especificación OpenAPI 3.1 se generará desde los controladores NestJS (`@ne
 
 ### 1.1 Autenticación y roles
 
-- `Authorization: Bearer <accessToken>`. JWT firmado (HS256/EdDSA) con `sub` (usuarioId), `hogarId`, `rol`, `iat`, `exp`; vigencia 24 h (supuesto M01). Refresh token opaco de 30 días, rotativo (`POST /auth/refresh`).
+- `Authorization: Bearer <accessToken>`. JWT HS256 con `sub` (usuarioId), `hogarId`, `rol` (nulos si el usuario no tiene hogar), `iat`, `exp`; vigencia **15 min** (ADR-004, reemplaza el supuesto de 24 h de M01). Refresh token opaco de 30 días, rotativo (`POST /auth/refresh`); reutilizar uno ya rotado revoca su familia.
+- **Transporte del refresh (ADR-004):** la PWA lo recibe y lo envía en la cookie `mf_refresh` (`HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`) y las respuestas **no** traen `refreshToken`. La app Android envía `X-Cliente: android` en todas las solicitudes y recibe/envía `refreshToken` en el cuerpo.
+- Errores 401 de autenticación: `NO_AUTENTICADO` (sin token), `TOKEN_EXPIRADO`, `TOKEN_INVALIDO`, `CREDENCIALES_INVALIDAS`, `SESION_INVALIDA` (refresh inexistente, vencido o cerrado), `SESION_REVOCADA` (reutilización detectada).
 - **El hogar se toma del token, nunca de la ruta.** Las rutas `/hogares/{id}/…` de las historias se normalizan a `/hogar/…` para evitar acceso a otro hogar por cambiar el id (RNF-06).
 - Roles en las tablas: **Público** (sin token) · **Auth** (token sin hogar) · **MIEMBRO** (incluye ADMIN, que hereda) · **ADMIN** (solo administrador, RN-10) · **ADMIN_SISTEMA** (`Usuario.esAdminSistema`, datos globales, D-07). El worker de precios no usa la API: escribe en la base y en la cola.
 
@@ -92,10 +94,10 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| POST | `/auth/registro` | Público | RF-01 · HU-01 | `{nombre, correo, contrasena}` → 201 `{usuario, accessToken, refreshToken, expiraEn, hogar: null}` | 400 · 409 `CORREO_REGISTRADO` · 422 `CONTRASENA_DEBIL` |
-| POST | `/auth/login` | Público | RF-01 · HU-01 | `{correo, contrasena, dispositivo?}` → 200 `{usuario, accessToken, refreshToken, expiraEn, hogar: {id, nombre, rol} \| null}` | 401 `CREDENCIALES_INVALIDAS` · 423 `CUENTA_BLOQUEADA` (`bloqueadoHasta`) |
-| POST | `/auth/refresh` | Público | RF-01 | `{refreshToken}` → 200 nuevo par (rota; reutilizar uno rotado revoca la familia) | 401 |
-| POST | `/auth/logout` | Auth | RF-01 | `{refreshToken}` → 204 | 401 |
+| POST | `/auth/registro` | Público | RF-01 · HU-01 | `{nombre, correo, contrasena}` → 201 `{usuario: {id, nombre, correo, esAdminSistema}, accessToken, refreshToken (solo Android), expiraEn, hogar: null}` + cookie `mf_refresh` (PWA) | 400 `VALIDACION` · 409 `CORREO_REGISTRADO` · 422 `CONTRASENA_DEBIL` · 429 |
+| POST | `/auth/login` | Público | RF-01 · HU-01 | `{correo, contrasena, dispositivo?}` → 200 `{usuario, accessToken, refreshToken (solo Android), expiraEn, hogar: {id, nombre, rol} \| null}` + cookie (PWA) | 400 · 401 `CREDENCIALES_INVALIDAS` · 423 `CUENTA_BLOQUEADA` (`bloqueadoHasta`) · 429 (`Retry-After`) |
+| POST | `/auth/refresh` | Público | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 200 misma forma que login con el nuevo par (rota; reutilizar uno rotado revoca la familia); trae `usuario` y `hogar` vigentes para restaurar la sesión al abrir la app | 401 `SESION_INVALIDA` · 401 `SESION_REVOCADA` · 429 |
+| POST | `/auth/logout` | Auth | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 204; revoca la familia solo si el refresh es del usuario del token y borra la cookie | 401 |
 | POST | `/auth/recuperar` | Público | RF-04 · HU-04 | `{correo}` → 202 mensaje neutro siempre | 429 |
 | POST | `/auth/restablecer` | Público | RF-04 · HU-04 | `{token, contrasena, confirmacion}` → 200; invalida sesiones previas | 410 `ENLACE_NO_VALIDO` · 422 |
 | GET | `/usuarios/yo` | Auth | RF-01 | → 200 `{id, nombre, correo, esAdminSistema, hogar \| null}` | 401 |
@@ -446,6 +448,9 @@ Respuesta 200 (el mismo cuerpo se devuelve si la solicitud se repite con la mism
 `promedioCompra` = (26.50 + 27.00 + 28.10) ÷ 3 = 27.20 (RN-12; la compra del 12/07/2026 queda fuera de las 12 semanas). `gastoSugerido` = suma de `precioReal` de la lista; la app lo usa para prellenar `PUT /menus/{id}/gasto-real` si todavía no hay gasto registrado (RF-27).
 
 ## 4. Diferencias con las rutas de las historias
+
+Cambios de la versión 1.2 (HU-01): vigencia del acceso de 15 min; `refreshToken` en el cuerpo solo para Android (`X-Cliente: android`), cookie HttpOnly en la PWA; `refresh` y `logout` aceptan el refresh del cuerpo o de la cookie; `refresh` devuelve también `usuario` y `hogar`; `expiraEn` es el instante ISO 8601 UTC de vencimiento del acceso; los 429 incluyen `Retry-After`.
+
 
 | Historia | Ruta en la historia | Ruta del contrato | Motivo |
 |---|---|---|---|

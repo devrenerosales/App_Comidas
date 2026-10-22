@@ -1,16 +1,25 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
+  "roots": ["<rootDir>/test"],
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
-  "setupFiles": ["<rootDir>/setup-env.ts"],
+  "setupFiles": ["<rootDir>/test/setup-env.ts"],
   "transform": {
     "^.+\\.ts$": [
       "ts-jest",
       {
-        "tsconfig": "<rootDir>/../tsconfig.json"
+        "tsconfig": "<rootDir>/tsconfig.json"
       }
     ]
   },
-  "testTimeout": 30000
+  "testTimeout": 30000,
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/main.ts",
+    "!src/**/*.module.ts",
+    "!src/**/*.spec.ts"
+  ],
+  "coverageDirectory": "<rootDir>/coverage/integracion",
+  "coverageReporters": ["text-summary", "lcov", "json-summary"]
 }

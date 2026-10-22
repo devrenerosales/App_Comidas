@@ -4,7 +4,7 @@ Cada capítulo se escribe en el sprint en que se entrega su funcionalidad: es pa
 
 | Capítulo | Contenido | Historias | Sprint | Estado |
 |---|---|---|---|---|
-| 1. Primeros pasos | Instalar la app (web o Android), crear cuenta, iniciar sesión, recuperar contraseña | HU-01, HU-04 | S1–S2 | Pendiente |
+| [1. Primeros pasos](01-primeros-pasos.md) | Instalar la app (web o Android), crear cuenta, iniciar sesión, recuperar contraseña | HU-01, HU-04 | S1–S2 | Parcial: crear cuenta, iniciar y cerrar sesión (HU-01, S1); falta recuperar contraseña (HU-04, S2) y capturas |
 | 2. Tu hogar | Crear el hogar, invitar a la familia, comensales y factor de porción | HU-02, HU-03 | S1 | Pendiente |
 | 3. Configuración | Tiempos de comida, presupuesto y su reparto, inicio de semana, supermercados y marcas, gustos y restricciones | HU-05 a HU-10 | S1, S3, S5 | Pendiente |
 | 4. Platillos y productos | Registrar platillos, ingredientes por porción, catálogo, calificar | HU-11 a HU-14 | S1, S3 | Pendiente |
