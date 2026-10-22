@@ -1,0 +1,43 @@
+{
+  "name": "menu-familiar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Menú Familiar: sugerencia de menús semanales, lista de compras y comparación de precios",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9.12.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:cov": "turbo run test:cov",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "9.13.0",
+    "eslint": "9.13.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-react-hooks": "5.0.0",
+    "eslint-plugin-react-refresh": "0.4.14",
+    "globals": "15.11.0",
+    "prettier": "3.3.3",
+    "turbo": "2.2.3",
+    "typescript": "5.6.3",
+    "typescript-eslint": "8.11.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "msgpackr-extract",
+      "prisma"
+    ]
+  }
+}

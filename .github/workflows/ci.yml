@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TZ: America/Guatemala
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  verificar:
+    name: Lint · Typecheck · Test · Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node (versión de .nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Generar cliente Prisma
+        run: pnpm --filter @menu/api prisma:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Pruebas con cobertura
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publicar reportes de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: |
+            packages/*/coverage
+            apps/*/coverage
+          retention-days: 14
+          if-no-files-found: ignore

@@ -1,0 +1,35 @@
+# Desarrollo local: solo infraestructura. La API, el worker y la web corren con `pnpm dev`.
+#   docker compose -f docker-compose.dev.yml up -d
+name: menu-familiar-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-menu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-esta-clave}
+      POSTGRES_DB: ${POSTGRES_DB:-menu_familiar}
+      TZ: America/Guatemala
+      PGTZ: America/Guatemala
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata-dev:

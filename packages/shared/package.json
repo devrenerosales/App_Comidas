@@ -1,0 +1,39 @@
+{
+  "name": "@menu/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos, enums y reglas de negocio puras compartidas (Menú Familiar)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:cov": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "2.1.4",
+    "tsup": "8.3.5",
+    "typescript": "5.6.3",
+    "vitest": "2.1.4"
+  }
+}

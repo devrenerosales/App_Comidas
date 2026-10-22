@@ -21,3 +21,10 @@ desktop.ini
 .vscode/
 .idea/
 *.log
+
+# Monorepo (Sprint 0)
+*.tsbuildinfo
+.pnpm-store/
+apps/web/dev-dist/
+apps/web/android/
+apps/web/ios/

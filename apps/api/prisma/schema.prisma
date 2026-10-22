@@ -1,0 +1,1449 @@
+// Esquema Prisma — Menú Familiar (apps/api)
+// Copia del esquema de diseño docs/02-diseno/schema.prisma (fuente de verdad).
+// Diferencia: binaryTargets para la imagen Docker Alpine (musl) del API.
+// Cambie primero el diseño y luego copie aquí; genere la migración con
+// `npm run prisma:migrate` y agregue el SQL manual de modelo-datos.md §6.1.
+// =============================================================================
+// Menú Familiar — Esquema de datos v1 (PostgreSQL 16 + Prisma 5.22)
+// Documento: docs/02-diseno/modelo-datos.md · SRS-MF-001 v1.3 · D-01..D-09 · RF-43, RF-44
+// Convenciones: modelos en español PascalCase, campos camelCase, tablas y
+// columnas snake_case (@@map/@map), ids uuid, dinero Decimal(10,2) en GTQ,
+// fechas de calendario @db.Date, instantes timestamptz (UTC).
+// Restricciones que Prisma no expresa (CHECK, índices parciales) se agregan
+// como SQL manual en la migración inicial (ver modelo-datos.md §6).
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum RolHogar {
+  ADMIN
+  MIEMBRO
+
+  @@map("rol_hogar")
+}
+
+enum MedioInvitacion {
+  CORREO
+  ENLACE
+
+  @@map("medio_invitacion")
+}
+
+enum TipoComensal {
+  ADULTO
+  NINO
+
+  @@map("tipo_comensal")
+}
+
+enum TiempoComida {
+  DESAYUNO
+  ALMUERZO
+  CENA
+
+  @@map("tiempo_comida")
+}
+
+enum DiaSemana {
+  DOMINGO
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+
+  @@map("dia_semana")
+}
+
+enum ProteinaPrincipal {
+  POLLO
+  RES
+  CERDO
+  PESCADO
+  HUEVO
+  EMBUTIDO
+  VEGETARIANA
+  OTRA
+
+  @@map("proteina_principal")
+}
+
+enum MagnitudUnidad {
+  MASA
+  VOLUMEN
+  CONTEO
+
+  @@map("magnitud_unidad")
+}
+
+enum TipoProducto {
+  INGREDIENTE
+  DESPENSA
+  AMBOS
+
+  @@map("tipo_producto")
+}
+
+enum OrigenAlias {
+  IMPORTACION
+  MANUAL
+
+  @@map("origen_alias")
+}
+
+enum EstadoMenu {
+  BORRADOR
+  APROBADO
+  HISTORICO
+
+  @@map("estado_menu")
+}
+
+enum OrigenMenu {
+  MOTOR
+  CAPTURA_MANUAL
+  IMPORTACION
+  CUADERNO
+
+  @@map("origen_menu")
+}
+
+enum OrigenAsignacion {
+  MOTOR
+  REEMPLAZO_PRESUPUESTO
+  ALTERNATIVA
+  USUARIO
+  HISTORICO
+
+  @@map("origen_asignacion")
+}
+
+enum EstadoAlertaPresupuesto {
+  NORMAL
+  ALERTADO
+
+  @@map("estado_alerta_presupuesto")
+}
+
+enum OrigenItemLista {
+  MENU
+  DESPENSA
+  MENU_Y_DESPENSA
+  MANUAL
+
+  @@map("origen_item_lista")
+}
+
+/// Estado de compra del ítem (RF-30, RF-43). YA_LO_TENGO cuenta como cubierto (RN-13) pero no se cotiza
+enum EstadoItemLista {
+  PENDIENTE
+  COMPRADO
+  YA_LO_TENGO
+
+  @@map("estado_item_lista")
+}
+
+enum OperacionSync {
+  AGREGAR
+  ACTUALIZAR
+  MARCAR_COMPRADO
+  MARCAR_YA_LO_TENGO
+  DESMARCAR_COMPRADO
+  /// Registrar o corregir el precio real pagado (RF-44)
+  REGISTRAR_PRECIO
+  ELIMINAR
+
+  @@map("operacion_sync")
+}
+
+enum ResultadoSync {
+  APLICADO
+  OBSOLETO
+  RECHAZADO
+
+  @@map("resultado_sync")
+}
+
+enum FrecuenciaDespensa {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+
+  @@map("frecuencia_despensa")
+}
+
+enum OrigenPrecio {
+  AUTOMATICO
+  MANUAL
+  TICKET
+
+  @@map("origen_precio")
+}
+
+enum EstadoTicket {
+  PROCESANDO
+  PENDIENTE_CONFIRMACION
+  SIN_LECTURA
+  CONFIRMADO
+  DESCARTADO
+
+  @@map("estado_ticket")
+}
+
+enum EstadoLineaTicket {
+  SIN_ASIGNAR
+  PROPUESTA
+  ASIGNADA
+  DESCARTADA
+
+  @@map("estado_linea_ticket")
+}
+
+enum DisparoCorrida {
+  PROGRAMADA
+  MANUAL
+
+  @@map("disparo_corrida")
+}
+
+enum EstadoCorrida {
+  EN_CURSO
+  COMPLETADA
+  PARCIAL
+  FALLIDA
+  OMITIDA
+
+  @@map("estado_corrida")
+}
+
+enum EstadoCorridaSitio {
+  EN_CURSO
+  COMPLETADA
+  PARCIAL
+  FALLIDA
+  BLOQUEADO
+  NO_HABILITADO
+  DETENIDO
+
+  @@map("estado_corrida_sitio")
+}
+
+enum TipoErrorExtraccion {
+  TIEMPO_AGOTADO
+  HTTP
+  ESTRUCTURA
+  PRECIO_INVALIDO
+  ROBOTS
+  OTRO
+
+  @@map("tipo_error_extraccion")
+}
+
+enum TipoAviso {
+  CORRIDA_PARCIAL
+  CORRIDA_FALLIDA
+  SITIO_BLOQUEADO
+  PRESUPUESTO_NO_CONFIGURADO
+
+  @@map("tipo_aviso")
+}
+
+enum CanalPush {
+  WEB_PUSH
+  FCM
+
+  @@map("canal_push")
+}
+
+enum TipoNotificacion {
+  RECORDATORIO_PLANIFICACION
+  ALERTA_PRESUPUESTO
+
+  @@map("tipo_notificacion")
+}
+
+enum ResultadoEnvio {
+  ENVIADA
+  PARCIAL
+  SIN_DESTINATARIOS
+  FALLIDA
+
+  @@map("resultado_envio")
+}
+
+enum OrigenImportacion {
+  ARCHIVO
+  CUADERNO
+
+  @@map("origen_importacion")
+}
+
+enum FormatoArchivo {
+  CSV
+  XLSX
+
+  @@map("formato_archivo")
+}
+
+enum EstadoImportacion {
+  CON_ERRORES
+  VISTA_PREVIA
+  CONFIRMADA
+  CANCELADA
+
+  @@map("estado_importacion")
+}
+
+enum HojaImportacion {
+  MENUS
+  LISTAS
+
+  @@map("hoja_importacion")
+}
+
+enum DecisionPlatillo {
+  PENDIENTE
+  ASOCIAR
+  CREAR
+
+  @@map("decision_platillo")
+}
+
+enum DecisionSemana {
+  CREAR
+  OMITIR
+  REEMPLAZAR
+
+  @@map("decision_semana")
+}
+
+// -----------------------------------------------------------------------------
+// Dominio 1 — Hogar, cuenta y configuración (M01, M02, M10)
+// -----------------------------------------------------------------------------
+
+model Usuario {
+  id                       String    @id @default(uuid()) @db.Uuid
+  nombre                   String    @db.VarChar(80)
+  /// Guardado en minúsculas y sin espacios; único global (RF-01)
+  correo                   String    @unique @db.VarChar(254)
+  hashContrasena           String    @map("hash_contrasena") @db.VarChar(255)
+  intentosFallidos         Int       @default(0) @map("intentos_fallidos") @db.SmallInt
+  primerIntentoFallidoEn   DateTime? @map("primer_intento_fallido_en") @db.Timestamptz(3)
+  bloqueadoHasta           DateTime? @map("bloqueado_hasta") @db.Timestamptz(3)
+  /// Tokens de acceso emitidos antes de esta marca se rechazan (CU-01.4)
+  sesionesInvalidasAntesDe DateTime? @map("sesiones_invalidas_antes_de") @db.Timestamptz(3)
+  /// Puede cambiar datos globales: permiso de extracción por sitio (D-07)
+  esAdminSistema           Boolean   @default(false) @map("es_admin_sistema")
+  activo                   Boolean   @default(true)
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  membresia               MiembroHogar?
+  invitacionesCreadas     Invitacion[]           @relation("InvitacionCreadaPor")
+  invitacionesUsadas      Invitacion[]           @relation("InvitacionUsadaPor")
+  tokensRecuperacion      TokenRecuperacion[]
+  refreshTokens           RefreshToken[]
+  configuracionesEditadas Configuracion[]
+  menusAprobados          MenuSemanal[]          @relation("MenuAprobadoPor")
+  gastosRegistrados       MenuSemanal[]          @relation("MenuGastoRegistradoPor")
+  detallesModificados     MenuDetalle[]
+  calificaciones          Calificacion[]
+  itemsComprados          ListaItem[]
+  cambiosSync             SyncCambio[]
+  preciosRegistrados      Precio[]
+  tickets                 Ticket[]
+  vinculosCreados         ProductoSupermercado[]
+  supermercadosRevisados  Supermercado[]
+  suscripcionesPush       SuscripcionPush[]
+  avisosLeidos            Aviso[]
+  importaciones           Importacion[]
+  clavesIdempotencia      ClaveIdempotencia[]
+
+  @@map("usuario")
+}
+
+model Hogar {
+  id        String   @id @default(uuid()) @db.Uuid
+  nombre    String   @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  miembros              MiembroHogar[]
+  invitaciones          Invitacion[]
+  comensales            Comensal[]
+  configuracion         Configuracion?
+  supermercados         HogarSupermercado[]
+  marcasPreferidas      MarcaPreferida[]
+  ingredientesExcluidos IngredienteExcluido[]
+  platillos             Platillo[]
+  etiquetas             Etiqueta[]
+  aliases               PlatilloAlias[]
+  menus                 MenuSemanal[]
+  listas                ListaCompras[]
+  despensa              DespensaItem[]
+  precios               Precio[]
+  resumenesPrecio       PrecioResumen[]
+  tickets               Ticket[]
+  vinculosCreados       ProductoSupermercado[]
+  avisos                Aviso[]
+  notificaciones        NotificacionEnviada[]
+  importaciones         Importacion[]
+
+  @@map("hogar")
+}
+
+/// Pertenencia usuario-hogar con rol. usuarioId único: un hogar por usuario en v1.
+model MiembroHogar {
+  id        String   @id @default(uuid()) @db.Uuid
+  hogarId   String   @map("hogar_id") @db.Uuid
+  usuarioId String   @unique @map("usuario_id") @db.Uuid
+  rol       RolHogar @default(MIEMBRO)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar   Hogar   @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([hogarId, rol])
+  @@map("miembro_hogar")
+}
+
+model Invitacion {
+  id            String          @id @default(uuid()) @db.Uuid
+  hogarId       String          @map("hogar_id") @db.Uuid
+  creadaPorId   String          @map("creada_por_id") @db.Uuid
+  medio         MedioInvitacion
+  correo        String?         @db.VarChar(254)
+  /// SHA-256 del token; el token plano solo viaja en el enlace
+  tokenHash     String          @unique @map("token_hash") @db.Char(64)
+  venceEn       DateTime        @map("vence_en") @db.Timestamptz(3)
+  usadaEn       DateTime?       @map("usada_en") @db.Timestamptz(3)
+  usadaPorId    String?         @map("usada_por_id") @db.Uuid
+  revocadaEn    DateTime?       @map("revocada_en") @db.Timestamptz(3)
+  correoEnviado Boolean         @default(false) @map("correo_enviado")
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar     Hogar    @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  creadaPor Usuario  @relation("InvitacionCreadaPor", fields: [creadaPorId], references: [id], onDelete: Cascade)
+  usadaPor  Usuario? @relation("InvitacionUsadaPor", fields: [usadaPorId], references: [id], onDelete: SetNull)
+
+  @@index([hogarId, venceEn])
+  @@map("invitacion")
+}
+
+model TokenRecuperacion {
+  id        String    @id @default(uuid()) @db.Uuid
+  usuarioId String    @map("usuario_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  venceEn   DateTime  @map("vence_en") @db.Timestamptz(3)
+  usadoEn   DateTime? @map("usado_en") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("token_recuperacion")
+}
+
+/// Refresh token rotativo; familia agrupa una cadena de rotaciones para detectar reutilización
+model RefreshToken {
+  id               String    @id @default(uuid()) @db.Uuid
+  usuarioId        String    @map("usuario_id") @db.Uuid
+  tokenHash        String    @unique @map("token_hash") @db.Char(64)
+  familia          String    @db.Uuid
+  dispositivo      String?   @db.VarChar(120)
+  venceEn          DateTime  @map("vence_en") @db.Timestamptz(3)
+  revocadoEn       DateTime? @map("revocado_en") @db.Timestamptz(3)
+  reemplazadoPorId String?   @unique @map("reemplazado_por_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  usuario        Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  reemplazadoPor RefreshToken? @relation("RotacionRefresh", fields: [reemplazadoPorId], references: [id], onDelete: SetNull)
+  reemplazaA     RefreshToken? @relation("RotacionRefresh")
+
+  @@index([usuarioId, revocadoEn])
+  @@index([familia])
+  @@map("refresh_token")
+}
+
+model Comensal {
+  id                String       @id @default(uuid()) @db.Uuid
+  hogarId           String       @map("hogar_id") @db.Uuid
+  nombre            String       @db.VarChar(60)
+  nombreNormalizado String       @map("nombre_normalizado") @db.VarChar(60)
+  tipo              TipoComensal
+  /// D-02 / RN-07: 0.25 a 2.00 en pasos de 0.25
+  factorPorcion     Decimal      @default(1.00) @map("factor_porcion") @db.Decimal(3, 2)
+  activo            Boolean      @default(true)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar Hogar @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+
+  @@unique([hogarId, nombreNormalizado])
+  @@index([hogarId, activo])
+  @@map("comensal")
+}
+
+/// Configuración vigente del hogar (1:1). version = bloqueo optimista (CU-02.3 E1)
+model Configuracion {
+  id                 String    @id @default(uuid()) @db.Uuid
+  hogarId            String    @unique @map("hogar_id") @db.Uuid
+  presupuestoSemanal Decimal   @default(250.00) @map("presupuesto_semanal") @db.Decimal(10, 2)
+  diaInicioSemana    DiaSemana @default(DOMINGO) @map("dia_inicio_semana")
+  diaPlanificacion   DiaSemana @default(DOMINGO) @map("dia_planificacion")
+  /// Hora local America/Guatemala (0-23) del recordatorio (D-08)
+  horaPlanificacion  Int       @default(8) @map("hora_planificacion") @db.SmallInt
+  pesoPreferencia    Decimal   @default(0.40) @map("peso_preferencia") @db.Decimal(3, 2)
+  pesoNovedad        Decimal   @default(0.25) @map("peso_novedad") @db.Decimal(3, 2)
+  pesoAhorro         Decimal   @default(0.20) @map("peso_ahorro") @db.Decimal(3, 2)
+  pesoAfinidad       Decimal   @default(0.15) @map("peso_afinidad") @db.Decimal(3, 2)
+  /// Umbral de similitud para proponer asociación en importación (CU-04.3)
+  umbralSimilitud    Decimal   @default(0.80) @map("umbral_similitud") @db.Decimal(3, 2)
+  version            Int       @default(1)
+  actualizadoPorId   String?   @map("actualizado_por_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar          Hogar                @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  actualizadoPor Usuario?             @relation(fields: [actualizadoPorId], references: [id], onDelete: SetNull)
+  tiempos        TiempoComidaConfig[]
+
+  @@map("configuracion")
+}
+
+/// Siempre 3 filas por configuración; inactivas con porcentaje 0 (RF-05, RF-06, RN-06)
+model TiempoComidaConfig {
+  id              String       @id @default(uuid()) @db.Uuid
+  configuracionId String       @map("configuracion_id") @db.Uuid
+  tiempo          TiempoComida
+  activo          Boolean      @default(false)
+  porcentaje      Decimal      @default(0) @db.Decimal(5, 2)
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  configuracion Configuracion @relation(fields: [configuracionId], references: [id], onDelete: Cascade)
+
+  @@unique([configuracionId, tiempo])
+  @@map("tiempo_comida_config")
+}
+
+/// Supermercados preferidos del hogar (RF-09). Al menos uno preferido.
+model HogarSupermercado {
+  id             String   @id @default(uuid()) @db.Uuid
+  hogarId        String   @map("hogar_id") @db.Uuid
+  supermercadoId String   @map("supermercado_id") @db.Uuid
+  preferido      Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar        Hogar        @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  supermercado Supermercado @relation(fields: [supermercadoId], references: [id], onDelete: Restrict)
+
+  @@unique([hogarId, supermercadoId])
+  @@map("hogar_supermercado")
+}
+
+/// Marca preferida por producto (RF-09); se compara con ProductoSupermercado.marcaNormalizada
+model MarcaPreferida {
+  id               String   @id @default(uuid()) @db.Uuid
+  hogarId          String   @map("hogar_id") @db.Uuid
+  productoId       String   @map("producto_id") @db.Uuid
+  marca            String   @db.VarChar(60)
+  marcaNormalizada String   @map("marca_normalizada") @db.VarChar(60)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar    Hogar    @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([hogarId, productoId])
+  @@map("marca_preferida")
+}
+
+/// Ingredientes que el hogar no come (RF-10); prevalece sobre favorito
+model IngredienteExcluido {
+  id         String   @id @default(uuid()) @db.Uuid
+  hogarId    String   @map("hogar_id") @db.Uuid
+  productoId String   @map("producto_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  hogar    Hogar    @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([hogarId, productoId])
+  @@map("ingrediente_excluido")
+}
+
+// -----------------------------------------------------------------------------
+// Dominio 2 — Catálogo y menús (M03, M04, M05, M06)
+// -----------------------------------------------------------------------------
+
+model Unidad {
+  id         String         @id @default(uuid()) @db.Uuid
+  /// g, kg, lb, oz, ml, l, taza, cda, cdta, unidad, manojo, diente
+  codigo     String         @unique @db.VarChar(10)
+  nombre     String         @db.VarChar(30)
+  magnitud   MagnitudUnidad
+  /// Equivalencia a la unidad base de su magnitud (g, ml, unidad); null = no convertible
+  factorBase Decimal?       @map("factor_base") @db.Decimal(14, 6)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  productosPresentacion Producto[]
+  vinculosPresentacion  ProductoSupermercado[]
+  ingredientes          PlatilloIngrediente[]
+  equivalencias         ProductoEquivalencia[]
+  itemsLista            ListaItem[]
+
+  @@map("unidad")
+}
+
+model Categoria {
+  id        String   @id @default(uuid()) @db.Uuid
+  codigo    String   @unique @db.VarChar(20)
+  nombre    String   @db.VarChar(40)
+  orden     Int      @default(0) @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  productos Producto[]
+
+  @@map("categoria")
+}
+
+/// Catálogo GLOBAL de productos (D-05). Unidad de compra = empaque; presentación = contenido.
+model Producto {
+  id                   String       @id @default(uuid()) @db.Uuid
+  nombre               String       @db.VarChar(80)
+  nombreNormalizado    String       @map("nombre_normalizado") @db.VarChar(80)
+  tipo                 TipoProducto
+  categoriaId          String       @map("categoria_id") @db.Uuid
+  /// bolsa, lb, unidad, frasco, caja, botella...
+  unidadCompra         String       @map("unidad_compra") @db.VarChar(20)
+  presentacionCantidad Decimal      @map("presentacion_cantidad") @db.Decimal(10, 3)
+  presentacionUnidadId String       @map("presentacion_unidad_id") @db.Uuid
+  activo               Boolean      @default(true)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  categoria          Categoria              @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  presentacionUnidad Unidad                 @relation(fields: [presentacionUnidadId], references: [id], onDelete: Restrict)
+  equivalencias      ProductoEquivalencia[]
+  ingredientes       PlatilloIngrediente[]
+  vinculos           ProductoSupermercado[]
+  resumenesPrecio    PrecioResumen[]
+  despensa           DespensaItem[]
+  itemsLista         ListaItem[]
+  marcasPreferidas   MarcaPreferida[]
+  excluidoEn         IngredienteExcluido[]
+
+  @@unique([nombreNormalizado, presentacionCantidad, presentacionUnidadId])
+  @@index([tipo, categoriaId, activo])
+  @@index([nombreNormalizado(ops: raw("gin_trgm_ops"))], type: Gin, map: "producto_nombre_trgm_idx")
+  @@map("producto")
+}
+
+/// Equivalencia de una unidad de receta de otra magnitud (p. ej. taza de arroz → lb)
+model ProductoEquivalencia {
+  id         String   @id @default(uuid()) @db.Uuid
+  productoId String   @map("producto_id") @db.Uuid
+  unidadId   String   @map("unidad_id") @db.Uuid
+  /// Cantidad en la unidad de presentación del producto que equivale a 1 unidadId
+  factor     Decimal  @db.Decimal(14, 6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  unidad   Unidad   @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  @@unique([productoId, unidadId])
+  @@map("producto_equivalencia")
+}
+
+/// Platillo del hogar (D-05). Sin borrado físico: activo=false (RF-11)
+model Platillo {
+  id                   String            @id @default(uuid()) @db.Uuid
+  hogarId              String            @map("hogar_id") @db.Uuid
+  nombre               String            @db.VarChar(80)
+  /// minúsculas, sin tildes, espacios simples — único por hogar
+  nombreNormalizado    String            @map("nombre_normalizado") @db.VarChar(80)
+  proteinaPrincipal    ProteinaPrincipal @default(OTRA) @map("proteina_principal")
+  porcionesBase        Int               @default(4) @map("porciones_base") @db.SmallInt
+  activo               Boolean           @default(true)
+  favorito             Boolean           @default(false)
+  /// true si no tiene ingredientes (sin costo estimado) — CU-03.2, CU-04.3
+  incompleto           Boolean           @default(true)
+  calificacionPromedio Decimal?          @map("calificacion_promedio") @db.Decimal(3, 2)
+  calificacionConteo   Int               @default(0) @map("calificacion_conteo")
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar                  Hogar                     @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  tiempos                PlatilloTiempo[]
+  etiquetas              PlatilloEtiqueta[]
+  aliases                PlatilloAlias[]
+  ingredientes           PlatilloIngrediente[]
+  asignaciones           MenuDetalle[]
+  alternativasMostradas  MenuAlternativaMostrada[]
+  calificaciones         Calificacion[]
+  decisionesImportacion  ImportacionPlatillo[]     @relation("DecisionPlatilloDestino")
+  sugerenciasImportacion ImportacionPlatillo[]     @relation("DecisionPlatilloSugerido")
+
+  @@unique([hogarId, nombreNormalizado])
+  @@index([hogarId, activo, proteinaPrincipal])
+  @@index([nombreNormalizado(ops: raw("gin_trgm_ops"))], type: Gin, map: "platillo_nombre_trgm_idx")
+  @@map("platillo")
+}
+
+model PlatilloTiempo {
+  platilloId String       @map("platillo_id") @db.Uuid
+  tiempo     TiempoComida
+
+  platillo Platillo @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+
+  @@id([platilloId, tiempo])
+  @@index([tiempo])
+  @@map("platillo_tiempo")
+}
+
+model Etiqueta {
+  id                String   @id @default(uuid()) @db.Uuid
+  hogarId           String   @map("hogar_id") @db.Uuid
+  nombre            String   @db.VarChar(30)
+  nombreNormalizado String   @map("nombre_normalizado") @db.VarChar(30)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  hogar     Hogar              @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  platillos PlatilloEtiqueta[]
+
+  @@unique([hogarId, nombreNormalizado])
+  @@map("etiqueta")
+}
+
+model PlatilloEtiqueta {
+  platilloId String @map("platillo_id") @db.Uuid
+  etiquetaId String @map("etiqueta_id") @db.Uuid
+
+  platillo Platillo @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+  etiqueta Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([platilloId, etiquetaId])
+  @@index([etiquetaId])
+  @@map("platillo_etiqueta")
+}
+
+/// Nombres alternos que resuelven importaciones futuras sin preguntar (RF-17)
+model PlatilloAlias {
+  id               String      @id @default(uuid()) @db.Uuid
+  hogarId          String      @map("hogar_id") @db.Uuid
+  platilloId       String      @map("platillo_id") @db.Uuid
+  alias            String      @db.VarChar(80)
+  aliasNormalizado String      @map("alias_normalizado") @db.VarChar(80)
+  origen           OrigenAlias @default(IMPORTACION)
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  hogar    Hogar    @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  platillo Platillo @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+
+  @@unique([hogarId, aliasNormalizado])
+  @@index([platilloId])
+  @@map("platillo_alias")
+}
+
+/// Ingrediente para porcionesBase del platillo (RF-12)
+model PlatilloIngrediente {
+  id         String   @id @default(uuid()) @db.Uuid
+  platilloId String   @map("platillo_id") @db.Uuid
+  productoId String   @map("producto_id") @db.Uuid
+  cantidad   Decimal  @db.Decimal(10, 3)
+  unidadId   String   @map("unidad_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  platillo Platillo @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  unidad   Unidad   @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  @@unique([platilloId, productoId])
+  @@index([productoId])
+  @@map("platillo_ingrediente")
+}
+
+/// Menú de una semana del hogar. Único por (hogar, fechaInicio).
+/// Al aprobar se congelan presupuesto, Σ factores y tiempos (D-04) y el exceso (D-03).
+model MenuSemanal {
+  id                      String                  @id @default(uuid()) @db.Uuid
+  hogarId                 String                  @map("hogar_id") @db.Uuid
+  fechaInicio             DateTime                @map("fecha_inicio") @db.Date
+  fechaFin                DateTime                @map("fecha_fin") @db.Date
+  /// Semana corta por cambio de día de inicio (CU-02.4)
+  esTransicion            Boolean                 @default(false) @map("es_transicion")
+  estado                  EstadoMenu              @default(BORRADOR)
+  /// Borrador cuya configuración cambió (CU-02.3 5b); se ofrece regenerar
+  desactualizado          Boolean                 @default(false)
+  origen                  OrigenMenu              @default(MOTOR)
+  configuracionVersion    Int?                    @map("configuracion_version")
+  presupuestoSemanal      Decimal?                @map("presupuesto_semanal") @db.Decimal(10, 2)
+  sumaFactoresPorcion     Decimal?                @map("suma_factores_porcion") @db.Decimal(5, 2)
+  pesoPreferencia         Decimal?                @map("peso_preferencia") @db.Decimal(3, 2)
+  pesoNovedad             Decimal?                @map("peso_novedad") @db.Decimal(3, 2)
+  pesoAhorro              Decimal?                @map("peso_ahorro") @db.Decimal(3, 2)
+  pesoAfinidad            Decimal?                @map("peso_afinidad") @db.Decimal(3, 2)
+  costoEstimado           Decimal?                @map("costo_estimado") @db.Decimal(10, 2)
+  costoIncompleto         Boolean                 @default(false) @map("costo_incompleto")
+  generadoEn              DateTime?               @map("generado_en") @db.Timestamptz(3)
+  aprobadoPorId           String?                 @map("aprobado_por_id") @db.Uuid
+  aprobadoEn              DateTime?               @map("aprobado_en") @db.Timestamptz(3)
+  /// RN-11 / D-03: exceso total al aprobar (null o 0 = dentro del presupuesto)
+  excesoAlAprobar         Decimal?                @map("exceso_al_aprobar") @db.Decimal(10, 2)
+  estadoAlertaPresupuesto EstadoAlertaPresupuesto @default(NORMAL) @map("estado_alerta_presupuesto")
+  gastoReal               Decimal?                @map("gasto_real") @db.Decimal(10, 2)
+  notaGasto               String?                 @map("nota_gasto") @db.VarChar(200)
+  gastoRegistradoPorId    String?                 @map("gasto_registrado_por_id") @db.Uuid
+  gastoRegistradoEn       DateTime?               @map("gasto_registrado_en") @db.Timestamptz(3)
+  importacionId           String?                 @map("importacion_id") @db.Uuid
+  notas                   String?                 @db.VarChar(500)
+  version                 Int                     @default(1)
+  createdAt               DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar              Hogar                 @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  aprobadoPor        Usuario?              @relation("MenuAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  gastoRegistradoPor Usuario?              @relation("MenuGastoRegistradoPor", fields: [gastoRegistradoPorId], references: [id], onDelete: SetNull)
+  importacion        Importacion?          @relation(fields: [importacionId], references: [id], onDelete: SetNull)
+  tiempos            MenuTiempo[]
+  detalles           MenuDetalle[]
+  lista              ListaCompras?
+  notificaciones     NotificacionEnviada[]
+
+  @@unique([hogarId, fechaInicio])
+  @@index([hogarId, estado, fechaInicio])
+  @@map("menu_semanal")
+}
+
+/// Copia por tiempo de comida: % y presupuesto usados, costo y exceso (D-04, RN-05, RF-26)
+model MenuTiempo {
+  id             String       @id @default(uuid()) @db.Uuid
+  menuId         String       @map("menu_id") @db.Uuid
+  tiempo         TiempoComida
+  porcentaje     Decimal      @db.Decimal(5, 2)
+  presupuesto    Decimal      @db.Decimal(10, 2)
+  costoEstimado  Decimal?     @map("costo_estimado") @db.Decimal(10, 2)
+  /// max(0, costo - presupuesto); > 0 muestra "Excede por Q__"
+  exceso         Decimal      @default(0) @db.Decimal(10, 2)
+  intentosAjuste Int          @default(0) @map("intentos_ajuste") @db.SmallInt
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  menu MenuSemanal @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, tiempo])
+  @@map("menu_tiempo")
+}
+
+/// Espacio día × tiempo. platilloId null = "Sin sugerencia" (CU-05.1 E3)
+model MenuDetalle {
+  id                String           @id @default(uuid()) @db.Uuid
+  menuId            String           @map("menu_id") @db.Uuid
+  fecha             DateTime         @db.Date
+  tiempo            TiempoComida
+  platilloId        String?          @map("platillo_id") @db.Uuid
+  fijado            Boolean          @default(false)
+  origen            OrigenAsignacion @default(MOTOR)
+  puntaje           Decimal?         @db.Decimal(6, 4)
+  factorPreferencia Decimal?         @map("factor_preferencia") @db.Decimal(5, 4)
+  factorNovedad     Decimal?         @map("factor_novedad") @db.Decimal(5, 4)
+  factorAhorro      Decimal?         @map("factor_ahorro") @db.Decimal(5, 4)
+  factorAfinidad    Decimal?         @map("factor_afinidad") @db.Decimal(5, 4)
+  costoEstimado     Decimal?         @map("costo_estimado") @db.Decimal(10, 2)
+  costoIncompleto   Boolean          @default(false) @map("costo_incompleto")
+  /// Códigos de reglas aplicadas: REEMPLAZO_PRESUPUESTO, RN02_CONFIRMADA, RN03_CONFIRMADA...
+  reglasAplicadas   String[]         @default([]) @map("reglas_aplicadas")
+  notas             String?          @db.VarChar(200)
+  modificadoPorId   String?          @map("modificado_por_id") @db.Uuid
+  modificadoEn      DateTime?        @map("modificado_en") @db.Timestamptz(3)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  menu                  MenuSemanal               @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  platillo              Platillo?                 @relation(fields: [platilloId], references: [id], onDelete: Restrict)
+  modificadoPor         Usuario?                  @relation(fields: [modificadoPorId], references: [id], onDelete: SetNull)
+  calificacion          Calificacion?
+  alternativasMostradas MenuAlternativaMostrada[]
+  itemsLista            ListaItemOrigen[]
+
+  @@unique([menuId, fecha, tiempo])
+  @@index([platilloId, fecha])
+  @@map("menu_detalle")
+}
+
+/// Alternativas ya mostradas para un espacio en Borrador (RF-23)
+model MenuAlternativaMostrada {
+  id            String   @id @default(uuid()) @db.Uuid
+  menuDetalleId String   @map("menu_detalle_id") @db.Uuid
+  platilloId    String   @map("platillo_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  menuDetalle MenuDetalle @relation(fields: [menuDetalleId], references: [id], onDelete: Cascade)
+  platillo    Platillo    @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+
+  @@unique([menuDetalleId, platilloId])
+  @@map("menu_alternativa_mostrada")
+}
+
+/// Una calificación por espacio; la última reemplaza (RF-14)
+model Calificacion {
+  id            String   @id @default(uuid()) @db.Uuid
+  menuDetalleId String   @unique @map("menu_detalle_id") @db.Uuid
+  platilloId    String   @map("platillo_id") @db.Uuid
+  valor         Int      @db.SmallInt
+  usuarioId     String?  @map("usuario_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  menuDetalle MenuDetalle @relation(fields: [menuDetalleId], references: [id], onDelete: Cascade)
+  platillo    Platillo    @relation(fields: [platilloId], references: [id], onDelete: Cascade)
+  usuario     Usuario?    @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([platilloId])
+  @@map("calificacion")
+}
+
+// -----------------------------------------------------------------------------
+// Dominio 3 — Compras y despensa (M07)
+// -----------------------------------------------------------------------------
+
+model ListaCompras {
+  id         String   @id @default(uuid()) @db.Uuid
+  hogarId    String   @map("hogar_id") @db.Uuid
+  menuId     String   @unique @map("menu_id") @db.Uuid
+  /// Se incrementa con cada cambio aplicado; el cliente la usa para sincronizar
+  version    Int      @default(1)
+  generadaEn DateTime @default(now()) @map("generada_en") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar       Hogar          @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  menu        MenuSemanal    @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items       ListaItem[]
+  cambiosSync SyncCambio[]
+  despensa    DespensaItem[]
+
+  @@index([hogarId])
+  @@map("lista_compras")
+}
+
+/// Ítem de lista. id puede generarlo el cliente (offline). eliminado = borrado lógico (LWW)
+model ListaItem {
+  id                      String          @id @db.Uuid
+  listaId                 String          @map("lista_id") @db.Uuid
+  productoId              String?         @map("producto_id") @db.Uuid
+  /// Producto de texto libre (no se cotiza)
+  textoLibre              String?         @map("texto_libre") @db.VarChar(80)
+  origen                  OrigenItemLista
+  cantidadRequerida       Decimal?        @map("cantidad_requerida") @db.Decimal(12, 3)
+  unidadRequeridaId       String?         @map("unidad_requerida_id") @db.Uuid
+  /// Presentaciones enteras a comprar (redondeo hacia arriba)
+  cantidadComprar         Decimal         @map("cantidad_comprar") @db.Decimal(10, 3)
+  sinConversion           Boolean         @default(false) @map("sin_conversion")
+  /// RF-30 / RF-43: PENDIENTE, COMPRADO o YA_LO_TENGO (reemplaza el booleano comprado)
+  estado                  EstadoItemLista @default(PENDIENTE)
+  /// Momento (hora del dispositivo) en que pasó a COMPRADO o YA_LO_TENGO; base de la ventana de 12 semanas (RN-12)
+  compradoEn              DateTime?       @map("comprado_en") @db.Timestamptz(3)
+  compradoPorId           String?         @map("comprado_por_id") @db.Uuid
+  /// RF-44: total pagado por el ítem en GTQ (opcional, solo con estado COMPRADO)
+  precioReal              Decimal?        @map("precio_real") @db.Decimal(10, 2)
+  /// Contenido comprado en la unidad de la presentación del catálogo (p. ej. 5 lb); por defecto cantidadComprar × presentación
+  contenidoComprado       Decimal?        @map("contenido_comprado") @db.Decimal(12, 3)
+  /// precioReal × presentación del catálogo ÷ contenidoComprado, redondeado a centavos (RN-12)
+  precioNormalizado       Decimal?        @map("precio_normalizado") @db.Decimal(10, 2)
+  eliminado               Boolean         @default(false)
+  /// Hora del dispositivo del último cambio (resolución "última escritura gana")
+  modificadoEnDispositivo DateTime        @map("modificado_en_dispositivo") @db.Timestamptz(3)
+  version                 Int             @default(1)
+  createdAt               DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  lista           ListaCompras      @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  producto        Producto?         @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  unidadRequerida Unidad?           @relation(fields: [unidadRequeridaId], references: [id], onDelete: SetNull)
+  compradoPor     Usuario?          @relation(fields: [compradoPorId], references: [id], onDelete: SetNull)
+  origenes        ListaItemOrigen[]
+
+  @@unique([listaId, productoId])
+  @@index([listaId, eliminado])
+  /// Promedio de compra de 12 semanas por producto (RN-12)
+  @@index([productoId, compradoEn])
+  @@map("lista_item")
+}
+
+/// Comidas programadas (detalles del menú) que originan cada ítem consolidado (RF-43, RN-13)
+model ListaItemOrigen {
+  id                String   @id @default(uuid()) @db.Uuid
+  listaItemId       String   @map("lista_item_id") @db.Uuid
+  menuDetalleId     String   @map("menu_detalle_id") @db.Uuid
+  /// Cantidad escalada que aporta esa comida, en la unidad requerida del ítem
+  cantidadRequerida Decimal? @map("cantidad_requerida") @db.Decimal(12, 3)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  listaItem   ListaItem   @relation(fields: [listaItemId], references: [id], onDelete: Cascade)
+  menuDetalle MenuDetalle @relation(fields: [menuDetalleId], references: [id], onDelete: Cascade)
+
+  @@unique([listaItemId, menuDetalleId])
+  @@index([menuDetalleId])
+  @@map("lista_item_origen")
+}
+
+/// Registro idempotente de cada cambio offline (id = UUID generado por el cliente)
+model SyncCambio {
+  id                     String        @id @db.Uuid
+  listaId                String        @map("lista_id") @db.Uuid
+  itemId                 String        @map("item_id") @db.Uuid
+  usuarioId              String?       @map("usuario_id") @db.Uuid
+  operacion              OperacionSync
+  datos                  Json?
+  marcaTiempoDispositivo DateTime      @map("marca_tiempo_dispositivo") @db.Timestamptz(3)
+  resultado              ResultadoSync
+  motivo                 String?       @db.VarChar(200)
+  recibidoEn             DateTime      @default(now()) @map("recibido_en") @db.Timestamptz(3)
+
+  lista   ListaCompras @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  usuario Usuario?     @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([listaId, recibidoEn])
+  @@map("sync_cambio")
+}
+
+/// Producto recurrente del hogar con frecuencia (RF-29, PA-03)
+model DespensaItem {
+  id                     String             @id @default(uuid()) @db.Uuid
+  hogarId                String             @map("hogar_id") @db.Uuid
+  productoId             String             @map("producto_id") @db.Uuid
+  /// En presentaciones de compra del producto
+  cantidad               Decimal            @db.Decimal(10, 3)
+  frecuencia             FrecuenciaDespensa @default(MENSUAL)
+  activo                 Boolean            @default(true)
+  /// fechaInicio de la última semana en que se incluyó; null = toca en la primera lista
+  ultimaInclusionSemana  DateTime?          @map("ultima_inclusion_semana") @db.Date
+  ultimaInclusionListaId String?            @map("ultima_inclusion_lista_id") @db.Uuid
+  /// Precio de referencia de la carga del cuaderno (no es un PRECIO formal)
+  precioReferencia       Decimal?           @map("precio_referencia") @db.Decimal(10, 2)
+  notas                  String?            @db.VarChar(200)
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar                Hogar         @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  producto             Producto      @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  ultimaInclusionLista ListaCompras? @relation(fields: [ultimaInclusionListaId], references: [id], onDelete: SetNull)
+
+  @@unique([hogarId, productoId])
+  @@index([hogarId, activo])
+  @@map("despensa_item")
+}
+
+// -----------------------------------------------------------------------------
+// Dominio 4 — Precios y notificaciones (M08, M10)
+// -----------------------------------------------------------------------------
+
+/// Catálogo global. extraccionPermitida apagada por defecto (D-07, PA-02, R-03)
+model Supermercado {
+  id                    String    @id @default(uuid()) @db.Uuid
+  codigo                String    @unique @db.VarChar(20)
+  nombre                String    @db.VarChar(40)
+  /// Dominio para validar URLs de vínculos; null = sin sitio consultable
+  dominio               String?   @db.VarChar(100)
+  /// Tiene extractor implementado (Walmart, Paiz; La Torre fase 2)
+  soportaExtraccion     Boolean   @default(false) @map("soporta_extraccion")
+  /// Sitio habilitado para corridas (fase)
+  habilitado            Boolean   @default(false)
+  /// Permiso tras revisar términos de uso (D-07)
+  extraccionPermitida   Boolean   @default(false) @map("extraccion_permitida")
+  permisoRevisadoPorId  String?   @map("permiso_revisado_por_id") @db.Uuid
+  permisoRevisadoEn     DateTime? @map("permiso_revisado_en") @db.Timestamptz(3)
+  notaTerminos          String?   @map("nota_terminos") @db.VarChar(500)
+  solicitudesPorSegundo Decimal   @default(1.00) @map("solicitudes_por_segundo") @db.Decimal(4, 2)
+  activo                Boolean   @default(true)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  permisoRevisadoPor Usuario?               @relation(fields: [permisoRevisadoPorId], references: [id], onDelete: SetNull)
+  hogares            HogarSupermercado[]
+  vinculos           ProductoSupermercado[]
+  resumenesMinimo    PrecioResumen[]
+  tickets            Ticket[]
+  corridasSitio      CorridaSitio[]
+
+  @@map("supermercado")
+}
+
+/// Vínculo global producto ↔ producto en tienda (RF-35). Máx. 1 activo por (producto, supermercado) — índice parcial SQL.
+model ProductoSupermercado {
+  id                   String    @id @default(uuid()) @db.Uuid
+  productoId           String    @map("producto_id") @db.Uuid
+  supermercadoId       String    @map("supermercado_id") @db.Uuid
+  nombreTienda         String    @map("nombre_tienda") @db.VarChar(150)
+  marca                String?   @db.VarChar(60)
+  marcaNormalizada     String?   @map("marca_normalizada") @db.VarChar(60)
+  presentacionCantidad Decimal   @map("presentacion_cantidad") @db.Decimal(10, 3)
+  presentacionUnidadId String    @map("presentacion_unidad_id") @db.Uuid
+  /// presentación en tienda ÷ presentación de compra del catálogo; precioNormalizado = precio ÷ factor
+  factor               Decimal   @db.Decimal(12, 6)
+  url                  String?   @db.VarChar(500)
+  sku                  String?   @db.VarChar(60)
+  activo               Boolean   @default(true)
+  inactivadoEn         DateTime? @map("inactivado_en") @db.Timestamptz(3)
+  creadoPorHogarId     String?   @map("creado_por_hogar_id") @db.Uuid
+  creadoPorUsuarioId   String?   @map("creado_por_usuario_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  producto           Producto       @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  supermercado       Supermercado   @relation(fields: [supermercadoId], references: [id], onDelete: Restrict)
+  presentacionUnidad Unidad         @relation(fields: [presentacionUnidadId], references: [id], onDelete: Restrict)
+  creadoPorHogar     Hogar?         @relation(fields: [creadoPorHogarId], references: [id], onDelete: SetNull)
+  creadoPorUsuario   Usuario?       @relation(fields: [creadoPorUsuarioId], references: [id], onDelete: SetNull)
+  precios            Precio[]
+  lineasTicket       TicketLinea[]
+  erroresCorrida     CorridaError[]
+
+  @@index([productoId, supermercadoId, activo])
+  @@index([supermercadoId, activo])
+  @@map("producto_supermercado")
+}
+
+/// Histórico de precios (RF-37). hogarId solo en MANUAL/TICKET (D-05) — CHECK SQL.
+model Precio {
+  id                     String       @id @default(uuid()) @db.Uuid
+  productoSupermercadoId String       @map("producto_supermercado_id") @db.Uuid
+  origen                 OrigenPrecio
+  hogarId                String?      @map("hogar_id") @db.Uuid
+  /// Precio de la presentación en tienda
+  precio                 Decimal      @db.Decimal(10, 2)
+  /// precio ÷ factor del vínculo, redondeado a centavos (half-up)
+  precioNormalizado      Decimal      @map("precio_normalizado") @db.Decimal(10, 2)
+  fechaPrecio            DateTime     @map("fecha_precio") @db.Date
+  corridaId              String?      @map("corrida_id") @db.Uuid
+  ticketLineaId          String?      @unique @map("ticket_linea_id") @db.Uuid
+  registradoPorId        String?      @map("registrado_por_id") @db.Uuid
+  createdAt              DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  productoSupermercado ProductoSupermercado @relation(fields: [productoSupermercadoId], references: [id], onDelete: Restrict)
+  hogar                Hogar?               @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  corrida              Corrida?             @relation(fields: [corridaId], references: [id], onDelete: Restrict)
+  ticketLinea          TicketLinea?         @relation(fields: [ticketLineaId], references: [id], onDelete: Restrict)
+  registradoPor        Usuario?             @relation(fields: [registradoPorId], references: [id], onDelete: SetNull)
+
+  @@index([productoSupermercadoId, fechaPrecio(sort: Desc)])
+  @@index([hogarId, fechaPrecio])
+  @@index([corridaId])
+  @@map("precio")
+}
+
+/// Resumen por (producto, hogar): mediana con todos los supermercados, mínimo con preferidos (RF-36, RN-08)
+model PrecioResumen {
+  id                    String   @id @default(uuid()) @db.Uuid
+  productoId            String   @map("producto_id") @db.Uuid
+  hogarId               String   @map("hogar_id") @db.Uuid
+  precioMediana         Decimal  @map("precio_mediana") @db.Decimal(10, 2)
+  precioMinimo          Decimal  @map("precio_minimo") @db.Decimal(10, 2)
+  supermercadoMinimoId  String   @map("supermercado_minimo_id") @db.Uuid
+  fechaPrecioMinimo     DateTime @map("fecha_precio_minimo") @db.Date
+  cantidadPrecios       Int      @map("cantidad_precios") @db.SmallInt
+  /// Ningún precio con antigüedad ≤ 14 días (RN-08)
+  desactualizado        Boolean  @default(false)
+  fechaPrecioMasAntiguo DateTime @map("fecha_precio_mas_antiguo") @db.Date
+  calculadoEn           DateTime @default(now()) @map("calculado_en") @db.Timestamptz(3)
+
+  producto           Producto     @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  hogar              Hogar        @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  supermercadoMinimo Supermercado @relation(fields: [supermercadoMinimoId], references: [id], onDelete: Restrict)
+
+  @@unique([productoId, hogarId])
+  @@index([hogarId])
+  @@map("precio_resumen")
+}
+
+model Ticket {
+  id             String       @id @default(uuid()) @db.Uuid
+  hogarId        String       @map("hogar_id") @db.Uuid
+  supermercadoId String       @map("supermercado_id") @db.Uuid
+  fechaCompra    DateTime     @map("fecha_compra") @db.Date
+  /// Ruta en el almacenamiento de archivos (volumen Docker)
+  archivoRuta    String       @map("archivo_ruta") @db.VarChar(300)
+  archivoMime    String       @map("archivo_mime") @db.VarChar(20)
+  archivoBytes   Int          @map("archivo_bytes")
+  estado         EstadoTicket @default(PROCESANDO)
+  textoOcr       String?      @map("texto_ocr")
+  subidoPorId    String?      @map("subido_por_id") @db.Uuid
+  confirmadoEn   DateTime?    @map("confirmado_en") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar        Hogar         @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  supermercado Supermercado  @relation(fields: [supermercadoId], references: [id], onDelete: Restrict)
+  subidoPor    Usuario?      @relation(fields: [subidoPorId], references: [id], onDelete: SetNull)
+  lineas       TicketLinea[]
+
+  @@index([hogarId, createdAt])
+  @@map("ticket")
+}
+
+model TicketLinea {
+  id                     String            @id @default(uuid()) @db.Uuid
+  ticketId               String            @map("ticket_id") @db.Uuid
+  orden                  Int               @db.SmallInt
+  descripcion            String            @db.VarChar(150)
+  precio                 Decimal?          @db.Decimal(10, 2)
+  productoSupermercadoId String?           @map("producto_supermercado_id") @db.Uuid
+  similitud              Decimal?          @db.Decimal(5, 4)
+  estado                 EstadoLineaTicket @default(SIN_ASIGNAR)
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  ticket               Ticket                @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  productoSupermercado ProductoSupermercado? @relation(fields: [productoSupermercadoId], references: [id], onDelete: SetNull)
+  precioGenerado       Precio?
+
+  @@unique([ticketId, orden])
+  @@map("ticket_linea")
+}
+
+/// Corrida del worker (RF-33). Solo una EN_CURSO a la vez — índice parcial SQL.
+model Corrida {
+  id                String         @id @default(uuid()) @db.Uuid
+  disparo           DisparoCorrida @default(PROGRAMADA)
+  programadaPara    DateTime       @map("programada_para") @db.Timestamptz(3)
+  iniciadaEn        DateTime?      @map("iniciada_en") @db.Timestamptz(3)
+  finalizadaEn      DateTime?      @map("finalizada_en") @db.Timestamptz(3)
+  estado            EstadoCorrida  @default(EN_CURSO)
+  totalConsultados  Int            @default(0) @map("total_consultados")
+  totalActualizados Int            @default(0) @map("total_actualizados")
+  totalFallidos     Int            @default(0) @map("total_fallidos")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sitios  CorridaSitio[]
+  precios Precio[]
+  avisos  Aviso[]
+
+  @@index([estado, programadaPara])
+  @@map("corrida")
+}
+
+model CorridaSitio {
+  id                    String             @id @default(uuid()) @db.Uuid
+  corridaId             String             @map("corrida_id") @db.Uuid
+  supermercadoId        String             @map("supermercado_id") @db.Uuid
+  estado                EstadoCorridaSitio @default(EN_CURSO)
+  totalVinculos         Int                @default(0) @map("total_vinculos")
+  totalOk               Int                @default(0) @map("total_ok")
+  totalFallidos         Int                @default(0) @map("total_fallidos")
+  /// Corte al superar 50 % de fallas por estructura (CU-09.3)
+  detenidoPorEstructura Boolean            @default(false) @map("detenido_por_estructura")
+  iniciadaEn            DateTime?          @map("iniciada_en") @db.Timestamptz(3)
+  finalizadaEn          DateTime?          @map("finalizada_en") @db.Timestamptz(3)
+
+  corrida      Corrida        @relation(fields: [corridaId], references: [id], onDelete: Cascade)
+  supermercado Supermercado   @relation(fields: [supermercadoId], references: [id], onDelete: Restrict)
+  errores      CorridaError[]
+
+  @@unique([corridaId, supermercadoId])
+  @@map("corrida_sitio")
+}
+
+model CorridaError {
+  id                     String              @id @default(uuid()) @db.Uuid
+  corridaSitioId         String              @map("corrida_sitio_id") @db.Uuid
+  productoSupermercadoId String?             @map("producto_supermercado_id") @db.Uuid
+  tipo                   TipoErrorExtraccion
+  mensaje                String              @db.VarChar(500)
+  intentos               Int                 @default(1) @db.SmallInt
+  ocurridoEn             DateTime            @default(now()) @map("ocurrido_en") @db.Timestamptz(3)
+
+  corridaSitio         CorridaSitio          @relation(fields: [corridaSitioId], references: [id], onDelete: Cascade)
+  productoSupermercado ProductoSupermercado? @relation(fields: [productoSupermercadoId], references: [id], onDelete: SetNull)
+
+  @@index([corridaSitioId])
+  @@index([productoSupermercadoId])
+  @@map("corrida_error")
+}
+
+/// Aviso dentro de la app para administradores del hogar (CU-09.1 3a, CU-09.3 paso 5)
+model Aviso {
+  id         String    @id @default(uuid()) @db.Uuid
+  hogarId    String    @map("hogar_id") @db.Uuid
+  tipo       TipoAviso
+  titulo     String    @db.VarChar(120)
+  mensaje    String    @db.VarChar(500)
+  datos      Json?
+  corridaId  String?   @map("corrida_id") @db.Uuid
+  leidoEn    DateTime? @map("leido_en") @db.Timestamptz(3)
+  leidoPorId String?   @map("leido_por_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  hogar    Hogar    @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  corrida  Corrida? @relation(fields: [corridaId], references: [id], onDelete: SetNull)
+  leidoPor Usuario? @relation(fields: [leidoPorId], references: [id], onDelete: SetNull)
+
+  @@index([hogarId, leidoEn])
+  @@map("aviso")
+}
+
+/// Dispositivo registrado para Web Push o FCM (IE-04). endpoint = URL Web Push o token FCM
+model SuscripcionPush {
+  id            String    @id @default(uuid()) @db.Uuid
+  usuarioId     String    @map("usuario_id") @db.Uuid
+  canal         CanalPush
+  endpoint      String    @unique @db.VarChar(1000)
+  p256dh        String?   @db.VarChar(200)
+  auth          String?   @db.VarChar(100)
+  dispositivo   String?   @db.VarChar(120)
+  ultimoEnvioEn DateTime? @map("ultimo_envio_en") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("suscripcion_push")
+}
+
+/// Registro de envíos. claveDeduplicacion: "RECORDATORIO:{hogar}:{semana}" (1 por semana) o "ALERTA:{menu}:{n}"
+model NotificacionEnviada {
+  id                 String           @id @default(uuid()) @db.Uuid
+  hogarId            String           @map("hogar_id") @db.Uuid
+  tipo               TipoNotificacion
+  semanaInicio       DateTime         @map("semana_inicio") @db.Date
+  menuId             String?          @map("menu_id") @db.Uuid
+  claveDeduplicacion String           @unique @map("clave_deduplicacion") @db.VarChar(120)
+  resultado          ResultadoEnvio
+  destinatarios      Int              @default(0) @db.SmallInt
+  entregados         Int              @default(0) @db.SmallInt
+  contenido          Json
+  enviadaEn          DateTime         @default(now()) @map("enviada_en") @db.Timestamptz(3)
+
+  hogar Hogar        @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  menu  MenuSemanal? @relation(fields: [menuId], references: [id], onDelete: SetNull)
+
+  @@index([hogarId, tipo, semanaInicio])
+  @@map("notificacion_enviada")
+}
+
+// -----------------------------------------------------------------------------
+// Soporte — Importación histórica (M04) e idempotencia de la API
+// -----------------------------------------------------------------------------
+
+model Importacion {
+  id            String            @id @default(uuid()) @db.Uuid
+  hogarId       String            @map("hogar_id") @db.Uuid
+  usuarioId     String?           @map("usuario_id") @db.Uuid
+  origen        OrigenImportacion @default(ARCHIVO)
+  nombreArchivo String            @map("nombre_archivo") @db.VarChar(200)
+  formato       FormatoArchivo
+  tamanoBytes   Int               @map("tamano_bytes")
+  estado        EstadoImportacion
+  totalFilas    Int               @default(0) @map("total_filas")
+  filasConError Int               @default(0) @map("filas_con_error")
+  /// Reporte final: semanas creadas/reemplazadas/omitidas, platillos creados, conciliación
+  reporte       Json?
+  confirmadaEn  DateTime?         @map("confirmada_en") @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  hogar     Hogar                 @relation(fields: [hogarId], references: [id], onDelete: Cascade)
+  usuario   Usuario?              @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  filas     ImportacionFila[]
+  platillos ImportacionPlatillo[]
+  semanas   ImportacionSemana[]
+  menus     MenuSemanal[]
+
+  @@index([hogarId, createdAt])
+  @@map("importacion")
+}
+
+model ImportacionFila {
+  id            String          @id @default(uuid()) @db.Uuid
+  importacionId String          @map("importacion_id") @db.Uuid
+  hoja          HojaImportacion
+  numeroFila    Int             @map("numero_fila")
+  datos         Json
+  /// [{columna, motivo}]
+  errores       Json?
+  valida        Boolean
+  semanaInicio  DateTime?       @map("semana_inicio") @db.Date
+
+  importacion Importacion @relation(fields: [importacionId], references: [id], onDelete: Cascade)
+
+  @@unique([importacionId, hoja, numeroFila])
+  @@map("importacion_fila")
+}
+
+/// Decisión por nombre distinto de platillo del archivo (RF-17)
+model ImportacionPlatillo {
+  id                 String             @id @default(uuid()) @db.Uuid
+  importacionId      String             @map("importacion_id") @db.Uuid
+  nombreOriginal     String             @map("nombre_original") @db.VarChar(80)
+  nombreNormalizado  String             @map("nombre_normalizado") @db.VarChar(80)
+  platilloSugeridoId String?            @map("platillo_sugerido_id") @db.Uuid
+  similitud          Decimal?           @db.Decimal(5, 4)
+  decision           DecisionPlatillo   @default(PENDIENTE)
+  platilloId         String?            @map("platillo_id") @db.Uuid
+  /// Nombre corregido al crear (CU-04.3 5b)
+  nombreFinal        String?            @map("nombre_final") @db.VarChar(80)
+  proteinaPrincipal  ProteinaPrincipal? @map("proteina_principal")
+
+  importacion      Importacion @relation(fields: [importacionId], references: [id], onDelete: Cascade)
+  platilloSugerido Platillo?   @relation("DecisionPlatilloSugerido", fields: [platilloSugeridoId], references: [id], onDelete: SetNull)
+  platillo         Platillo?   @relation("DecisionPlatilloDestino", fields: [platilloId], references: [id], onDelete: SetNull)
+
+  @@unique([importacionId, nombreNormalizado])
+  @@map("importacion_platillo")
+}
+
+model ImportacionSemana {
+  id            String         @id @default(uuid()) @db.Uuid
+  importacionId String         @map("importacion_id") @db.Uuid
+  semanaInicio  DateTime       @map("semana_inicio") @db.Date
+  yaExiste      Boolean        @default(false) @map("ya_existe")
+  decision      DecisionSemana @default(CREAR)
+  gastoSemana   Decimal?       @map("gasto_semana") @db.Decimal(10, 2)
+
+  importacion Importacion @relation(fields: [importacionId], references: [id], onDelete: Cascade)
+
+  @@unique([importacionId, semanaInicio])
+  @@map("importacion_semana")
+}
+
+/// Cabecera Idempotency-Key de POST/PUT reintentables (offline). Vence a las 24 h.
+model ClaveIdempotencia {
+  id              String   @id @default(uuid()) @db.Uuid
+  usuarioId       String   @map("usuario_id") @db.Uuid
+  clave           String   @db.VarChar(64)
+  metodo          String   @db.VarChar(7)
+  ruta            String   @db.VarChar(200)
+  hashSolicitud   String   @map("hash_solicitud") @db.Char(64)
+  estadoRespuesta Int      @map("estado_respuesta") @db.SmallInt
+  cuerpoRespuesta Json?    @map("cuerpo_respuesta")
+  venceEn         DateTime @map("vence_en") @db.Timestamptz(3)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, clave])
+  @@index([venceEn])
+  @@map("clave_idempotencia")
+}
