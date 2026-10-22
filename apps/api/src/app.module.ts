@@ -4,9 +4,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module';
 import { ProblemaFiltro } from './comun/problema.filter';
+import { CorreoModule } from './correo/correo.module';
 import { validarEntorno } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { HogarModule } from './hogar/hogar.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -39,6 +41,8 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     HealthModule,
     AuthModule,
+    CorreoModule,
+    HogarModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

@@ -44,6 +44,6 @@ import { TokensService } from './tokens.service';
     { provide: RELOJ, useValue: () => new Date() },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  exports: [AuthService, TokensService],
+  exports: [AuthService, TokensService, UsuariosRepositorio, RELOJ],
 })
 export class AuthModule {}
