@@ -39,7 +39,13 @@ export default defineConfig({
       },
     }),
   ],
-  server: { port: 5173, host: true },
+  server: {
+    port: 5173,
+    host: true,
+    // Mismo origen en desarrollo, como Caddy en producción: la cookie del refresh
+    // (Path=/api/v1/auth, SameSite=Strict) llega a la API sin CORS.
+    proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: false } },
+  },
   build: { outDir: 'dist', sourcemap: true, chunkSizeWarningLimit: 1500 },
   test: {
     globals: true,
@@ -49,8 +55,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/main.tsx', 'src/setupTests.ts', 'src/vite-env.d.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/main.tsx',
+        'src/setupTests.ts',
+        'src/vite-env.d.ts',
+      ],
       reporter: ['text', 'lcov', 'json-summary'],
+      // RNF-09: cobertura mínima de 70 %.
+      thresholds: { lines: 70, functions: 70, branches: 70, statements: 70 },
     },
   },
 });
