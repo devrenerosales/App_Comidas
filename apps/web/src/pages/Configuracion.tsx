@@ -1,23 +1,39 @@
 import { IonText } from '@ionic/react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/contexto';
 import { BotonCerrarSesion } from './BotonCerrarSesion';
 import { PaginaBase } from './PaginaBase';
+import './acceso.css';
+import './hogar.css';
 
 export default function Configuracion() {
-  const { usuario } = useAuth();
+  const { usuario, hogar } = useAuth();
   return (
     <PaginaBase titulo="Configuración">
-      <section aria-labelledby="titulo-cuenta">
-        <h2 id="titulo-cuenta">Tu cuenta</h2>
-        {usuario && (
-          <IonText>
+      <div className="mf-hogar">
+        {hogar && (
+          <section aria-labelledby="titulo-hogar">
+            <h2 id="titulo-hogar">Tu hogar</h2>
             <p>
-              {usuario.nombre} · {usuario.correo}
+              {hogar.nombre} · {hogar.rol === 'ADMIN' ? 'Administrador' : 'Miembro'}
             </p>
-          </IonText>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/hogar">
+              Hogar y usuarios
+            </Link>
+          </section>
         )}
-        <BotonCerrarSesion />
-      </section>
+        <section aria-labelledby="titulo-cuenta">
+          <h2 id="titulo-cuenta">Tu cuenta</h2>
+          {usuario && (
+            <IonText>
+              <p>
+                {usuario.nombre} · {usuario.correo}
+              </p>
+            </IonText>
+          )}
+          <BotonCerrarSesion />
+        </section>
+      </div>
     </PaginaBase>
   );
 }

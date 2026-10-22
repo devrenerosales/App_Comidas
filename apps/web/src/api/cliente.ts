@@ -56,6 +56,14 @@ export class ClienteHttp {
     if (this.opciones.nativo && sesion.refreshToken) this.refreshNativo = sesion.refreshToken;
   }
 
+  /**
+   * Reemplaza solo el token de acceso, p. ej. tras crear un hogar o aceptar una invitación
+   * (HU-02): el nuevo ya lleva `hogarId` y `rol`; el refresh no cambia.
+   */
+  establecerAcceso(accessToken: string): void {
+    this.accessToken = accessToken;
+  }
+
   /** Olvida los tokens en memoria (la cookie la borra la API). */
   limpiarSesion(): void {
     this.accessToken = null;

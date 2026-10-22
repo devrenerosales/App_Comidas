@@ -313,7 +313,7 @@ La lógica de cola vive en la **capa de datos de la app** (`apps/web/src/datos/s
 | Token de acceso | JWT HS256, 15 min, claims `sub`, `hogarId`, `rol`; secreto en variable de entorno | RNF-05 |
 | Refresh token | Opaco (32 bytes aleatorios), 30 días, guardado como hash SHA-256 en `refresh_token`, **rotación en cada uso** y detección de reutilización (revoca la familia). PWA: cookie `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`. Android: almacenamiento seguro del dispositivo | RNF-05 |
 | Autorización por rol | `RolesGuard` con `@Roles('ADMIN')` en presupuesto, tiempos, pesos, invitaciones, sitios de precios | RN-10 |
-| Aislamiento por hogar | `HogarGuard` valida que el recurso de la ruta pertenezca al `hogarId` del token; los repositorios Drizzle agregan `where hogar_id` a las tablas del hogar; los datos comunes (D-05) son de solo lectura para usuarios. Pruebas de autorización por cada endpoint | RNF-06 |
+| Aislamiento por hogar | `HogarGuard` toma el `hogarId` y el rol de `miembro_hogar` para el usuario del token (nunca de la ruta ni del cuerpo; las rutas son `/hogar/…`) y lo inyecta con `@HogarActual()`; los repositorios Drizzle agregan `where hogar_id` a las tablas del hogar; los datos comunes (D-05) son de solo lectura para usuarios. Pruebas de autorización por cada endpoint | RNF-06 |
 | Validación | `ValidationPipe` global con DTO (class-validator) y esquemas zod compartidos | — |
 | Cabeceras y abuso | Helmet; `@nestjs/throttler` (login 10/min por IP, API 120/min por usuario); límite de cuerpo 5 MB (tickets) | RNF-05 |
 | Secretos | `.env` en el servidor con permisos 600, fuera del repo; en CI como GitHub Secrets | — |

@@ -71,6 +71,9 @@ describe('rutas protegidas y sesión (HU-01)', () => {
     expect(destinoTrasSesion(SESION_CON_HOGAR.hogar)).toBe('/inicio');
     expect(destinoTrasSesion(SESION_CON_HOGAR.hogar, '/crear-hogar')).toBe('/inicio');
     expect(destinoTrasSesion(SESION_CON_HOGAR.hogar, '/lista')).toBe('/lista');
+    // HU-02: tras entrar desde un enlace de invitación vuelve a él, tenga o no hogar.
+    expect(destinoTrasSesion(null, '/invitacion/tok')).toBe('/invitacion/tok');
+    expect(destinoTrasSesion(SESION_CON_HOGAR.hogar, '/invitacion/tok')).toBe('/invitacion/tok');
   });
 
   it('useAuth fuera del proveedor lanza un error claro', () => {

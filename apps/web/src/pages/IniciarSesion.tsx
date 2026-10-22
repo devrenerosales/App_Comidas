@@ -62,7 +62,7 @@ export default function IniciarSesion() {
       pie={
         <>
           ¿Aún no tienes cuenta?{' '}
-          <Link className="mf-enlace" to="/registro">
+          <Link className="mf-enlace" to={{ pathname: '/registro', state: location.state }}>
             Crear cuenta
           </Link>
         </>

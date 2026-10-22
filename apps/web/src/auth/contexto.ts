@@ -11,6 +11,8 @@ export interface ValorAuth {
   iniciarSesion(correo: string, contrasena: string): Promise<Sesion>;
   registrar(datos: DatosRegistro): Promise<Sesion>;
   cerrarSesion(): Promise<void>;
+  /** Actualiza la sesión tras crear un hogar o aceptar una invitación (HU-02). */
+  entrarAlHogar(hogar: HogarDeSesion): void;
 }
 
 export const ContextoAuth = createContext<ValorAuth | null>(null);
@@ -22,8 +24,15 @@ export function useAuth(): ValorAuth {
   return valor;
 }
 
-/** Ruta a la que va el usuario al entrar: sin hogar → "Crear hogar" (CU-01.1 paso 6). */
+/** Prefijo de la pantalla "Aceptar invitación" (HU-02). */
+export const RUTA_INVITACION = '/invitacion/';
+
+/**
+ * Ruta a la que va el usuario al entrar: si venía de un enlace de invitación vuelve a él; sin
+ * hogar → "Crear hogar" (CU-01.1 paso 6); con hogar → la página que intentaba abrir o Inicio.
+ */
 export function destinoTrasSesion(hogar: HogarDeSesion | null, desde?: string): string {
+  if (desde?.startsWith(RUTA_INVITACION)) return desde;
   if (!hogar) return '/crear-hogar';
   return desde && desde !== '/crear-hogar' ? desde : '/inicio';
 }

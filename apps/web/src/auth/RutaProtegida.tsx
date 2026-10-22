@@ -7,9 +7,17 @@ interface Props extends Omit<RouteProps, 'render' | 'component' | 'children'> {
   children: ReactNode;
 }
 
+interface PropsProtegida extends Props {
+  /**
+   * `requerido`: sin hogar lleva a "Crear hogar" (CU-01.1 paso 6).
+   * `prohibido`: con hogar lleva a Inicio (un hogar por usuario en v1).
+   */
+  hogar?: 'requerido' | 'prohibido';
+}
+
 /** Ruta que exige sesión: sin sesión redirige a /login recordando a dónde iba. */
-export function RutaProtegida({ children, ...resto }: Props) {
-  const { estado } = useAuth();
+export function RutaProtegida({ children, hogar: reglaHogar, ...resto }: PropsProtegida) {
+  const { estado, hogar } = useAuth();
   return (
     <Route
       {...resto}
@@ -18,6 +26,8 @@ export function RutaProtegida({ children, ...resto }: Props) {
         if (estado === 'anonimo') {
           return <Redirect to={{ pathname: '/login', state: { desde: location.pathname } }} />;
         }
+        if (reglaHogar === 'requerido' && !hogar) return <Redirect to="/crear-hogar" />;
+        if (reglaHogar === 'prohibido' && hogar) return <Redirect to="/inicio" />;
         return children;
       }}
     />

@@ -32,7 +32,7 @@ Este capítulo explica cómo crear tu cuenta, entrar a Menú Familiar y salir de
 
    Ejemplo válido: `Almuerzo2026`. Ejemplo no válido: `pollo`.
 5. Toca el botón **Crear cuenta**.
-6. Listo: tu cuenta queda creada, ya tienes la sesión iniciada y la app te lleva a **Crear hogar**. Allí podrás crear tu hogar e invitar a tu familia (capítulo 2, disponible con HU-02).
+6. Listo: tu cuenta queda creada, ya tienes la sesión iniciada y la app te lleva a **Crear hogar**. Allí podrás crear tu hogar e invitar a tu familia ([capítulo 2](02-tu-hogar.md)). Si te invitaron a un hogar, abre el enlace de la invitación: después de crear la cuenta la app te regresa a ella.
 
 `[Captura 1-2: formulario "Crear cuenta" lleno — img/01-crear-cuenta.png]`
 

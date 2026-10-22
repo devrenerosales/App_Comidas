@@ -252,6 +252,7 @@ Si DuckDNS dejara de funcionar, basta con apuntar otro nombre (otro DNS dinámic
 | `SMTP_FROM` | `"Menú Familiar <cuenta@gmail.com>"` (Gmail reescribe el remitente a la cuenta autenticada) |
 | `APP_URL` | `https://<DOMINIO>` (enlaces de invitación y recuperación) |
 | Límite | ~500 correos/día: sobrado para un hogar |
+| Sin `SMTP_HOST` | La API no envía correos: los guarda en memoria y los escribe en su log (desarrollo). En producción avisa en el log y las invitaciones se comparten con enlace |
 
 Es cambiable por configuración (Brevo, Resend, etc.) sin tocar código.
 

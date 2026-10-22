@@ -23,7 +23,8 @@ describe('Crear cuenta (HU-01)', () => {
       correo: 'rene@correo.com',
       contrasena: 'Almuerzo2026',
     });
-    expect(await screen.findByText('¡Hola, Rene! Tu cuenta está lista.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Crear hogar' })).toBeInTheDocument();
+    expect(screen.getByText(/¡Hola, Rene!/)).toBeInTheDocument();
     expect(window.location.pathname).toBe('/crear-hogar');
   });
 

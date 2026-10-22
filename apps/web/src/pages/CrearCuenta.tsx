@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import {
   LARGO_MAXIMO_CORREO,
   LARGO_MAXIMO_NOMBRE,
@@ -28,6 +28,9 @@ function validar(nombre: string, correo: string, contrasena: string): Errores {
 export default function CrearCuenta() {
   const { registrar } = useAuth();
   const history = useHistory();
+  // Si viene de un enlace de invitación, al volver a "Iniciar sesión" conserva a dónde regresar.
+  const location = useLocation<{ desde?: string } | undefined>();
+  const desde = location.state?.desde;
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
@@ -73,7 +76,7 @@ export default function CrearCuenta() {
       pie={
         <>
           ¿Ya tienes cuenta?{' '}
-          <Link className="mf-enlace" to="/login">
+          <Link className="mf-enlace" to={{ pathname: '/login', state: location.state }}>
             Iniciar sesión
           </Link>
         </>
@@ -87,7 +90,7 @@ export default function CrearCuenta() {
               <button
                 type="button"
                 className="mf-boton mf-boton--secundario"
-                onClick={() => history.push('/login', { correo: correo.trim() })}
+                onClick={() => history.push('/login', { correo: correo.trim(), desde })}
               >
                 Iniciar sesión
               </button>

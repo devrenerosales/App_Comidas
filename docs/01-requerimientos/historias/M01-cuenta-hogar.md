@@ -301,6 +301,20 @@ Característica: Crear hogar e invitar miembros
 | ST-02.6 | QA | Casos de prueba PF-M1-02.1..4 y pruebas de autorización automatizadas | 4 |
 | ST-02.7 | DOC | Manual de usuario: "Crear tu hogar e invitar miembros" | 1 |
 
+> **Implementado en `feature/HU-02-hogar-invitaciones`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-02.1 | Hecha (sin migración nueva: `hogar`, `miembro_hogar`, `invitacion`, `configuracion` y `tiempo_comida_config` ya estaban en `0001_init`) | `packages/db/src/schema/hogar-config.ts` |
+> | ST-02.2 | Hecha: `POST /hogares` crea hogar, ADMIN, configuración por defecto y sus tres tiempos en una transacción | `apps/api/src/hogar/` (`hogar.service.ts`, `hogar.repositorio.ts`, `configuracion-por-defecto.ts`) |
+> | ST-02.3 | Hecha: invitación por correo (nodemailer/Gmail, D-13) o por enlace, revocar, ver y aceptar | `apps/api/src/hogar/invitaciones.*`, `apps/api/src/correo/` |
+> | ST-02.4 | Hecha: `HogarGuard` (pertenencia leída de la base) y `RolesGuard` + `@Roles('ADMIN')` | `apps/api/src/hogar/hogar.guard.ts`, `roles.guard.ts` |
+> | ST-02.5 | Hecha | `apps/web/src/pages/CrearHogar.tsx`, `HogarUsuarios.tsx`, `AceptarInvitacion.tsx` |
+> | ST-02.6 | Hecha: CA-02.1..4 y suite de autorización RNF-06 automatizados (integración API + Testing Library) | `apps/api/test/hogar.e2e-spec.ts`, `apps/web/src/pages/*.test.tsx` |
+> | ST-02.7 | Hecha (faltan capturas) | `docs/05-manual-usuario/02-tu-hogar.md` |
+>
+> Decisiones de implementación: las rutas siguen el contrato (`/hogar/…`, hogar del token, api-contrato §1.1) en lugar de `/hogares/{id}/…`. Crear hogar y aceptar devuelven un `accessToken` nuevo con `hogarId` y `rol`; aun así `HogarGuard` lee la pertenencia y el rol de la base en cada solicitud. La invitación por **correo** solo la acepta la cuenta de ese correo (403 `INVITACION_DE_OTRO_CORREO`); la de **enlace**, cualquier cuenta sin hogar. Invitar de nuevo al mismo correo revoca la anterior. El token se guarda como HMAC-SHA256. La pantalla de aceptar pide confirmar con "Unirme a …" después de iniciar sesión. "Quitar miembro" no está en CU-01.2 y queda fuera de HU-02.
+
 ---
 
 ### CU-01.3 — Registrar comensales · RF-03 · HU-03

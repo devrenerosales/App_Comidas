@@ -1,12 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, hogar, miembroHogar, usuario, type Db, type Usuario } from '@menu/db';
 import type { Rol } from '@menu/shared';
+import { esViolacionUnicidad } from '../comun/postgres';
 import { DB } from '../database/database.constants';
 import { calcularIntentoFallido, type EstadoIntentos } from '../auth/bloqueo';
 import type { HogarDeSesion } from '../auth/auth.tipos';
-
-/** Violación de unicidad de PostgreSQL. */
-const UNIQUE_VIOLATION = '23505';
 
 export class CorreoDuplicadoError extends Error {
   constructor() {
@@ -41,9 +39,7 @@ export class UsuariosRepositorio {
       const [fila] = await this.db.insert(usuario).values(datos).returning();
       return fila as Usuario;
     } catch (error) {
-      const codigo =
-        (error as { code?: string }).code ?? (error as { cause?: { code?: string } }).cause?.code;
-      if (codigo === UNIQUE_VIOLATION) throw new CorreoDuplicadoError();
+      if (esViolacionUnicidad(error)) throw new CorreoDuplicadoError();
       throw error;
     }
   }

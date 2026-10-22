@@ -13,6 +13,6 @@ export type { OpcionesSemilla, ResultadoSemilla } from './semilla';
 export { TABLAS_SEMILLA, crearBaseTemporal, truncarTablas, urlConBase } from './pruebas';
 export type { BaseTemporal, OpcionesBaseTemporal } from './pruebas';
 // Operadores de Drizzle reexportados para que API y worker usen la misma instancia.
-export { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
+export { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
 export type { SQL } from 'drizzle-orm';
 export type { Pool, PoolConfig } from 'pg';
