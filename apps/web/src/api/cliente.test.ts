@@ -37,6 +37,15 @@ function crear(respuestas: Response[], nativo = false) {
 }
 
 describe('ClienteHttp', () => {
+  it('HU-02 establecerAcceso reemplaza solo el token de acceso (hogar nuevo)', async () => {
+    const { cliente, cabeceras } = crear([json(200, {})], true);
+    cliente.establecerSesion({ ...SESION, accessToken: 'sin-hogar', refreshToken: 'r1' });
+    cliente.establecerAcceso('con-hogar');
+    await cliente.peticion('/hogar');
+    expect(cabeceras(0).Authorization).toBe('Bearer con-hogar');
+    expect(cliente.refreshToken).toBe('r1');
+  });
+
   it('envía JSON con el token de acceso y cookies (credentials: include)', async () => {
     const { cliente, fetch, cabeceras } = crear([json(200, { ok: true })]);
     cliente.establecerSesion({ ...SESION, accessToken: 'acceso' });
