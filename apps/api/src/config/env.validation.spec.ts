@@ -28,4 +28,31 @@ describe('validarEntorno', () => {
     const { DATABASE_URL: _omit, ...sinBd } = base;
     expect(() => validarEntorno(sinBd)).toThrow(/DATABASE_URL/);
   });
+
+  it('correo: sin SMTP_HOST no exige credenciales y usa APP_URL y puerto por defecto', () => {
+    const env = validarEntorno({ ...base, SMTP_HOST: '' });
+    expect(env.SMTP_PORT).toBe(587);
+    expect(env.APP_URL).toBe('http://localhost:5173');
+  });
+
+  it('correo: con SMTP_HOST exige SMTP_USER, SMTP_PASS y SMTP_FROM', () => {
+    expect(() => validarEntorno({ ...base, SMTP_HOST: 'smtp.gmail.com' })).toThrow(
+      /SMTP_USER.*SMTP_PASS.*SMTP_FROM/,
+    );
+    const env = validarEntorno({
+      ...base,
+      SMTP_HOST: 'smtp.gmail.com',
+      SMTP_PORT: '587',
+      SMTP_USER: 'cuenta@gmail.com',
+      SMTP_PASS: 'abcd efgh ijkl mnop',
+      SMTP_FROM: 'Menú Familiar <cuenta@gmail.com>',
+      APP_URL: 'https://menu.duckdns.org',
+    });
+    expect(env.SMTP_PORT).toBe(587);
+    expect(env.APP_URL).toBe('https://menu.duckdns.org');
+  });
+
+  it('rechaza un APP_URL que no es URL', () => {
+    expect(() => validarEntorno({ ...base, APP_URL: 'menu-familiar' })).toThrow(/APP_URL/);
+  });
 });
