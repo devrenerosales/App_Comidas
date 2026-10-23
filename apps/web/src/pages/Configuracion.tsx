@@ -22,6 +22,15 @@ export default function Configuracion() {
             </Link>
           </section>
         )}
+        {hogar && (
+          <section aria-labelledby="titulo-tiempos">
+            <h2 id="titulo-tiempos">Tiempos de comida y presupuesto</h2>
+            <p>Qué tiempos planificas, cuánto gastas a la semana y cómo se reparte.</p>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/tiempos">
+              Tiempos y presupuesto
+            </Link>
+          </section>
+        )}
         <section aria-labelledby="titulo-cuenta">
           <h2 id="titulo-cuenta">Tu cuenta</h2>
           {usuario && (
