@@ -148,6 +148,20 @@ Característica: Gestionar platillos del hogar
 | ST-11.6 | QA | Casos de prueba PF-M3-11.1..4 y prueba automatizada (API + e2e) | 4 |
 | ST-11.7 | DOC | Manual de usuario: "Administrar platillos" | 1 |
 
+> **Implementado en `feature/HU-11-13-catalogo-platillos`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-11.1 | Hecha (sin migración nueva: `platillo`, `platillo_tiempo`, `etiqueta` y `platillo_etiqueta` ya estaban en `0001_init` con el índice único `hogar_id` + `nombre_normalizado`) | `packages/db/src/schema/catalogo-menus.ts` |
+> | ST-11.2 | Hecha: `GET/POST /platillos`, `GET/PATCH /platillos/{id}`, `POST /platillos/{id}/inactivar` y `/reactivar` con `HogarGuard` (otro hogar → 404) | `apps/api/src/catalogo/platillos.*` |
+> | ST-11.3 | Hecha: `?q` (pg_trgm, sin tildes), `tiempo`, `proteina`, `etiqueta`, `ingrediente`, `estado=ACTIVO\|INACTIVO\|INCOMPLETO`, paginado | `platillos.repositorio.ts` |
+> | ST-11.4 | Hecha | `apps/web/src/pages/Platillos.tsx` |
+> | ST-11.5 | Hecha | `apps/web/src/pages/PlatilloDetalle.tsx` |
+> | ST-11.6 | Hecha: CA-11.1..4 automatizados (integración API + Testing Library) | `apps/api/test/catalogo.e2e-spec.ts`, `apps/web/src/pages/Platillos.test.tsx`, `PlatilloDetalle.test.tsx` |
+> | ST-11.7 | Hecha (faltan capturas) | `docs/05-manual-usuario/04-platillos-y-productos.md` |
+>
+> Decisiones: miembro y administrador gestionan platillos por igual (actor de CU-03.1). El nombre se normaliza con `normalizarNombreCatalogo` de `@menu/shared` (minúsculas, sin tildes, espacios simples); duplicado → 409 `PLATILLO_DUPLICADO` con `existenteId`. Las etiquetas se reutilizan por hogar y se quitan repetidas. "Incompleto" = sin ingredientes (lo mantiene el servicio al guardar ingredientes). El motor (M05) debe filtrar `activo = true` para cumplir el último paso de CA-11.2.
+
 ---
 
 ### CU-03.2 — Asociar ingredientes a platillo · RF-12 · HU-12
@@ -272,6 +286,19 @@ Característica: Ingredientes del platillo por porciones base
 | ST-12.5 | QA | Casos de prueba PF-M3-12.1..5 y prueba automatizada | 3 |
 | ST-12.6 | DOC | Manual de usuario: "Ingredientes y porciones" | 1 |
 
+> **Implementado en `feature/HU-11-13-catalogo-platillos`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-12.1 | Hecha (sin migración nueva: `platillo_ingrediente` y `porciones_base` ya estaban en `0001_init`/`0002`) | `packages/db/src/schema/catalogo-menus.ts` |
+> | ST-12.2 | Hecha: `PUT /platillos/{id}/ingredientes` valida magnitud (o `producto_equivalencia`), cantidad > 0 con hasta 3 decimales, porciones 1–20 y producto repetido; errores 422 por ítem (`ingredientes.N.campo`) | `apps/api/src/catalogo/platillos.service.ts` |
+> | ST-12.3 | Hecha: `escalarCantidad(cantidadBase, porcionesBase, sumaFactores)`, `unidadCompatible` y `convertirCantidad` puras en `@menu/shared` con pruebas; `GET /platillos/{id}/vista-previa?sumaFactores=` | `packages/shared/src/catalogo.ts` |
+> | ST-12.4 | Hecha | `apps/web/src/pages/EditorIngredientes.tsx` |
+> | ST-12.5 | Hecha: CA-12.1..5 automatizados | `packages/shared/src/catalogo.test.ts`, `apps/api/test/catalogo.e2e-spec.ts`, `apps/web/src/pages/EditorIngredientes.test.tsx` |
+> | ST-12.6 | Hecha (faltan capturas) | `docs/05-manual-usuario/04-platillos-y-productos.md` |
+>
+> Decisiones: la Σ factores de la vista previa se lee de la tabla `comensal` (activos) sin depender de HU-03; si el hogar aún no tiene comensales, se muestra a las porciones base (`origen: PORCIONES_BASE`). El parámetro `sumaFactores` permite previsualizar otra suma. E3: la app avisa que el producto ya está y pide ajustar su cantidad; la API rechaza repetidos con 422 `PRODUCTO_REPETIDO`. Un producto inactivo no se puede agregar, pero uno que ya era ingrediente se conserva al volver a guardar.
+
 ---
 
 ### CU-03.3 — Gestionar catálogo de productos · RF-13 · HU-13
@@ -378,6 +405,19 @@ Característica: Catálogo de productos
 | ST-13.4 | FE | Pantalla de catálogo de productos y formulario (también modal desde CU-03.2) | 5 |
 | ST-13.5 | QA | Casos de prueba PF-M3-13.1..4 y prueba automatizada | 3 |
 | ST-13.6 | DOC | Manual de usuario: "Catálogo de productos" | 1 |
+
+> **Implementado en `feature/HU-11-13-catalogo-platillos`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-13.1 | Hecha (sin migración nueva: `producto`, `unidad`, `categoria` e índice único nombre + presentación ya estaban en `0001_init`) | `packages/db/src/schema/catalogo-menus.ts` |
+> | ST-13.2 | Hecha: 45 productos básicos guatemaltecos idempotentes (solo inserta faltantes) | `packages/db/src/semilla.ts` |
+> | ST-13.3 | Hecha: `GET/POST /productos`, `GET/PATCH /productos/{id}`, `POST /productos/{id}/inactivar` y `/reactivar` (con `platillosAfectados`), `GET /unidades`, `GET /categorias` | `apps/api/src/catalogo/productos.*` |
+> | ST-13.4 | Hecha (catálogo y formulario reutilizado desde el editor de ingredientes) | `apps/web/src/pages/Productos.tsx`, `FormularioProducto.tsx` |
+> | ST-13.5 | Hecha: CA-13.1..4 automatizados | `apps/api/test/catalogo.e2e-spec.ts`, `apps/web/src/pages/Productos.test.tsx` |
+> | ST-13.6 | Hecha (faltan capturas) | `docs/05-manual-usuario/04-platillos-y-productos.md` |
+>
+> Decisión (D-05, pendiente de confirmar por el PO): como el catálogo es común a todos los hogares, **cualquier miembro crea** productos (CA-12.2, CA-13.1), pero **editar, inactivar y reactivar** lo hace solo el administrador del sistema (`usuario.esAdminSistema`, 403 `SOLO_ADMIN_SISTEMA`), para que un hogar no cambie el catálogo de los demás. Filtrar por tipo `DESPENSA` o `INGREDIENTE` incluye los de tipo `AMBOS`. La búsqueda usa pg_trgm (`LIKE` o `word_similarity` ≥ 0.5) sobre el nombre normalizado. Las equivalencias por producto (`PUT /productos/{id}/equivalencias`) quedan para RF-28 (S4).
 
 ---
 

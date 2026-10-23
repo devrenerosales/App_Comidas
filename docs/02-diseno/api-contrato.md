@@ -134,20 +134,28 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| GET | `/platillos` | MIEMBRO | RF-11 · HU-11 | `?q&tiempo&proteina&etiqueta&ingrediente&estado=ACTIVO\|INACTIVO\|INCOMPLETO&pagina&tamano` → 200 paginado `{id, nombre, tiempos, proteinaPrincipal, etiquetas, favorito, incompleto, calificacionPromedio}` | 400 |
-| POST | `/platillos` | MIEMBRO | RF-11 · HU-11 | `{nombre, tiempos[], proteinaPrincipal, etiquetas[]}` → 201 | 409 `PLATILLO_DUPLICADO` (`existenteId`) · 422 `SIN_TIEMPO`, `NOMBRE_LARGO`, `MAX_ETIQUETAS` |
-| GET | `/platillos/{id}` | MIEMBRO | RF-11, RF-12 | → 200 con ingredientes, alias, advertencias (`INGREDIENTE_INACTIVO`) | 404 |
-| PATCH | `/platillos/{id}` | MIEMBRO | RF-11 | campos parciales → 200 | 404 · 409 · 422 |
-| POST | `/platillos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-11 · HU-11 | → 200 | 404 |
-| PUT | `/platillos/{id}/ingredientes` | MIEMBRO | RF-12 · HU-12 | `{porcionesBase, ingredientes: [{productoId, cantidad, unidadId}]}` → 200 `{…, vistaPrevia: {sumaFactores, ingredientes: [{productoId, cantidadEscalada, unidad}]}}` | 404 · 422 `UNIDAD_INCOMPATIBLE`, `CANTIDAD_INVALIDA`, `PRODUCTO_REPETIDO` |
-| GET / POST / DELETE | `/platillos/{id}/alias[/{aliasId}]` | MIEMBRO | RF-17 | `{alias}` → 201 / 204 | 409 `ALIAS_EN_USO` |
-| GET | `/productos` | MIEMBRO | RF-13 · HU-13 | `?q&tipo&categoria&activo&pagina` → 200 paginado `{id, nombre, tipo, categoria, unidadCompra, presentacion: {cantidad, unidad}, etiqueta: "Arroz · bolsa 2 lb"}` | — |
-| POST | `/productos` | MIEMBRO | RF-13 · HU-13 | `{nombre, tipo, categoriaId, unidadCompra, presentacionCantidad, presentacionUnidadId}` → 201 | 409 `PRODUCTO_DUPLICADO` · 422 `PRESENTACION_INVALIDA` |
-| PATCH | `/productos/{id}` | MIEMBRO | RF-13 | parcial → 200 | 404 · 409 · 422 |
-| POST | `/productos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-13 | → 200 `{platillosAfectados}` | 404 |
-| PUT | `/productos/{id}/equivalencias` | MIEMBRO | RF-12, RF-28 | `[{unidadId, factor}]` → 200 | 422 |
+| GET | `/platillos` | MIEMBRO | RF-11 · HU-11 | `?q&tiempo&proteina&etiqueta&ingrediente&estado=ACTIVO\|INACTIVO\|INCOMPLETO&pagina&tamano` (por defecto `ACTIVO`; `INCOMPLETO` = activos sin ingredientes) → 200 paginado `{id, nombre, tiempos, proteinaPrincipal, etiquetas, porcionesBase, favorito, incompleto, activo, calificacionPromedio, ingredientesInactivos}`; con `q`, ordenado por similitud | 400 |
+| POST | `/platillos` | MIEMBRO | RF-11 · HU-11 | `{nombre, tiempos[], proteinaPrincipal?, etiquetas[]?}` → 201 detalle (proteína por defecto `OTRA`) | 409 `PLATILLO_DUPLICADO` (`existenteId`, `existenteNombre`) · 422 `NOMBRE_OBLIGATORIO`, `NOMBRE_LARGO`, `SIN_TIEMPO`, `MAX_ETIQUETAS`, `ETIQUETA_LARGA` |
+| GET | `/platillos/{id}` | MIEMBRO | RF-11, RF-12 | → 200 resumen + `ingredientes: [{id, producto: {id, nombre, etiqueta, activo, presentacionUnidad}, cantidad, unidad}]` + `advertencias: [{codigo: INGREDIENTE_INACTIVO, mensaje, productoId}]` | 404 (no existe, otro hogar o id mal formado) |
+| PATCH | `/platillos/{id}` | MIEMBRO | RF-11 | `{nombre?, tiempos?, proteinaPrincipal?, etiquetas?, favorito?}` → 200 detalle | 404 · 409 · 422 |
+| POST | `/platillos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-11 · HU-11 | → 200 detalle | 404 |
+| PUT | `/platillos/{id}/ingredientes` | MIEMBRO | RF-12 · HU-12 | `{porcionesBase: 1..20, ingredientes: [{productoId, cantidad, unidadId}]}` (máx. 50; lista vacía = "Incompleto") → 200 detalle + `vistaPrevia` | 404 · 422 `PORCIONES_INVALIDAS`, `CANTIDAD_INVALIDA`, `UNIDAD_INCOMPATIBLE`, `PRODUCTO_REPETIDO`, `PRODUCTO_INACTIVO`, `PRODUCTO_NO_EXISTE`, `UNIDAD_NO_EXISTE` con `errores[].campo = ingredientes.N.<campo>` |
+| GET | `/platillos/{id}/vista-previa` | MIEMBRO | RF-12 · RN-07 | `?sumaFactores=0.25..200` (opcional) → 200 `{porcionesBase, sumaFactores, origen: COMENSALES\|PARAMETRO\|PORCIONES_BASE, ingredientes: [{productoId, nombre, cantidadBase, cantidadEscalada, unidad}]}` | 400 · 404 |
+| GET / POST / DELETE | `/platillos/{id}/alias[/{aliasId}]` | MIEMBRO | RF-17 | `{alias}` → 201 / 204 (S2) | 409 `ALIAS_EN_USO` |
+| GET | `/productos` | MIEMBRO | RF-13 · HU-13 | `?q&tipo&categoria=<codigo>&activo=true\|false\|todos&pagina&tamano` (por defecto solo activos) → 200 paginado `{id, nombre, tipo, categoria: {id, codigo, nombre}, unidadCompra, presentacion: {cantidad, unidad}, etiqueta: "Arroz · bolsa 2 lb", activo}`; `tipo=DESPENSA` o `INGREDIENTE` incluye `AMBOS` | 400 |
+| GET | `/productos/{id}` | MIEMBRO | RF-13 | → 200 producto | 404 |
+| POST | `/productos` | MIEMBRO | RF-13 · HU-13 | `{nombre, tipo, categoriaId, unidadCompra, presentacionCantidad, presentacionUnidadId}` → 201 | 409 `PRODUCTO_DUPLICADO` (`existenteId`, `existente`) · 422 `PRESENTACION_INVALIDA`, `NOMBRE_OBLIGATORIO`, `NOMBRE_LARGO`, `UNIDAD_COMPRA_INVALIDA`, `CATEGORIA_NO_EXISTE`, `UNIDAD_NO_EXISTE` |
+| PATCH | `/productos/{id}` | ADMIN_SISTEMA | RF-13 | parcial → 200 | 403 `SOLO_ADMIN_SISTEMA` · 404 · 409 · 422 `MAGNITUD_EN_USO` |
+| POST | `/productos/{id}/inactivar` · `/reactivar` | ADMIN_SISTEMA | RF-13 · HU-13 | → 200 `{producto, platillosAfectados: [{id, nombre}]}` (solo platillos del hogar de quien llama) | 403 · 404 |
+| PUT | `/productos/{id}/equivalencias` | MIEMBRO | RF-12, RF-28 | `[{unidadId, factor}]` → 200 (S4) | 422 |
 | GET | `/unidades` · `/categorias` · `/supermercados` | MIEMBRO | RF-12, RF-13, RF-09 | → 200 catálogos semilla | — |
 | PUT | `/menus/{menuId}/detalles/{detalleId}/calificacion` | MIEMBRO | RF-14 · HU-14 | `{valor: 1..5}` → 200 `{valor, platillo: {id, calificacionPromedio, calificacionConteo}}` | 404 · 409 `MENU_NO_APROBADO` · 422 `CALIFICACION_FUERA_DE_RANGO`, `FECHA_FUTURA` |
+
+Notas de implementación (HU-11, HU-12, HU-13, rama `feature/HU-11-13-catalogo-platillos`):
+- Editar, inactivar y reactivar productos pasa de MIEMBRO a **ADMIN_SISTEMA** porque el catálogo es común a todos los hogares (D-05); crear sigue abierto a cualquier miembro (CA-12.2, CA-13.1).
+- Nuevo `GET /platillos/{id}/vista-previa`: la Σ factores sale de los comensales activos del hogar (RN-07) o del parámetro `sumaFactores`; sin comensales activos no se escala (`PORCIONES_BASE`).
+- Cantidades y presentaciones se aceptan como número o texto decimal (> 0, hasta 3 decimales) y se devuelven como texto (`"2.000"`); `cantidadEscalada` con 3 decimales.
+- Búsqueda `?q` sin tildes ni mayúsculas: `LIKE` o `word_similarity` (pg_trgm) ≥ 0.5 sobre `nombre_normalizado`.
 
 ### 2.4 M04 — Carga histórica
 
