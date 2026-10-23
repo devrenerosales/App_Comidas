@@ -12,7 +12,7 @@ services:
       TZ: America/Guatemala
       PGTZ: America/Guatemala
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - pgdata-dev:/var/lib/postgresql/data
     healthcheck:
