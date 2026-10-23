@@ -22,4 +22,6 @@ export type { BaseTemporal, OpcionesBaseTemporal } from './pruebas';
 // Operadores de Drizzle reexportados para que API y worker usen la misma instancia.
 export { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
 export type { SQL } from 'drizzle-orm';
+export { alias } from 'drizzle-orm/pg-core';
+export type { AnyPgColumn } from 'drizzle-orm/pg-core';
 export type { Pool, PoolConfig } from 'pg';
