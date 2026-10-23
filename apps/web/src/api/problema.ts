@@ -15,6 +15,11 @@ export interface CuerpoProblema {
 /** Código interno cuando no hay red (CU-01.1 E1). */
 export const SIN_CONEXION = 'SIN_CONEXION';
 
+/** Código interno cuando el servidor no responde con un problema JSON (p. ej. API apagada). */
+export const SERVIDOR_NO_DISPONIBLE = 'SERVIDOR_NO_DISPONIBLE';
+export const MENSAJE_SERVIDOR_NO_DISPONIBLE =
+  'No pudimos comunicarnos con el servidor. Intenta de nuevo en unos minutos.';
+
 /** Error de la API con su `codigo` estable y el `detail` en español. */
 export class ProblemaApi extends Error {
   readonly status: number;
@@ -47,11 +52,23 @@ export class ProblemaApi extends Error {
   /** Lee una respuesta de error; si el cuerpo no es JSON usa un mensaje genérico. */
   static async desde(respuesta: Response): Promise<ProblemaApi> {
     let cuerpo: CuerpoProblema = {};
+    let esProblemaJson = false;
     try {
       const leido: unknown = await respuesta.json();
-      if (leido && typeof leido === 'object') cuerpo = leido as CuerpoProblema;
+      if (leido && typeof leido === 'object') {
+        cuerpo = leido as CuerpoProblema;
+        esProblemaJson = true;
+      }
     } catch {
       // Cuerpo vacío o no JSON (p. ej. un proxy caído).
+    }
+    if (!esProblemaJson && respuesta.status >= 500) {
+      // La API no respondió (apagada, reiniciando o proxy sin destino): no es un error de la app.
+      return new ProblemaApi({
+        status: respuesta.status,
+        codigo: SERVIDOR_NO_DISPONIBLE,
+        detail: MENSAJE_SERVIDOR_NO_DISPONIBLE,
+      });
     }
     return new ProblemaApi({
       detail: 'Ocurrió un error inesperado. Intenta de nuevo más tarde.',

@@ -203,9 +203,36 @@ describe('ProblemaApi (RFC 7807)', () => {
     );
   });
 
-  it('cuerpo no JSON → mensaje genérico y código HTTP_xxx', async () => {
-    const p = await ProblemaApi.desde(new Response('<html>', { status: 502 }));
-    expect(p.codigo).toBe('HTTP_502');
+  it('5xx sin cuerpo JSON (API apagada o proxy sin destino) → servidor no disponible', async () => {
+    for (const status of [500, 502, 503, 504]) {
+      const p = await ProblemaApi.desde(new Response('<html>', { status }));
+      expect(p.codigo).toBe('SERVIDOR_NO_DISPONIBLE');
+      expect(p.status).toBe(status);
+      expect(p.message).toBe(
+        'No pudimos comunicarnos con el servidor. Intenta de nuevo en unos minutos.',
+      );
+    }
+    const vacio = await ProblemaApi.desde(new Response(null, { status: 500 }));
+    expect(vacio.codigo).toBe('SERVIDOR_NO_DISPONIBLE');
+  });
+
+  it('5xx con problema JSON conserva el detalle de la API', async () => {
+    const p = await ProblemaApi.desde(
+      new Response(
+        JSON.stringify({
+          status: 500,
+          detail: 'Ocurrió un error inesperado. Intenta de nuevo más tarde.',
+        }),
+        { status: 500 },
+      ),
+    );
+    expect(p.codigo).toBe('HTTP_500');
+    expect(p.message).toBe('Ocurrió un error inesperado. Intenta de nuevo más tarde.');
+  });
+
+  it('cuerpo no JSON en 4xx → mensaje genérico y código HTTP_xxx', async () => {
+    const p = await ProblemaApi.desde(new Response('<html>', { status: 404 }));
+    expect(p.codigo).toBe('HTTP_404');
     expect(p.message).toBe('Ocurrió un error inesperado. Intenta de nuevo más tarde.');
     expect(p.errores).toEqual([]);
     const sinDetalle = new ProblemaApi({ status: 500, title: 'Error interno' });
