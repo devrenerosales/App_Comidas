@@ -13,7 +13,7 @@ Sprints de 2 semanas, de lunes a viernes de la semana siguiente. La revisión y 
 | S4 | 2026-12-07 → 2026-12-18 | Lista de compras con avance y precio real | HU-27, 28, 29, 30, 32, 43, 44 | 39 |
 | — | 2026-12-21 → 2027-01-01 | Pausa de fin de año | — | — |
 | S5 | 2027-01-04 → 2027-01-15 | Precios y marcas | HU-09, 31, 33–38 | 51 |
-| S6 | 2027-01-18 → 2027-01-29 | Reportes, notificaciones, APK y cierre | HU-39–42 | 21 |
+| S6 | 2027-01-18 → 2027-01-29 | Reportes, notificaciones, APK, despliegue en Oracle Cloud y cierre | HU-39–42 + despliegue (D-16) | 21 |
 
 Cambio frente al SRS: HU-04 (recuperar contraseña) y HU-08 (inicio de semana) pasan de S1 a S2 para bajar el S1 de 56 a 51 puntos. Ambas son de prioridad "S" y no bloquean nada del S1. La pausa de fin de año es una propuesta; ajústala a tu calendario.
 
@@ -29,12 +29,12 @@ gantt
   S4 Lista de compras        :s4, 2026-12-07, 12d
   Pausa fin de año           :crit, p1, 2026-12-21, 12d
   S5 Precios y marcas        :s5, 2027-01-04, 12d
-  S6 Cierre y APK            :s6, 2027-01-18, 12d
+  S6 Cierre, APK y despliegue :s6, 2027-01-18, 12d
 ```
 
 ## 2. Sprint 1 — planificación
 
-**Objetivo:** que el administrador cree su hogar con comensales y factores de porción, configure tiempos de comida y presupuesto con vista previa, y registre platillos con ingredientes del catálogo, todo desplegado en la VM de Oracle Cloud (D-11, ADR-009).
+**Objetivo:** que el administrador cree su hogar con comensales y factores de porción, configure tiempos de comida y presupuesto con vista previa, y registre platillos con ingredientes del catálogo, probado en la laptop del PO (el despliegue en Oracle Cloud pasa al S6, D-16).
 
 | Orden | HU | Historia | Puntos | Depende de |
 |---|---|---|---|---|
@@ -54,7 +54,7 @@ gantt
 - [ ] Primera corrida de CI en GitHub: migración inicial con Drizzle ORM (D-15) contra PostgreSQL de servicio.
 - [ ] Datos semilla: supermercados, unidades, categorías y reparto RN-06.
 - [ ] Guard de aislamiento por hogar (RNF-06) con pruebas de autorización.
-- [ ] Puesta en marcha de la VM Oracle Cloud Always Free ARM según el checklist de `docs/02-diseno/despliegue.md` §13 (DuckDNS, Caddy, `deploy/deploy.sh`; D-11, D-12).
+- [x] ~~Puesta en marcha de la VM Oracle Cloud~~: se mueve al Sprint 6 (D-16).
 
 **Flujo de trabajo:** una rama `feature/HU-nn-descripcion` por historia desde `develop`. Claude prepara los commits y tú haces el push y el merge a `develop`. Al cierre del sprint se hace merge a `main` y se etiqueta `v0.1.0`.
 

@@ -19,5 +19,6 @@ Decisiones que cierran los supuestos de la fase de requerimientos. Cada una se r
 | D-13 | 2026-10-22 | Correo de invitaciones y recuperación con **Gmail + contraseña de aplicación** (SMTP), cambiable por configuración. | IE-03 · HU-02, HU-04 |
 | D-14 | 2026-10-22 | Se aprueba ADR-004: token de acceso de 15 min y refresh rotativo de 30 días. | HU-01 |
 | D-15 | 2026-10-22 | Se cambia Prisma por **Drizzle ORM** (TypeScript puro, sin motores binarios) para poder probar contra PostgreSQL real en todos los entornos. | R-01 · ADR-010 |
+| D-16 | 2026-10-23 | El **despliegue en Oracle Cloud se hace en el Sprint 6** (último). Hasta entonces la app se prueba en la laptop con `docker-compose.dev.yml` y `pnpm dev`; el correo queda en modo consola hasta configurar Gmail. | Plan de sprints · ADR-009 · despliegue.md |
 
 Se mantienen como propuestos, sin objeción del PO: las fórmulas de los factores del motor (M05, CU-05.2) y que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2).

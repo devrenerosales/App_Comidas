@@ -4,7 +4,7 @@
 |---|---|
 | Fechas planificadas | 2026-10-26 → 2026-11-06 (se adelantó el inicio al 2026-10-22) |
 | Objetivo | El administrador crea su hogar con comensales y factores de porción, configura tiempos y presupuesto con vista previa, y registra platillos con ingredientes del catálogo |
-| Estado | Historias terminadas e integradas en `develop`; pendiente la revisión del PO y el despliegue en Oracle Cloud |
+| Estado | Historias terminadas e integradas en `develop`; pendiente la revisión del PO (el despliegue pasa al S6, D-16) |
 
 ## 1. Historias
 
@@ -52,4 +52,4 @@ Lint, revisión de tipos, build, Prettier y `db:generate` (sin cambios de esquem
 - Capturas de pantalla en los capítulos 1 a 4 del manual.
 - Pruebas E2E de navegador con Playwright de los escenarios marcados `@e2e`.
 - Guardar el refresh de Android en almacenamiento seguro al agregar la plataforma Android.
-- Primer despliegue en Oracle Cloud (requiere la VM, DuckDNS y la contraseña de aplicación de Gmail).
+- Despliegue en Oracle Cloud: se hace en el Sprint 6 (D-16). Requiere la VM, DuckDNS y la contraseña de aplicación de Gmail.
