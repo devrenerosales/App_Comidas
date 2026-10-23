@@ -109,10 +109,13 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 | DELETE | `/hogar/invitaciones/{id}` | ADMIN | RF-02 | → 204 (revoca; repetir no es error) | 403 · 404 (no existe, otro hogar o id mal formado) · 409 `INVITACION_USADA` |
 | GET | `/invitaciones/{token}` | Público | RF-02 · HU-02 | → 200 `{hogarNombre, invitadoPor, medio, correo (enmascarado o null), venceEn}` | 410 `INVITACION_NO_VALIDA` · 429 |
 | POST | `/invitaciones/{token}/aceptar` | Auth | RF-02 · HU-02 | → 200 `{hogar: {id, nombre, rol}, rol: "MIEMBRO", accessToken, expiraEn}` | 403 `INVITACION_DE_OTRO_CORREO` · 409 `YA_TIENE_HOGAR` · 410 `INVITACION_NO_VALIDA` · 429 |
-| GET | `/hogar/comensales` | MIEMBRO | RF-03 · HU-03 | `?incluirInactivos=` → 200 `{comensales: [{id, nombre, tipo, factorPorcion, activo}], totales: {adultos, ninos, sumaFactores}}` | — |
-| POST | `/hogar/comensales` | ADMIN | RF-03 · HU-03 | `{nombre, tipo, factorPorcion?}` → 201 comensal + totales | 403 · 409 `NOMBRE_REPETIDO` · 422 `FACTOR_INVALIDO` |
-| PATCH | `/hogar/comensales/{id}` | ADMIN | RF-03 · D-02 | `{nombre?, tipo?, factorPorcion?}` → 200 | 403 · 404 · 409 · 422 |
-| DELETE | `/hogar/comensales/{id}` | ADMIN | RF-03 · HU-03 | → 200 inactivado + totales | 403 · 404 · 422 `ULTIMO_COMENSAL` |
+| GET | `/hogar/comensales` | MIEMBRO | RF-03 · HU-03 | `?incluirInactivos=true\|1` → 200 `{comensales: [{id, nombre, tipo, factorPorcion, activo}], totales: {activos, adultos, ninos, sumaFactores}}`. Activos primero y luego por fecha de alta; `totales` siempre sobre los activos; `sumaFactores` = **total de porciones** (Σ factores, RN-07), p. ej. `"3.50"` | 401 · 403 `SIN_HOGAR` |
+| POST | `/hogar/comensales` | ADMIN | RF-03 · HU-03 | `{nombre (1–60, espacios recortados), tipo?: ADULTO\|NINO (ADULTO si se omite; solo informativa), factorPorcion?: número o texto decimal (1.00 si se omite)}` → 201 `{comensal, totales}` | 403 `SOLO_ADMINISTRADOR` ("Solo el administrador puede modificar comensales") · 409 `NOMBRE_REPETIDO` (sin distinguir mayúsculas, espacios ni tildes; si el repetido está inactivo trae `comensalId` y `activo: false`) · 422 `FACTOR_INVALIDO` · 422 `NOMBRE_COMENSAL_INVALIDO` · 400 `VALIDACION` (tipo desconocido, campos extra) |
+| PATCH | `/hogar/comensales/{id}` | ADMIN | RF-03 · D-02 | `{nombre?, tipo?, factorPorcion?}` → 200 `{comensal, totales}` | 403 · 404 (no existe, otro hogar o id mal formado) · 409 `NOMBRE_REPETIDO` · 422 `FACTOR_INVALIDO`, `NOMBRE_COMENSAL_INVALIDO` |
+| DELETE | `/hogar/comensales/{id}` | ADMIN | RF-03 · HU-03 | Quitar = inactivar (baja lógica; repetir no es error) → 200 `{comensal, totales}` | 403 · 404 · 422 `ULTIMO_COMENSAL` |
+| POST | `/hogar/comensales/{id}/reactivar` | ADMIN | RF-03 · HU-03 | → 200 `{comensal, totales}` | 403 · 404 |
+
+`factorPorcion` válido: 0.25 a 2.00 en pasos de 0.25 (D-02; reglas en `@menu/shared`: `esFactorPorcionValido`, `totalPorciones`; CHECK `comensal_factor_ck` en la base). Las escrituras bloquean la fila del hogar para que dos bajas simultáneas no dejen el hogar sin comensales activos. El total de porciones para HU-12/HU-28 se obtiene en la API con `ComensalesService.totalPorciones(hogarId)`.
 
 ### 2.2 M02 — Configuración
 

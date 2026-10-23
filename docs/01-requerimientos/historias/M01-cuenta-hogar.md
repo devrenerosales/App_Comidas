@@ -337,6 +337,8 @@ Decisión D-02: cada comensal tiene un factor de porción sugerido en 1.0 y edit
 Supuesto: solo el administrador gestiona comensales (el perfil Miembro del SRS §2.3 no incluye configuración del hogar).
 Supuesto: quitar un comensal lo inactiva (no se borra) y no altera menús ya aprobados (D-04).
 
+> **Implementado en `feature/HU-03-comensales`** (S1): API `/hogar/comensales` (listar, crear, editar, inactivar y reactivar; totales con `sumaFactores`), pantalla **Comensales** enlazada desde "Hogar y usuarios" y reglas compartidas en `packages/shared/src/comensales.ts` (`totalPorciones`). La etiqueta es obligatoria en la base (`tipo` NOT NULL): si no se elige se guarda ADULTO. El nombre repetido no distingue mayúsculas, espacios ni tildes; un nombre de un comensal quitado se ofrece reactivar.
+
 #### Diagrama de actividad
 
 ```mermaid

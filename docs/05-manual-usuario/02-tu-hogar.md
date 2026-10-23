@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-02 Crear hogar e invitar miembros (S1) · HU-03 Registrar comensales (S1, pendiente) |
-| Versión de la app | Sprint 1 (rama `feature/HU-02-hogar-invitaciones`) |
-| Estado del capítulo | Parcial: falta "Comensales y factor de porción" (HU-03) y las capturas |
+| Historias | HU-02 Crear hogar e invitar miembros (S1) · HU-03 Registrar comensales (S1) |
+| Versión de la app | Sprint 1 (ramas `feature/HU-02-hogar-invitaciones` y `feature/HU-03-comensales`) |
+| Estado del capítulo | Completo para S1; faltan las capturas |
 
 En Menú Familiar todo se organiza por **hogar**: el menú de la semana, la lista de compras, el presupuesto y los platillos son del hogar y solo los ven sus integrantes. Este capítulo explica cómo crear tu hogar, invitar a tu familia y unirte a un hogar cuando alguien te invita.
 
@@ -19,7 +19,9 @@ Cada hogar tiene un **Administrador** (quien lo creó) y **Miembros** (las perso
 | Ver el hogar y la lista de miembros | Sí | Sí |
 | Invitar por correo o con un enlace | Sí | No |
 | Ver y revocar invitaciones pendientes | Sí | No |
-| Cambiar presupuesto, tiempos de comida y comensales (capítulos 2.6 y 3) | Sí | No |
+| Ver los comensales y el total de porciones (sección 2.6) | Sí | Sí |
+| Agregar, editar o quitar comensales (sección 2.6) | Sí | No |
+| Cambiar presupuesto y tiempos de comida (capítulo 3) | Sí | No |
 
 En esta versión **cada cuenta pertenece a un solo hogar**.
 
@@ -131,6 +133,69 @@ Si vuelves a invitar al mismo correo, la invitación anterior se anula sola y va
 | **Tu cuenta ya pertenece a un hogar** | Tu cuenta ya es de otro hogar (en esta versión solo puedes estar en uno). | No es posible unirte; si es un error, habla con el administrador de tu hogar actual. |
 | **Esta invitación se envió a otro correo…** | La invitación por correo es para otra cuenta. | Entra con la cuenta de ese correo o pide al administrador un enlace para compartir (opción B). |
 
-## 2.6 Comensales y factor de porción — próximamente
+## 2.6 Comensales y factor de porción
 
-> **Próximamente (HU-03, Sprint 1).** Aquí podrás registrar quiénes comen en casa y la porción de cada uno (por ejemplo 1.0 para un adulto y 0.5 para un niño pequeño), para que las cantidades del menú y de la lista de compras se ajusten a tu familia. Por ahora la sección **Comensales** de **Hogar y usuarios** muestra "Próximamente".
+Los **comensales** son las personas que comen en casa. Cada uno tiene un **factor de porción**: cuánto come comparado con un adulto. Menú Familiar suma los factores de todos los comensales y usa ese **total de porciones** para calcular las cantidades del menú y de la lista de compras.
+
+| Ejemplo | Factor |
+|---|---|
+| Adulto (lo normal) | 1.0 |
+| Niño pequeño | 0.5 |
+| Persona que come poco | 0.75 |
+| Persona que come el doble | 2.0 |
+
+El factor va de **0.25 a 2.0** en pasos de **0.25**. Al agregar a alguien se sugiere **1.0**.
+
+**Ejemplo:** Rene 1.0 + Ana 1.0 + Diego 1.0 + Sofía 0.5 = **3.5 porciones**.
+
+### Abrir Comensales
+
+1. Toca la pestaña **Configuración** y luego **Hogar y usuarios**.
+2. En la sección **Comensales** toca **Gestionar comensales** (si eres Miembro dice **Ver comensales**).
+
+Arriba verás el **Total de porciones** y cuántos comensales y niños hay. Debajo, en **Quiénes comen en casa**, está cada persona con su etiqueta y su porción.
+
+`[Captura 2-6: "Comensales" con el total de porciones y los botones − / + — img/02-comensales.png]`
+
+### Agregar un comensal (solo el administrador)
+
+1. En **Agregar comensal** escribe el **Nombre del comensal**, por ejemplo `Abuela Carmen` (hasta 60 caracteres).
+2. Si quieres, elige la **Etiqueta**: **Adulto** o **Niño**. Es solo para identificarlo: **no cambia las porciones**. Si no eliges, queda como Adulto.
+3. En **Porción** usa **−** y **+** para ajustar el factor (empieza en 1.0). Para un niño pequeño baja dos veces hasta **0.5**.
+4. Toca **Agregar comensal**. Verás **Agregamos a Abuela Carmen con porción 1.0.** y el total se actualiza.
+
+### Cambiar la porción de alguien
+
+1. Junto a la persona toca **−** o **+**. El total de porciones cambia al instante y aparece **Sin guardar**.
+2. Toca **Guardar cambios** para guardar, o **Descartar** para volver a como estaba.
+
+Los botones se desactivan cuando llegas al mínimo (0.25) o al máximo (2.0).
+
+### Cambiar el nombre o la etiqueta
+
+1. Toca **Editar** junto a la persona.
+2. Cambia el **Nombre** o la **Etiqueta** y toca **Guardar** (o **Cancelar**).
+
+### Quitar un comensal
+
+1. Toca **Quitar** junto a la persona.
+2. Confirma en el mensaje **¿Quitar a Diego? Dejará de contar en las porciones del hogar.**
+3. La persona pasa a la sección **Quitados** y deja de sumar en el total. No se borra: los menús ya aprobados no cambian.
+
+Para que vuelva a contar, toca **Volver a agregar** junto a su nombre en **Quitados**. Si intentas agregar de nuevo a alguien que quitaste, la app te ofrece **Volver a agregar a …**.
+
+El hogar siempre debe tener **al menos un comensal**: no puedes quitar al último.
+
+### Si eres Miembro
+
+Ves la lista de comensales, la porción de cada uno y el total, pero no puedes cambiarlos. La pantalla muestra **Solo el administrador puede modificar comensales.**
+
+### Si algo sale mal con los comensales
+
+| Mensaje | Qué significa | Qué hacer |
+|---|---|---|
+| **Ingresa el nombre del comensal** | El nombre está vacío. | Escribe un nombre. |
+| **Ya existe un comensal con ese nombre** | Ya hay alguien con ese nombre en tu hogar (no importan mayúsculas ni tildes: "Sofía" y "sofia" son el mismo). | Usa otro nombre, por ejemplo "Ana M.", o vuelve a agregar a quien quitaste. |
+| **El factor debe estar entre 0.25 y 2.0 en pasos de 0.25** | La porción no es válida. | Usa los botones − y + para elegir un valor permitido. |
+| **Debe quedar al menos un comensal activo en el hogar** | Intentaste quitar al último comensal. | Agrega a otra persona antes de quitar a esta. |
+| **Solo el administrador puede modificar comensales** | Tu cuenta es Miembro. | Pide al administrador que haga el cambio. |

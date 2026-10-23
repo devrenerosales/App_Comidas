@@ -60,7 +60,10 @@ describe('Hogar y usuarios (HU-02)', () => {
     expect(lista.getByText('Administrador')).toBeInTheDocument();
     expect(lista.getByText('ana@correo.com')).toBeInTheDocument();
     expect(lista.getByText('Miembro')).toBeInTheDocument();
-    expect(screen.getByText(/Próximamente/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Gestionar comensales' })).toHaveAttribute(
+      'href',
+      '/configuracion/comensales',
+    );
   });
 
   it('CA-02.1 invito a "ana@correo.com" por correo: confirma el envío y queda pendiente', async () => {

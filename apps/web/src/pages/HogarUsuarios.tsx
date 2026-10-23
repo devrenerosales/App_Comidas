@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   EstadoInvitacion,
   LARGO_MAXIMO_CORREO,
@@ -34,7 +34,7 @@ const NOMBRE_ROL: Readonly<Record<Rol, string>> = {
 /**
  * Pantalla "Hogar y usuarios" (HU-02 · CU-01.2 pasos 3–5): miembros del hogar y, solo para el
  * administrador (RN-10), invitar por correo, crear un enlace para compartir y revocar
- * invitaciones pendientes. Los comensales llegan con HU-03.
+ * invitaciones pendientes. Enlaza a "Comensales" (HU-03).
  */
 export default function HogarUsuarios() {
   const { hogar: sesionHogar } = useAuth();
@@ -269,8 +269,13 @@ export default function HogarUsuarios() {
         <section className="mf-tarjeta" aria-labelledby="titulo-comensales">
           <h2 id="titulo-comensales">Comensales</h2>
           <p className="mf-texto-suave">
-            Próximamente: registra quiénes comen en casa y su porción.
+            {esAdmin
+              ? 'Registra quiénes comen en casa y la porción de cada uno.'
+              : 'Mira quiénes comen en casa y la porción de cada uno.'}
           </p>
+          <Link className="mf-boton mf-boton--secundario" to="/configuracion/comensales">
+            {esAdmin ? 'Gestionar comensales' : 'Ver comensales'}
+          </Link>
         </section>
       </div>
     </PaginaBase>
