@@ -121,10 +121,10 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}], diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos, proximaSemana: {desde, hasta}}` | — |
-| POST | `/hogar/configuracion/vista-previa` | ADMIN | RF-07 · HU-07 | `{tiempos: [..], distribucion?: [{tiempo, porcentaje}]}` → 200 `{actual[], nuevo[], aplicaDesde, menusAprobadosConservados[], borradoresADesactualizar[]}` sin guardar | 403 · 422 `COMBINACION_TIEMPOS_INVALIDA`, `PORCENTAJES_NO_SUMAN_100` |
-| PUT | `/hogar/configuracion/tiempos` | ADMIN | RF-05, RF-07 · HU-05, HU-07 | `{version, tiempos: [{tiempo, porcentaje}]}` → 200 configuración + `borradoresDesactualizados` | 403 · 409 `VERSION_DESACTUALIZADA` · 422 |
-| PUT | `/hogar/configuracion/presupuesto` | ADMIN | RF-06 · HU-06 | `{version, presupuestoSemanal, modo: PORCENTAJE\|MONTO, distribucion: [{tiempo, porcentaje? , monto?}]}` → 200 (guarda en %) | 403 · 409 · 422 `PRESUPUESTO_INVALIDO`, `PORCENTAJES_NO_SUMAN_100`, `MONTOS_NO_SUMAN_PRESUPUESTO` |
+| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}] (siempre las 3 filas; inactivas en "0.00"), diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos: {preferencia, novedad, ahorro, afinidad}, actualizadoEn}`; `proximaSemana` llega con HU-08 | 403 `SIN_HOGAR` |
+| POST | `/hogar/configuracion/vista-previa` | ADMIN | RF-07 · HU-07 | `{tiempos: [..], presupuestoSemanal?, distribucion?: [{tiempo, porcentaje}]}` → 200 `{version, presupuestoSemanal, actual: [{tiempo, porcentaje, monto}], nuevo: [..], impacto: [{tiempo, cambio: AGREGADO\|QUITADO\|MODIFICADO\|SIN_CAMBIO, actual \| null, nuevo \| null, diferenciaMonto}], aplicaDesde, menusAprobadosConservados: [{id, fechaInicio, fechaFin}], borradoresADesactualizar: [..]}` sin guardar; sin `distribucion` propone RN-06 / D-01 | 400 · 403 `SOLO_ADMINISTRADOR` · 422 `COMBINACION_TIEMPOS_INVALIDA`, `PORCENTAJES_NO_SUMAN_100`, `DISTRIBUCION_INVALIDA`, `PRESUPUESTO_INVALIDO` |
+| PUT | `/hogar/configuracion/tiempos` | ADMIN | RF-05, RF-07 · HU-05, HU-07 | `{version, tiempos: [{tiempo, porcentaje}], presupuestoSemanal?}` (solo los tiempos activos) → 200 configuración (forma del GET) + `borradoresDesactualizados: [{id, fechaInicio, fechaFin}]` | 400 · 403 · 409 `VERSION_DESACTUALIZADA` · 422 (mismos códigos que la vista previa) |
+| PUT | `/hogar/configuracion/presupuesto` | ADMIN | RF-06 · HU-06 | `{version, presupuestoSemanal, modo?: PORCENTAJE\|MONTO, distribucion?: [{tiempo, porcentaje? , monto?}]}` → 200 configuración + `borradoresDesactualizados` (guarda en %; sin `distribucion` conserva los % y recalcula montos) | 400 · 403 · 409 · 422 `PRESUPUESTO_INVALIDO`, `PORCENTAJES_NO_SUMAN_100`, `MONTOS_NO_SUMAN_PRESUPUESTO`, `DISTRIBUCION_INVALIDA` |
 | PUT | `/hogar/configuracion/semana` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 `{…, semanaTransicion: {desde, hasta} \| null, proximaSemana}` | 403 · 409 · 422 |
 | GET | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | → 200 `[{supermercadoId, nombre, preferido}]` | — |
 | PUT | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | `{preferidos: [supermercadoId]}` → 200 | 422 `SIN_SUPERMERCADO_PREFERIDO` |
@@ -132,6 +132,13 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 | PUT | `/hogar/preferencias/marcas/{productoId}` | MIEMBRO | RF-09 · HU-09 | `{marca: "Ideal" \| null}` (null = cualquier marca) → 200 | 404 · 422 `MARCA_SIN_VINCULO` |
 | GET | `/hogar/preferencias/gustos` | MIEMBRO | RF-10 · HU-10 | → 200 `{ingredientesExcluidos: [producto], favoritos: [platillo]}` | — |
 | PUT | `/hogar/preferencias/gustos` | MIEMBRO | RF-10 · HU-10 | `{ingredientesExcluidos: [productoId], favoritos: [platilloId]}` → 200 `{…, impacto: {platillosExcluidos: [{id, nombre}]}, advertencias: [FAVORITO_CON_EXCLUIDO]}` | 404 · 422 `INACTIVO` |
+
+Notas de implementación de la configuración (HU-05, HU-06, HU-07, rama `feature/HU-05-07-configuracion`):
+- Montos calculados con enteros (centavos) en `@menu/shared`: monto = presupuesto × % redondeado a centavos; la diferencia de redondeo va al almuerzo (o al tiempo de mayor %). El modo monto convierte a % con 2 decimales y su redondeo también va al almuerzo.
+- RN-10: los guardados y la vista previa responden 403 `SOLO_ADMINISTRADOR` antes de validar el cuerpo; el `detail` es "Solo el administrador puede cambiar los tiempos de comida" (vista previa y tiempos) o "Solo el administrador puede cambiar esta configuración" (presupuesto).
+- Versión optimista: la escritura se hace con `UPDATE … WHERE version = :version`; si no actualiza filas, 409 `VERSION_DESACTUALIZADA` "La configuración cambió, revisa de nuevo". Guardar valores idénticos no sube la versión.
+- Al guardar un cambio efectivo (tiempos, % o presupuesto) se marcan `desactualizado = true` los menús en BORRADOR con `fechaFin` ≥ hoy (America/Guatemala); los APROBADOS e HISTÓRICOS no se tocan (D-04).
+- `aplicaDesde` = inicio de la próxima semana (primer `diaInicioSemana` posterior a hoy), saltando las semanas consecutivas con menú aprobado.
 
 ### 2.3 M03 — Catálogo
 

@@ -2,6 +2,7 @@ import { IonIcon, IonLabel, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } 
 import { Redirect, Route } from 'react-router-dom';
 import Comensales from './pages/Comensales';
 import Configuracion from './pages/Configuracion';
+import ConfiguracionTiempos from './pages/ConfiguracionTiempos';
 import HogarUsuarios from './pages/HogarUsuarios';
 import Inicio from './pages/Inicio';
 import Lista from './pages/Lista';
@@ -21,6 +22,7 @@ export function Pestanas() {
         <Route exact path="/configuracion" component={Configuracion} />
         <Route exact path="/configuracion/hogar" component={HogarUsuarios} />
         <Route exact path="/configuracion/comensales" component={Comensales} />
+        <Route exact path="/configuracion/tiempos" component={ConfiguracionTiempos} />
         <Route exact path="/">
           <Redirect to="/inicio" />
         </Route>

@@ -28,3 +28,6 @@ desktop.ini
 apps/web/dev-dist/
 apps/web/android/
 apps/web/ios/
+
+# Worktrees de agentes
+.claude/

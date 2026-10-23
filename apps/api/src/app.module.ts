@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module';
 import { ComensalesModule } from './comensales/comensales.module';
+import { ConfiguracionModule } from './configuracion/configuracion.module';
 import { ProblemaFiltro } from './comun/problema.filter';
 import { CorreoModule } from './correo/correo.module';
 import { validarEntorno } from './config/env.validation';
@@ -45,6 +46,7 @@ import { RedisModule } from './redis/redis.module';
     CorreoModule,
     HogarModule,
     ComensalesModule,
+    ConfiguracionModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

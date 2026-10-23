@@ -1,0 +1,233 @@
+/* Tiempos de comida y presupuesto (HU-05, HU-06, HU-07) — prototipo Config-tiempos.dc.html. */
+.mf-config form > * + * {
+  margin-top: 16px;
+}
+
+.mf-config fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.mf-config legend {
+  padding: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mf-config__opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mf-config__opcion {
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--mf-borde);
+  border-radius: 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+label.mf-config__opcion,
+.mf-config__opcion-titulo {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  display: flex;
+  min-height: 28px;
+}
+
+.mf-config__opcion--elegida {
+  border: 2px solid var(--mf-verde);
+  background: #e6f0ea;
+  color: var(--mf-verde-oscuro);
+}
+
+.mf-config input[type='radio'],
+.mf-config input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--mf-verde);
+}
+
+.mf-config__casillas {
+  display: flex;
+  gap: 8px;
+  padding-left: 32px;
+  flex-wrap: wrap;
+}
+
+.mf-config__casilla {
+  flex: 1 1 96px;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid #cfc7b8;
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--mf-texto);
+}
+
+.mf-config__modo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px !important;
+}
+
+.mf-config__modo legend {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.mf-config__encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mf-config__sin-guardar {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8a5a00;
+  background: #fcf1dc;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.mf-config__barra {
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 12px;
+  background: #efeae1;
+}
+
+.mf-config__tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mf-config__tabla th,
+.mf-config__tabla td {
+  padding: 8px 4px;
+  text-align: left;
+  border-bottom: 1px solid #efeae1;
+  font-size: 0.95rem;
+}
+
+.mf-config__tabla thead th {
+  font-size: 0.8rem;
+  color: var(--mf-texto-suave);
+}
+
+.mf-config__color {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.mf-config__nuevo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mf-config__entrada {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.mf-config__entrada input {
+  box-sizing: border-box;
+  width: 76px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid #cfc7b8;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--mf-texto);
+}
+
+.mf-config__equivalente {
+  font-weight: 700;
+}
+
+.mf-config__suma {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  font-weight: 700;
+  color: var(--mf-verde-oscuro);
+}
+
+.mf-config__suma--error {
+  color: var(--mf-error);
+}
+
+.mf-config__sugerida {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mf-config__nota {
+  margin: 8px 0 0 !important;
+  font-size: 0.85rem;
+}
+
+.mf-config__acciones {
+  display: flex;
+  gap: 10px;
+}
+
+.mf-config__acciones .mf-boton {
+  flex: 1;
+}
+
+.mf-config__acciones .mf-boton--primario {
+  flex: 2;
+}
+
+.mf-boton[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mf-visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
