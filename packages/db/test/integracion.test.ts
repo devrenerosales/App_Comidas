@@ -13,7 +13,9 @@ import {
   eq,
   hogar,
   migrar,
+  PRODUCTOS_SEMILLA,
   precio,
+  producto,
   sembrar,
   sql,
   supermercado,
@@ -97,6 +99,21 @@ describe.skipIf(!URL_PRUEBAS)('PostgreSQL real: migraciones, semilla y reglas', 
     expect(await contar('SELECT count(*) AS n FROM supermercado WHERE extraccion_permitida')).toBe(
       1,
     );
+  });
+
+  it('HU-13 siembra los productos básicos una sola vez y no pisa un producto inactivado', async () => {
+    expect(await contar('SELECT count(*) AS n FROM producto')).toBe(PRODUCTOS_SEMILLA.length);
+    await base.db.update(producto).set({ activo: false }).where(eq(producto.nombre, 'Crema'));
+    const r = await sembrar(base.db);
+    expect(r.productos).toBe(PRODUCTOS_SEMILLA.length);
+    expect(await contar('SELECT count(*) AS n FROM producto')).toBe(PRODUCTOS_SEMILLA.length);
+    expect(await contar('SELECT count(*) AS n FROM producto WHERE NOT activo')).toBe(1);
+    const { rows } = await base.db.$client.query<{ etiqueta: string }>(
+      `SELECT p.nombre || ' · ' || p.unidad_compra || ' ' || p.presentacion_cantidad::float8 || ' ' || u.codigo AS etiqueta
+         FROM producto p JOIN unidad u ON u.id = p.presentacion_unidad_id
+        WHERE p.nombre_normalizado = 'guisquil'`,
+    );
+    expect(rows[0]?.etiqueta).toBe('Güisquil · unidad 1 unidad');
   });
 
   it('marca al administrador del sistema por correo', async () => {
@@ -214,6 +231,7 @@ describe.skipIf(!URL_PRUEBAS)('PostgreSQL real: migraciones, semilla y reglas', 
     expect(await contar('SELECT count(*) AS n FROM unidad')).toBe(12);
     expect(await contar('SELECT count(*) AS n FROM categoria')).toBe(9);
     expect(await contar('SELECT count(*) AS n FROM supermercado')).toBe(4);
+    expect(await contar('SELECT count(*) AS n FROM producto')).toBe(PRODUCTOS_SEMILLA.length);
     await truncarTablas(base.db, { conservarSemilla: false });
     expect(await contar('SELECT count(*) AS n FROM unidad')).toBe(0);
   });

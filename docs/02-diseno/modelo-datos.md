@@ -1565,7 +1565,7 @@ Al crear un hogar (CU-01.2) se insertan `Configuracion` (Q250.00, domingo/doming
 
 ### 8.5 Otros
 
-- **Productos básicos** (~40, archivo `packages/db/semilla/productos.csv`, pendiente para S2): arroz, frijol negro, aceite, azúcar, sal, huevos, pechuga de pollo, carne de res para guisar, tomate, cebolla, chile pimiento, papa, güisquil, miltomate, crema, queso fresco, tortillas, pan francés, pasta, consomé, entre otros; se completa con la lista de Q814 en S2.
+- **Productos básicos** (45, `PRODUCTOS_SEMILLA` en `packages/db/src/semilla.ts`, HU-13): pechuga, pollo entero, carne de res para guisar, frijol negro, arroz, tortillas de maíz, tomate, cebolla, chile pimiento, güisquil, plátano, crema, queso fresco, huevos, aceite, azúcar, sal, consomé, entre otros, con su categoría y presentación habitual. Solo se insertan los que faltan (no pisa productos editados o inactivados); "Miltomate" no viene en la semilla (CA-12.2). Se completa con la lista de Q814 en S2.
 - **Usuario administrador del sistema:** el seed marca `esAdminSistema = true` al correo indicado en la variable `SEED_ADMIN_SISTEMA_CORREO` si ya existe.
 - **Datos de demostración** (solo desarrollo y pruebas, `SEED_DEMO=true`): hogar "Familia Demo", 4 comensales, 30 platillos con ingredientes y precios semilla para que el motor funcione antes de S5 (CU-05.3, supuesto de precios semilla).
 

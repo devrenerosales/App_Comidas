@@ -10,7 +10,7 @@ import { migrar } from './migraciones';
 import { sembrar } from './semilla';
 
 /** Tablas que llena la semilla; `truncarTablas` las vuelve a sembrar por defecto. */
-export const TABLAS_SEMILLA = ['supermercado', 'unidad', 'categoria'] as const;
+export const TABLAS_SEMILLA = ['supermercado', 'unidad', 'categoria', 'producto'] as const;
 
 export interface OpcionesBaseTemporal {
   /** Prefijo del nombre de la base (minúsculas, dígitos y `_`). Por defecto `prueba`. */

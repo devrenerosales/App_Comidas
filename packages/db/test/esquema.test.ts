@@ -6,9 +6,11 @@ import { describe, expect, it } from 'vitest';
 import {
   CARPETA_MIGRACIONES,
   CATEGORIAS_SEMILLA,
+  PRODUCTOS_SEMILLA,
   SUPERMERCADOS_SEMILLA,
   UNIDADES_SEMILLA,
   crearDb,
+  normalizarNombreSemilla,
   esquema,
   urlConBase,
 } from '../src';
@@ -85,6 +87,26 @@ describe('migraciones y semilla (sin base de datos)', () => {
     expect(SUPERMERCADOS_SEMILLA.every((s) => s.extraccionPermitida === false)).toBe(true);
     expect(UNIDADES_SEMILLA).toHaveLength(12);
     expect(CATEGORIAS_SEMILLA.map((c) => c.orden)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('HU-13 la semilla trae ~40 productos básicos sin repetir nombre + presentación', () => {
+    expect(PRODUCTOS_SEMILLA.length).toBeGreaterThanOrEqual(40);
+    const claves = PRODUCTOS_SEMILLA.map(
+      (p) => `${normalizarNombreSemilla(p.nombre)}|${Number(p.cantidad)}|${p.unidad}`,
+    );
+    expect(new Set(claves).size).toBe(claves.length);
+    expect(PRODUCTOS_SEMILLA.every((p) => Number(p.cantidad) > 0)).toBe(true);
+    expect(PRODUCTOS_SEMILLA.every((p) => p.unidadCompra.length <= 20)).toBe(true);
+    const nombres = PRODUCTOS_SEMILLA.map((p) => p.nombre);
+    expect(nombres).toEqual(
+      expect.arrayContaining(['Pechuga de pollo', 'Frijol negro', 'Güisquil', 'Aceite', 'Crema']),
+    );
+    // CA-12.2 crea "Miltomate" desde el buscador: no debe venir en la semilla.
+    expect(nombres).not.toContain('Miltomate');
+  });
+
+  it('normalizarNombreSemilla quita tildes, mayúsculas y espacios de más', () => {
+    expect(normalizarNombreSemilla('  Güisquil   TIERNO ')).toBe('guisquil tierno');
   });
 });
 
