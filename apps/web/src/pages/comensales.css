@@ -1,0 +1,107 @@
+/* Comensales (HU-03) — Comensales.dc.html: total de porciones y −/+ por comensal. */
+.mf-total {
+  text-align: center;
+}
+
+.mf-hogar .mf-total .mf-total__valor {
+  margin: 0 0 4px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--mf-verde-oscuro);
+}
+
+.mf-hogar .mf-total .mf-total__pendiente {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fdf3e3;
+  color: #8a5a12;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mf-lista-comensales li {
+  flex-wrap: wrap;
+}
+
+.mf-comensal__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mf-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--mf-borde);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.mf-stepper__boton {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--mf-verde);
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mf-stepper__boton:disabled {
+  color: var(--mf-borde);
+  cursor: not-allowed;
+}
+
+.mf-stepper__boton:focus-visible {
+  outline: 3px solid rgba(47, 107, 79, 0.45);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+
+.mf-stepper__valor {
+  min-width: 3.2em;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mf-etiquetas {
+  margin: 0 0 16px;
+  padding: 0;
+  border: none;
+}
+
+.mf-etiquetas legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mf-etiquetas__opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-right: 20px;
+}
+
+.mf-etiquetas__opcion input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--mf-verde);
+}
+
+.mf-campo__titulo {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mf-edicion {
+  width: 100%;
+}
