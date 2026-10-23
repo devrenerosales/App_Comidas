@@ -52,6 +52,8 @@ Supuesto S-M02-1: RN-06 solo define la pareja almuerzo + cena; para las otras pa
 
 ### CU-02.1 — Parametrizar tiempos de comida · RF-05 · HU-05
 
+> **Implementado en feature/HU-05-07** (HU-05): API `/hogar/configuracion` (api-contrato §2.2), pantalla Configuración → Tiempos y presupuesto y manual [03-configuracion.md](../../05-manual-usuario/03-configuracion.md).
+
 #### Especificación
 
 | Campo | Detalle |
@@ -165,6 +167,8 @@ Característica: Tiempos de comida parametrizables
 
 ### CU-02.2 — Definir presupuesto y distribución · RF-06 · HU-06
 
+> **Implementado en feature/HU-05-07** (HU-06): API `/hogar/configuracion` (api-contrato §2.2), pantalla Configuración → Tiempos y presupuesto y manual [03-configuracion.md](../../05-manual-usuario/03-configuracion.md).
+
 #### Especificación
 
 | Campo | Detalle |
@@ -272,6 +276,8 @@ Característica: Presupuesto semanal y su distribución
 ---
 
 ### CU-02.3 — Recalcular distribución con vista previa · RF-07 · HU-07
+
+> **Implementado en feature/HU-05-07** (HU-07): API `/hogar/configuracion` (api-contrato §2.2), pantalla Configuración → Tiempos y presupuesto y manual [03-configuracion.md](../../05-manual-usuario/03-configuracion.md).
 
 #### Especificación
 
