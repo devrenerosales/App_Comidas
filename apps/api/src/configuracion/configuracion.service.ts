@@ -37,11 +37,18 @@ import type {
 } from './configuracion.tipos';
 import type {
   GuardarPresupuestoDto,
+  GuardarSemanaDto,
   GuardarTiemposDto,
   TiempoPorcentajeDto,
   VistaPreviaDto,
 } from './dto/configuracion.dto';
-import { aplicaDesde, fechaLocal } from './semanas';
+import {
+  aplicaDesde,
+  fechaLocal,
+  calendarioSemana,
+  type CalendarioSemana,
+  type DiaSemana,
+} from './semanas';
 
 /** Vista de la API a partir de las filas (montos según RN-01 con la diferencia al almuerzo). */
 export function vistaConfiguracionHogar({
@@ -89,8 +96,54 @@ export class ConfiguracionService {
   ) {}
 
   /** GET /hogar/configuracion (cualquier miembro). */
-  async obtener(hogarId: string): Promise<VistaConfiguracionHogar> {
-    return vistaConfiguracionHogar(await this.leer(hogarId));
+  async obtener(hogarId: string): Promise<VistaConfiguracionHogar & CalendarioSemana> {
+    const leida = await this.leer(hogarId);
+    const c = leida.configuracion;
+    return {
+      ...vistaConfiguracionHogar(leida),
+      ...(await this.calendario(hogarId, c.diaInicioSemana, c.diaPlanificacion)),
+    };
+  }
+
+  private async calendario(hogarId: string, inicio: DiaSemana, planificacion: DiaSemana) {
+    const hoy = fechaLocal(this.reloj());
+    const menus = await this.repositorio.menusFuturos(hogarId, hoy);
+    return calendarioSemana(
+      hoy,
+      inicio,
+      planificacion,
+      menus.filter((m) => m.estado === 'APROBADO'),
+    );
+  }
+
+  async vistaPreviaSemana(hogarId: string, dto: GuardarSemanaDto) {
+    await this.leerVersion(hogarId, dto.version);
+    return {
+      version: dto.version,
+      ...(await this.calendario(hogarId, dto.diaInicioSemana, dto.diaPlanificacion)),
+    };
+  }
+
+  async guardarSemana(hogarId: string, usuarioId: string, dto: GuardarSemanaDto) {
+    try {
+      const guardada = await this.repositorio.guardarSemana(
+        hogarId,
+        usuarioId,
+        dto.version,
+        dto.diaInicioSemana,
+        dto.diaPlanificacion,
+        fechaLocal(this.reloj()),
+      );
+      return {
+        ...vistaConfiguracionHogar(guardada),
+        proximaSemana: guardada.proximaSemana,
+        semanaTransicion: guardada.semanaTransicion,
+        proximaPlanificacion: guardada.proximaPlanificacion,
+      };
+    } catch (error) {
+      if (error instanceof VersionDesactualizadaError) throw this.versionDesactualizada();
+      throw error;
+    }
   }
 
   /**

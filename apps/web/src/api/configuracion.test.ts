@@ -25,5 +25,22 @@ describe('API de configuración (api-contrato §2.2)', () => {
       metodo: 'PUT',
       cuerpo: presupuesto,
     });
+    await api.obtenerSemana();
+    expect(cliente.peticion).toHaveBeenLastCalledWith('/hogar/configuracion');
+    const semana = {
+      version: 1,
+      diaInicioSemana: 'LUNES' as const,
+      diaPlanificacion: 'SABADO' as const,
+    };
+    await api.vistaPreviaSemana(semana);
+    expect(cliente.peticion).toHaveBeenLastCalledWith('/hogar/configuracion/semana/vista-previa', {
+      metodo: 'POST',
+      cuerpo: semana,
+    });
+    await api.guardarSemana(semana);
+    expect(cliente.peticion).toHaveBeenLastCalledWith('/hogar/configuracion/semana', {
+      metodo: 'PUT',
+      cuerpo: semana,
+    });
   });
 });

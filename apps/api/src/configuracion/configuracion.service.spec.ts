@@ -63,7 +63,12 @@ async function problema(promesa: Promise<unknown>): Promise<[number, string, str
 }
 
 describe('ConfiguracionService', () => {
-  const repo = { leer: jest.fn(), menusFuturos: jest.fn(), guardar: jest.fn() };
+  const repo = {
+    leer: jest.fn(),
+    menusFuturos: jest.fn(),
+    guardar: jest.fn(),
+    guardarSemana: jest.fn(),
+  };
   const servicio = new ConfiguracionService(repo as unknown as ConfiguracionRepositorio, () => HOY);
 
   beforeEach(() => {
@@ -123,6 +128,50 @@ describe('ConfiguracionService', () => {
       'NO_ENCONTRADO',
       expect.any(String),
     ]);
+  });
+
+  it('HU-08 obtener y vista previa devuelven fechas sin guardar', async () => {
+    repo.leer.mockResolvedValue(leida('250.00', { ALMUERZO: '100.00' }));
+    const config = await servicio.obtener('h1');
+    expect(config.proximaSemana).toEqual({ desde: '2026-10-25', hasta: '2026-10-31' });
+    const previa = await servicio.vistaPreviaSemana('h1', {
+      version: 1,
+      diaInicioSemana: 'LUNES',
+      diaPlanificacion: 'SABADO',
+    });
+    expect(previa.proximaSemana.desde).toBe('2026-10-26');
+    expect(previa.proximaPlanificacion).toBe('2026-10-24');
+    expect(repo.guardarSemana).not.toHaveBeenCalled();
+    await expect(
+      servicio.vistaPreviaSemana('h1', {
+        version: 2,
+        diaInicioSemana: 'LUNES',
+        diaPlanificacion: 'SABADO',
+      }),
+    ).rejects.toMatchObject({ codigo: 'VERSION_DESACTUALIZADA' });
+  });
+
+  it('HU-08 guarda con la fecha local y traduce el conflicto de versión', async () => {
+    const datos = {
+      version: 1,
+      diaInicioSemana: 'LUNES' as const,
+      diaPlanificacion: 'SABADO' as const,
+    };
+    repo.guardarSemana.mockResolvedValue({
+      ...leida('250.00', { ALMUERZO: '100.00' }, 2),
+      proximaSemana: { desde: '2026-10-26', hasta: '2026-11-01' },
+      semanaTransicion: null,
+      proximaPlanificacion: '2026-10-24',
+    });
+    expect((await servicio.guardarSemana('h1', 'u1', datos)).version).toBe(2);
+    expect(repo.guardarSemana).toHaveBeenCalledWith('h1', 'u1', 1, 'LUNES', 'SABADO', '2026-10-22');
+    repo.guardarSemana.mockRejectedValueOnce(new VersionDesactualizadaError());
+    await expect(servicio.guardarSemana('h1', 'u1', datos)).rejects.toMatchObject({
+      codigo: 'VERSION_DESACTUALIZADA',
+    });
+    const error = new Error('BD caída');
+    repo.guardarSemana.mockRejectedValueOnce(error);
+    await expect(servicio.guardarSemana('h1', 'u1', datos)).rejects.toBe(error);
   });
 
   it('CA-07.1 vista previa con menús futuros: aprobados conservados y borradores a desactualizar', async () => {

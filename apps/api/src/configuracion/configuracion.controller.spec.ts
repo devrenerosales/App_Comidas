@@ -12,6 +12,8 @@ describe('ConfiguracionController', () => {
     vistaPrevia: jest.fn().mockResolvedValue('vista'),
     guardarTiempos: jest.fn().mockResolvedValue('tiempos'),
     guardarPresupuesto: jest.fn().mockResolvedValue('presupuesto'),
+    vistaPreviaSemana: jest.fn().mockResolvedValue('semana-previa'),
+    guardarSemana: jest.fn().mockResolvedValue('semana'),
   };
   const ctrl = new ConfiguracionController(servicio as unknown as ConfiguracionService);
 
@@ -27,6 +29,15 @@ describe('ConfiguracionController', () => {
     const presupuesto = { version: 1, presupuestoSemanal: '500' };
     await expect(ctrl.guardarPresupuesto('h1', 'u1', presupuesto)).resolves.toBe('presupuesto');
     expect(servicio.guardarPresupuesto).toHaveBeenCalledWith('h1', 'u1', presupuesto);
+    const semana = {
+      version: 1,
+      diaInicioSemana: 'LUNES' as const,
+      diaPlanificacion: 'SABADO' as const,
+    };
+    await expect(ctrl.vistaPreviaSemana('h1', semana)).resolves.toBe('semana-previa');
+    expect(servicio.vistaPreviaSemana).toHaveBeenCalledWith('h1', semana);
+    await expect(ctrl.guardarSemana('h1', 'u1', semana)).resolves.toBe('semana');
+    expect(servicio.guardarSemana).toHaveBeenCalledWith('h1', 'u1', semana);
   });
 
   it('CA-05.4 los guardados y la vista previa son solo del administrador', () => {

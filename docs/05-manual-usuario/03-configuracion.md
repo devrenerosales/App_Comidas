@@ -91,9 +91,26 @@ Puedes ajustar los porcentajes antes de confirmar; si no suman 100 %, **Confirma
 | La configuración cambió, revisa de nuevo | Otro administrador guardó un cambio mientras editabas. | Revisa los valores que se recargaron y vuelve a guardar. |
 | Solo el administrador puede cambiar los tiempos de comida | Tu rol es Miembro. | Pide el cambio al administrador. |
 
-## 3.6 Inicio de semana y día de planificación — próximamente (HU-08, Sprint 1)
+## 3.6 Inicio de semana y día de planificación
 
-Se completará cuando se implemente HU-08.
+1. Abre **Configuración → Configurar semana**.
+2. Elige el **Día de inicio de semana** y el **Día de planificación**. Ambos son domingo por defecto.
+3. Toca **Ver fechas** para comprobar la próxima semana y la próxima fecha de planificación.
+4. Si aparece una **Semana de transición**, revisa sus fechas: es una semana corta de uno a seis días que evita cambiar los menús aprobados.
+5. Toca **Guardar semana**. Si vuelves a cambiar un selector antes de guardar, toca **Ver fechas** otra vez.
+
+Ejemplo: si el menú aprobado termina el sábado 24 de octubre de 2026 y cambias el inicio a lunes,
+se crea un borrador de transición para el domingo 25. La siguiente semana completa va del lunes
+26 de octubre al domingo 1 de noviembre. Los platillos de los menús aprobados se conservan.
+
+Los miembros pueden consultar esta pantalla, pero solo el administrador puede cambiarla.
+Si otro administrador guardó primero, la app avisa y recarga la configuración para que la revises.
+Si ya hay un borrador que ocupa las fechas de transición, el cambio se rechaza para conservarlo.
+Una transición todavía vacía puede ajustarse si vuelves a cambiar el inicio.
+
+La fecha de planificación es la siguiente ocurrencia del día elegido, posterior a hoy, en hora
+de Guatemala. La hora se conserva. El envío de recordatorios estará disponible con el módulo
+de notificaciones (HU-41); guardar esta configuración todavía no envía una notificación.
 
 ## 3.7 Supermercados y marcas preferidas — próximamente (HU-09, Sprint 5)
 

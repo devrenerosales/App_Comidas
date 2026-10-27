@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ModoDistribucion, ORDEN_TIEMPOS, type TiempoComida } from '@menu/shared';
+import { DIAS_SEMANA, type DiaSemana } from '../semanas';
 
 /**
  * Los decimales viajan como texto (api-contrato §1.2); por comodidad se acepta también un número,
@@ -23,6 +24,24 @@ const aTexto = ({ value }: { value: unknown }) =>
 
 const MENSAJE_TIEMPO = 'Elige DESAYUNO, ALMUERZO o CENA';
 const MENSAJE_VERSION = 'Indica la versión de la configuración que estás editando';
+
+export class GuardarSemanaDto {
+  @IsInt({ message: MENSAJE_VERSION })
+  @Min(1, { message: MENSAJE_VERSION })
+  version!: number;
+
+  @IsIn(DIAS_SEMANA, {
+    message: 'Elige un día de inicio válido',
+    context: { status: 422, codigo: 'DIA_SEMANA_INVALIDO' },
+  })
+  diaInicioSemana!: DiaSemana;
+
+  @IsIn(DIAS_SEMANA, {
+    message: 'Elige un día de planificación válido',
+    context: { status: 422, codigo: 'DIA_SEMANA_INVALIDO' },
+  })
+  diaPlanificacion!: DiaSemana;
+}
 
 /** `{ tiempo, porcentaje }` de un tiempo activo. */
 export class TiempoPorcentajeDto {

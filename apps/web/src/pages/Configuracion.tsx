@@ -31,6 +31,15 @@ export default function Configuracion() {
             </Link>
           </section>
         )}
+        {hogar && (
+          <section aria-labelledby="titulo-semana">
+            <h2 id="titulo-semana">Semana</h2>
+            <p>Elige cuándo empieza tu semana y qué día planificas.</p>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/semana">
+              Configurar semana
+            </Link>
+          </section>
+        )}
         <section aria-labelledby="titulo-cuenta">
           <h2 id="titulo-cuenta">Tu cuenta</h2>
           {usuario && (
