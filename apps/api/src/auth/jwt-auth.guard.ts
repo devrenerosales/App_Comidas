@@ -5,6 +5,7 @@ import { Problema } from '../comun/problema';
 import { ES_PUBLICO } from './auth.constants';
 import type { UsuarioAutenticado } from './auth.tipos';
 import { TokensService } from './tokens.service';
+import { UsuariosRepositorio } from '../usuarios/usuarios.repositorio';
 
 export type RequestAutenticada = Request & { usuario?: UsuarioAutenticado };
 
@@ -23,9 +24,10 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly tokens: TokensService,
+    private readonly usuarios: UsuariosRepositorio,
   ) {}
 
-  canActivate(contexto: ExecutionContext): boolean {
+  async canActivate(contexto: ExecutionContext): Promise<boolean> {
     const esPublico = this.reflector.getAllAndOverride<boolean | undefined>(ES_PUBLICO, [
       contexto.getHandler(),
       contexto.getClass(),
@@ -35,6 +37,14 @@ export class JwtAuthGuard implements CanActivate {
     const token = tokenBearer(req);
     if (!token) throw new Problema(401, 'NO_AUTENTICADO', 'Inicia sesión para continuar.');
     const claims = this.tokens.verificarAcceso(token);
+    const cuenta = await this.usuarios.buscarPorId(claims.sub);
+    if (
+      !cuenta?.activo ||
+      (cuenta.sesionesInvalidasAntesDe &&
+        claims.emitidoEn <= cuenta.sesionesInvalidasAntesDe.getTime())
+    ) {
+      throw new Problema(401, 'SESION_REVOCADA', 'Tu sesión terminó. Inicia sesión de nuevo.');
+    }
     req.usuario = { id: claims.sub, hogarId: claims.hogarId, rol: claims.rol };
     return true;
   }

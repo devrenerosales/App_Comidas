@@ -10,6 +10,18 @@ const SESION: Sesion = {
   hogar: null,
 };
 
+it('al limpiar la sesión elimina los tokens y avisa al proveedor de autenticación', () => {
+  const cliente = new ClienteHttp({ base: '/api/v1', nativo: true });
+  const oyente = vi.fn();
+  cliente.alCambiarSesion(oyente);
+  cliente.establecerSesion({ ...SESION, refreshToken: 'refresh-anterior' });
+  cliente.limpiarSesion();
+  expect(cliente.tieneSesion).toBe(false);
+  expect(cliente.refreshToken).toBeNull();
+  expect(oyente).toHaveBeenCalledTimes(1);
+  expect(oyente).toHaveBeenCalledWith(null);
+});
+
 function json(status: number, cuerpo?: unknown): Response {
   return new Response(cuerpo === undefined ? null : JSON.stringify(cuerpo), {
     status,
@@ -37,6 +49,34 @@ function crear(respuestas: Response[], nativo = false) {
 }
 
 describe('ClienteHttp', () => {
+  it('reintenta multipart tras renovar, conserva el archivo y deja el boundary al navegador', async () => {
+    const { cliente, fetch, cabeceras } = crear([
+      json(401),
+      json(200, SESION),
+      json(201, { id: 'i1' }),
+    ]);
+    cliente.establecerAcceso('vencido');
+    const cuerpo = new FormData();
+    cuerpo.append('archivo', new File(['fecha'], 'menus.csv'));
+    expect(await cliente.peticion('/importaciones', { metodo: 'POST', cuerpo })).toEqual({
+      id: 'i1',
+    });
+    expect(cabeceras(0)['Content-Type']).toBeUndefined();
+    expect(cabeceras(2)['Content-Type']).toBeUndefined();
+    expect(cabeceras(2).Authorization).toBe('Bearer nuevo');
+    expect(fetch.mock.calls[0]![1].body).toBe(cuerpo);
+    expect(fetch.mock.calls[2]![1].body).toBe(cuerpo);
+  });
+  it('descarga archivos con el token de acceso', async () => {
+    const { cliente, cabeceras } = crear([new Response('fecha,platillo')]);
+    cliente.establecerAcceso('token');
+    const blob = await cliente.peticion<Blob>('/importaciones/plantilla?formato=csv', {
+      respuesta: 'blob',
+    });
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.size).toBe('fecha,platillo'.length);
+    expect(cabeceras(0).Authorization).toBe('Bearer token');
+  });
   it('HU-02 establecerAcceso reemplaza solo el token de acceso (hogar nuevo)', async () => {
     const { cliente, cabeceras } = crear([json(200, {})], true);
     cliente.establecerSesion({ ...SESION, accessToken: 'sin-hogar', refreshToken: 'r1' });

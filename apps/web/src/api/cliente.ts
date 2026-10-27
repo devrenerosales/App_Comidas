@@ -12,6 +12,7 @@ import type { Sesion } from './tipos';
 export type MetodoHttp = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface OpcionesPeticion {
+  respuesta?: 'json' | 'blob';
   metodo?: MetodoHttp;
   cuerpo?: unknown;
   /** Envía el token de acceso y renueva ante 401 (por defecto true). */
@@ -68,6 +69,7 @@ export class ClienteHttp {
   limpiarSesion(): void {
     this.accessToken = null;
     this.refreshNativo = null;
+    this.notificar(null);
   }
 
   get tieneSesion(): boolean {
@@ -91,6 +93,7 @@ export class ClienteHttp {
     }
     if (!respuesta.ok) throw await ProblemaApi.desde(respuesta);
     if (respuesta.status === 204) return undefined as T;
+    if (opciones.respuesta === 'blob') return (await respuesta.blob()) as T;
     return (await respuesta.json()) as T;
   }
 
@@ -115,7 +118,6 @@ export class ClienteHttp {
     }
     if (!respuesta.ok) {
       this.limpiarSesion();
-      this.notificar(null);
       return null;
     }
     const sesion = (await respuesta.json()) as Sesion;
@@ -139,14 +141,19 @@ export class ClienteHttp {
     autenticar: boolean,
   ): Promise<Response> {
     const cabeceras: Record<string, string> = { Accept: 'application/json' };
-    if (opciones.cuerpo !== undefined) cabeceras['Content-Type'] = 'application/json';
+    const multipart = opciones.cuerpo instanceof FormData;
+    if (opciones.cuerpo !== undefined && !multipart) cabeceras['Content-Type'] = 'application/json';
     if (autenticar && this.accessToken) cabeceras.Authorization = `Bearer ${this.accessToken}`;
     if (this.opciones.nativo) cabeceras['X-Cliente'] = 'android';
     try {
       return await this.fetchFn(`${this.opciones.base}${ruta}`, {
         method: opciones.metodo ?? 'GET',
         headers: cabeceras,
-        body: opciones.cuerpo === undefined ? undefined : JSON.stringify(opciones.cuerpo),
+        body: multipart
+          ? (opciones.cuerpo as FormData)
+          : opciones.cuerpo === undefined
+            ? undefined
+            : JSON.stringify(opciones.cuerpo),
         credentials: 'include',
       });
     } catch {

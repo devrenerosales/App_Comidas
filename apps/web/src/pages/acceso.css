@@ -60,7 +60,8 @@
   font-size: 0.95rem;
 }
 
-.mf-campo input {
+.mf-campo input,
+.mf-campo select {
   box-sizing: border-box;
   min-height: 48px;
   width: 100%;
@@ -73,7 +74,8 @@
   background: #ffffff;
 }
 
-.mf-campo input:focus-visible {
+.mf-campo input:focus-visible,
+.mf-campo select:focus-visible {
   outline: 3px solid rgba(47, 107, 79, 0.35);
   border-color: var(--mf-verde);
 }

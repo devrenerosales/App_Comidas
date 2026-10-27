@@ -47,3 +47,20 @@ La decisión no cambia; estas notas fijan detalles que el ADR dejaba abiertos.
 | Guard y decoradores | `JwtAuthGuard` como `APP_GUARD` (toda ruta exige token); `@Publico()` abre `registro`, `login`, `refresh` y `health`; `@UsuarioActual()` entrega `{ id, hogarId, rol }`. `RolesGuard` y `HogarGuard` llegan con HU-02. |
 | Anti fuerza bruta | Ventana de 15 min desde el primer fallo (`primer_intento_fallido_en`); al 5.º fallo `bloqueado_hasta = ahora + 15 min` (ese 5.º intento responde el 401 genérico, CA-01.3; los siguientes, 423 `CUENTA_BLOQUEADA` con `bloqueadoHasta`). El conteo es atómico (`FOR UPDATE`). Si el correo no existe se ejecuta una verificación argon2 ficticia para igualar tiempos. Throttling de `/auth/*`: 10 solicitudes/min por IP (`AUTH_LIMITE_POR_MINUTO`), con `trust proxy` para leer la IP real detrás de Caddy. |
 | Cierre de sesión | `POST /auth/logout` exige token de acceso y revoca la familia del refresh solo si pertenece al usuario del token; borra la cookie. No hay "cerrar todas las sesiones" en v1 (el contrato no lo prevé; lo cubrirá `/auth/restablecer`, HU-04, con `sesiones_invalidas_antes_de`). |
+
+## Notas de implementación de HU-04
+
+`/auth/recuperar` responde con un mensaje neutro y envía un enlace de un solo uso,
+vigente una hora. El token aleatorio tiene 32 bytes; solo su SHA-256 se guarda en
+`token_recuperacion`. La comprobación de vigencia no consume el enlace.
+
+El restablecimiento bloquea la fila del usuario y comprueba el token dentro de una
+transacción. Actualiza el hash de contraseña, reinicia los intentos fallidos, consume
+todos los enlaces pendientes y revoca los refresh de la cuenta.
+
+El guard global consulta la cuenta en cada solicitud protegida para rechazar cuentas
+inactivas y accesos emitidos antes o en `sesiones_invalidas_antes_de`. Los JWT nuevos
+incluyen `emitidoEn` en milisegundos para distinguir sesiones del mismo segundo;
+los JWT anteriores usan `iat` como referencia. Esto añade una lectura por solicitud
+protegida. El cliente limpia sus tokens en memoria y avisa al proveedor de sesión
+cuando se restablece la contraseña.

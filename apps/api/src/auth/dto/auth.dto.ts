@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import {
   LARGO_MAXIMO_CONTRASENA,
   LARGO_MAXIMO_CORREO,
@@ -12,6 +12,29 @@ const recortar = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 const correoCanonico = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? normalizarCorreo(value) : value;
+
+export class RecuperarDto {
+  @Transform(correoCanonico)
+  @IsEmail({}, { message: 'Ingresa un correo válido' })
+  @MaxLength(LARGO_MAXIMO_CORREO)
+  correo!: string;
+}
+
+export class TokenRecuperacionDto {
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{43}$/, { message: 'El enlace no es válido, solicita uno nuevo' })
+  token!: string;
+}
+
+export class RestablecerDto extends TokenRecuperacionDto {
+  @IsString()
+  @CumplePoliticaContrasena()
+  contrasena!: string;
+
+  @IsString()
+  @MaxLength(LARGO_MAXIMO_CONTRASENA)
+  confirmacion!: string;
+}
 
 /** POST /auth/registro (RF-01 · HU-01). */
 export class RegistroDto {

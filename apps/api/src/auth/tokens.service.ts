@@ -38,12 +38,12 @@ export class TokensService {
   firmarAcceso(claims: ClaimsAcceso, ahora: Date = new Date()): TokenAccesoFirmado {
     const iat = Math.floor(ahora.getTime() / 1000);
     const exp = iat + SEGUNDOS_TOKEN_ACCESO;
-    const token = this.jwt.sign({ ...claims, iat, exp });
+    const token = this.jwt.sign({ ...claims, emitidoEn: ahora.getTime(), iat, exp });
     return { token, expiraEn: new Date(exp * 1000) };
   }
 
   /** Verifica firma, algoritmo y vigencia; lanza 401 `TOKEN_EXPIRADO` o `TOKEN_INVALIDO`. */
-  verificarAcceso(token: string): ClaimsAcceso {
+  verificarAcceso(token: string): ClaimsAcceso & { emitidoEn: number } {
     let carga: Record<string, unknown>;
     try {
       carga = this.jwt.verify<Record<string, unknown>>(token, { algorithms: ['HS256'] });
@@ -56,12 +56,22 @@ export class TokensService {
     const { sub, hogarId, rol } = carga;
     const valido =
       typeof sub === 'string' &&
+      typeof carga.iat === 'number' &&
+      Number.isFinite(carga.iat) &&
+      (carga.emitidoEn === undefined ||
+        (typeof carga.emitidoEn === 'number' && Number.isFinite(carga.emitidoEn))) &&
       (hogarId === null || typeof hogarId === 'string') &&
       (rol === null || (typeof rol === 'string' && ROLES.has(rol)));
     if (!valido) {
       throw new Problema(401, 'TOKEN_INVALIDO', 'Inicia sesión para continuar.');
     }
-    return { sub, hogarId: hogarId as string | null, rol: rol as Rol | null };
+    return {
+      sub,
+      hogarId: hogarId as string | null,
+      rol: rol as Rol | null,
+      emitidoEn:
+        typeof carga.emitidoEn === 'number' ? carga.emitidoEn : (carga.iat as number) * 1000,
+    };
   }
 
   /** Genera un refresh opaco de 32 bytes y su hash. */

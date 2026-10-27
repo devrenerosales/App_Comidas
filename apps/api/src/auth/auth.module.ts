@@ -12,6 +12,9 @@ import { ContrasenasService } from './contrasenas.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RefreshTokensRepositorio } from './refresh-tokens.repositorio';
 import { TokensService } from './tokens.service';
+import { RecuperacionController } from './recuperacion.controller';
+import { RecuperacionRepositorio } from './recuperacion.repositorio';
+import { RecuperacionService } from './recuperacion.service';
 
 /** Autenticación (HU-01, ADR-004): JWT de acceso + refresh rotativo, guard global. */
 @Module({
@@ -34,9 +37,11 @@ import { TokensService } from './tokens.service';
       ],
     }),
   ],
-  controllers: [AuthController, UsuariosController],
+  controllers: [AuthController, UsuariosController, RecuperacionController],
   providers: [
     AuthService,
+    RecuperacionService,
+    RecuperacionRepositorio,
     ContrasenasService,
     TokensService,
     UsuariosRepositorio,
