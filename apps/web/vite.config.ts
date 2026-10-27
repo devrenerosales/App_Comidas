@@ -48,6 +48,8 @@ export default defineConfig({
   },
   build: { outDir: 'dist', sourcemap: true, chunkSizeWarningLimit: 1500 },
   test: {
+    // Las pruebas usan el proxy del mismo origen, independientemente del .env local.
+    env: { VITE_API_URL: '/api/v1' },
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],

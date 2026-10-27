@@ -73,7 +73,7 @@ Este capítulo explica cómo crear tu cuenta, entrar a Menú Familiar y salir de
 | Mensaje | Qué significa | Qué hacer |
 |---|---|---|
 | **Correo o contraseña incorrectos** | El correo no tiene cuenta o la contraseña no coincide. Por seguridad la app no dice cuál de los dos está mal. | Revisa el correo y la contraseña (mayúsculas incluidas) y vuelve a intentarlo. |
-| **Por seguridad, el inicio de sesión de esta cuenta está bloqueado 15 minutos…** | Hubo **5 intentos fallidos en 15 minutos**. La cuenta se bloquea 15 minutos para protegerla. El mensaje indica la hora a la que puedes volver a intentarlo. | Espera hasta la hora indicada. Si olvidaste tu contraseña, la opción "Recuperar contraseña" llegará en la versión del Sprint 2 (HU-04); mientras tanto, pide ayuda al administrador. |
+| **Por seguridad, el inicio de sesión de esta cuenta está bloqueado 15 minutos…** | Hubo **5 intentos fallidos en 15 minutos**. La cuenta se bloquea 15 minutos para protegerla. El mensaje indica la hora a la que puedes volver a intentarlo. | Espera hasta la hora indicada. Si olvidaste tu contraseña, toca **¿Olvidaste tu contraseña?** y sigue los pasos de recuperación. |
 | **Demasiados intentos. Espera un minuto e intenta de nuevo.** | Se hicieron muchas solicitudes seguidas desde la misma red. | Espera un minuto. |
 | **Necesitas conexión para iniciar sesión** | Sin internet. | Conéctate y vuelve a intentarlo. |
 
@@ -92,7 +92,15 @@ Cierra sesión cuando uses un teléfono o computadora que no es tuyo.
 
 ## 1.5 Recuperar contraseña
 
-*Pendiente — se documenta con HU-04 (Sprint 2).*
+1. En **Iniciar sesión**, toca **¿Olvidaste tu contraseña?**.
+2. Escribe tu correo y toca **Enviar enlace**. Verás **Si el correo existe, recibirás un enlace**; el mensaje es el mismo aunque no haya una cuenta con ese correo.
+3. Revisa tu correo y la carpeta de spam. Abre **Crear nueva contraseña** en el mensaje de Menú Familiar. El enlace vence en **una hora**.
+4. Escribe la nueva contraseña y repítela en **Confirmar contraseña**. Debe cumplir la política indicada en pantalla.
+5. Toca **Guardar contraseña**. Cuando veas **Contraseña actualizada**, toca **Iniciar sesión** y usa la nueva contraseña.
+
+El enlace sirve una sola vez. Si venció o ya se usó, la pantalla ofrece **Solicitar otro enlace**. Al actualizar la contraseña se cierran las sesiones anteriores en todos tus dispositivos, se invalidan los demás enlaces de recuperación y se reinicia el bloqueo por intentos fallidos. Los datos de tu hogar se conservan.
+
+Si no solicitaste el correo, puedes ignorarlo: solicitar un enlace no cambia la contraseña ni cierra tus sesiones.
 
 ## 1.6 Tu seguridad
 

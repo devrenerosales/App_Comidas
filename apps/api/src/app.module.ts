@@ -13,6 +13,8 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { HogarModule } from './hogar/hogar.module';
 import { RedisModule } from './redis/redis.module';
+import { HistorialModule } from './historial/historial.module';
+import { ImportacionesModule } from './importaciones/importaciones.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { RedisModule } from './redis/redis.module';
     ComensalesModule,
     ConfiguracionModule,
     CatalogoModule,
+    HistorialModule,
+    ImportacionesModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

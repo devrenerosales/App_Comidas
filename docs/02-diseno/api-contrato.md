@@ -99,6 +99,7 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 | POST | `/auth/refresh` | Público | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 200 misma forma que login con el nuevo par (rota; reutilizar uno rotado revoca la familia); trae `usuario` y `hogar` vigentes para restaurar la sesión al abrir la app | 401 `SESION_INVALIDA` · 401 `SESION_REVOCADA` · 429 |
 | POST | `/auth/logout` | Auth | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 204; revoca la familia solo si el refresh es del usuario del token y borra la cookie | 401 |
 | POST | `/auth/recuperar` | Público | RF-04 · HU-04 | `{correo}` → 202 mensaje neutro siempre | 429 |
+| POST | `/auth/validar-recuperacion` | Público | RF-04 · HU-04 | `{token}` → 204 si el enlace está vigente; no lo consume | 410 `ENLACE_NO_VALIDO` · 422 · 429 |
 | POST | `/auth/restablecer` | Público | RF-04 · HU-04 | `{token, contrasena, confirmacion}` → 200; invalida sesiones previas | 410 `ENLACE_NO_VALIDO` · 422 |
 | GET | `/usuarios/yo` | Auth | RF-01 | → 200 `{id, nombre, correo, esAdminSistema, hogar \| null}` | 401 |
 | POST | `/hogares` | Auth (sin hogar) | RF-02 · HU-02 | `{nombre}` (1–80, espacios recortados) → 201 `{hogar: {id, nombre, rol}, rol: "ADMIN", configuracion: {version, presupuestoSemanal, diaInicioSemana, diaPlanificacion, horaPlanificacion, tiempos: [{tiempo, activo, porcentaje}]}, accessToken, expiraEn}`; el nuevo `accessToken` lleva `hogarId` y `rol` | 409 `YA_TIENE_HOGAR` · 422 `NOMBRE_HOGAR_INVALIDO` |
@@ -121,11 +122,12 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}] (siempre las 3 filas; inactivas en "0.00"), diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos: {preferencia, novedad, ahorro, afinidad}, actualizadoEn}`; `proximaSemana` llega con HU-08 | 403 `SIN_HOGAR` |
+| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}] (siempre las 3 filas; inactivas en "0.00"), diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos: {preferencia, novedad, ahorro, afinidad}, actualizadoEn, proximaSemana: {desde, hasta}, semanaTransicion: {desde, hasta} \| null, proximaPlanificacion}`; fechas locales `AAAA-MM-DD` | 403 `SIN_HOGAR` |
 | POST | `/hogar/configuracion/vista-previa` | ADMIN | RF-07 · HU-07 | `{tiempos: [..], presupuestoSemanal?, distribucion?: [{tiempo, porcentaje}]}` → 200 `{version, presupuestoSemanal, actual: [{tiempo, porcentaje, monto}], nuevo: [..], impacto: [{tiempo, cambio: AGREGADO\|QUITADO\|MODIFICADO\|SIN_CAMBIO, actual \| null, nuevo \| null, diferenciaMonto}], aplicaDesde, menusAprobadosConservados: [{id, fechaInicio, fechaFin}], borradoresADesactualizar: [..]}` sin guardar; sin `distribucion` propone RN-06 / D-01 | 400 · 403 `SOLO_ADMINISTRADOR` · 422 `COMBINACION_TIEMPOS_INVALIDA`, `PORCENTAJES_NO_SUMAN_100`, `DISTRIBUCION_INVALIDA`, `PRESUPUESTO_INVALIDO` |
 | PUT | `/hogar/configuracion/tiempos` | ADMIN | RF-05, RF-07 · HU-05, HU-07 | `{version, tiempos: [{tiempo, porcentaje}], presupuestoSemanal?}` (solo los tiempos activos) → 200 configuración (forma del GET) + `borradoresDesactualizados: [{id, fechaInicio, fechaFin}]` | 400 · 403 · 409 `VERSION_DESACTUALIZADA` · 422 (mismos códigos que la vista previa) |
 | PUT | `/hogar/configuracion/presupuesto` | ADMIN | RF-06 · HU-06 | `{version, presupuestoSemanal, modo?: PORCENTAJE\|MONTO, distribucion?: [{tiempo, porcentaje? , monto?}]}` → 200 configuración + `borradoresDesactualizados` (guarda en %; sin `distribucion` conserva los % y recalcula montos) | 400 · 403 · 409 · 422 `PRESUPUESTO_INVALIDO`, `PORCENTAJES_NO_SUMAN_100`, `MONTOS_NO_SUMAN_PRESUPUESTO`, `DISTRIBUCION_INVALIDA` |
-| PUT | `/hogar/configuracion/semana` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 `{…, semanaTransicion: {desde, hasta} \| null, proximaSemana}` | 403 · 409 · 422 |
+| POST | `/hogar/configuracion/semana/vista-previa` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 `{version, semanaTransicion, proximaSemana, proximaPlanificacion}`; sin escrituras | 403 · 409 `VERSION_DESACTUALIZADA` · 422 `DIA_SEMANA_INVALIDO` |
+| PUT | `/hogar/configuracion/semana` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 configuración completa con `semanaTransicion`, `proximaSemana` y `proximaPlanificacion`; crea o ajusta el borrador de transición vacío en la misma transacción | 403 · 409 `VERSION_DESACTUALIZADA` / `SEMANA_EN_CONFLICTO` · 422 `DIA_SEMANA_INVALIDO` |
 | GET | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | → 200 `[{supermercadoId, nombre, preferido}]` | — |
 | PUT | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | `{preferidos: [supermercadoId]}` → 200 | 422 `SIN_SUPERMERCADO_PREFERIDO` |
 | GET | `/hogar/preferencias/marcas` | MIEMBRO | RF-09 | → 200 `[{productoId, producto, marca}]` | — |
@@ -171,18 +173,21 @@ Notas de implementación (HU-11, HU-12, HU-13, rama `feature/HU-11-13-catalogo-p
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| POST | `/historial/semanas` | ADMIN | RF-15 · HU-15 | `{fechaInicio, detalles: [{fecha, tiempo, platilloId}], gastoReal?, notas?, reemplazar: false}` → 201 menú HISTORICO | 403 · 409 `SEMANA_EXISTENTE` (reintentar con `reemplazar: true`) · 422 `SEMANA_NO_TERMINADA`, `SIN_PLATILLOS`, `GASTO_INVALIDO` |
-| GET | `/historial/semanas` | MIEMBRO | RF-15 | `?desde&hasta&pagina` → 200 paginado | — |
+| POST | `/historial/semanas` | ADMIN | RF-15 · HU-15 | `{fechaInicio, detalles: [{fecha, tiempo, platilloId}], gastoReal?, notas?, reemplazar?: false, version?}` → 201 `{id, fechaInicio, fechaFin, estado: HISTORICO, origen: CAPTURA_MANUAL, gastoReal, notas, version}`; domingo–sábado, al menos una comida y máximo 21; gasto opcional positivo hasta 99999.99 | 403 · 409 `SEMANA_EXISTENTE` (trae `semana: {id, version, fechaInicio, gastoReal}`; confirmar con `reemplazar: true` y esa `version`), `VERSION_DESACTUALIZADA`, `SEMANA_PROTEGIDA`, `SEMANA_SOLAPADA` · 422 `INICIO_SEMANA_INVALIDO`, `SEMANA_NO_TERMINADA`, `SIN_PLATILLOS`, `FECHA_FUERA_DE_SEMANA`, `COMIDA_DUPLICADA`, `PLATILLO_NO_VALIDO`, `GASTO_INVALIDO` |
+| GET | `/historial/semanas` | MIEMBRO | RF-15 | `?desde&hasta&pagina&tamano` → 200 `{datos: [{id, fechaInicio, fechaFin, estado, origen, gastoReal, notas, version, detalles: [{fecha, tiempo, platilloId, nombre}]}], paginacion}`; filtro inclusivo por inicio, orden de semanas descendente y comidas cronológico; 20 por página por defecto, máximo 100 | 400 paginación inválida · 422 `FECHAS_INVALIDAS` |
 | GET | `/importaciones/plantilla` | ADMIN | RF-16 | `?formato=xlsx\|csv` → 200 archivo | 403 |
-| POST | `/importaciones` | ADMIN | RF-16, RF-18 · HU-16, HU-18 | `multipart: archivo, origen=ARCHIVO\|CUADERNO` → 201 `{id, estado, resumen: {semanas, filas, filasConError, platillosNuevos, semanasExistentes}}` | 403 · 413 (> 5 MB) · 415 · 422 `COLUMNA_FALTANTE`, `DEMASIADAS_FILAS` |
-| GET | `/importaciones/{id}` | ADMIN | RF-16 | → 200 vista previa: semanas (gasto, decisión), platillos (propuesta, similitud), totales | 404 |
-| GET | `/importaciones/{id}/filas` | ADMIN | RF-16 | `?soloErrores=true&pagina` → 200 `[{hoja, numeroFila, errores: [{columna, motivo}]}]` | 404 |
+| POST | `/importaciones` | ADMIN | RF-16 · HU-16 | `multipart: archivo, origen=ARCHIVO` → 201 vista previa (ver implementación HU-16 abajo); `CUADERNO` reservado a HU-18 | 403 · 413 (> 5 MB) · 415 · 422 `COLUMNA_FALTANTE`, `DEMASIADAS_FILAS` |
+| GET | `/importaciones/{id}` | ADMIN | RF-16 | → 200 `{id, nombreArchivo, estado, revision, totalFilas, filasConError, pendientes, semanas, puedeConfirmar, reporte}`; propuestas y similitud reservadas a HU-17 | 404 |
+| GET | `/importaciones/{id}/filas` | ADMIN | RF-16 | `?soloErrores=true&pagina&tamano` → 200 `{datos: [{numeroFila, datos, errores: [{columna, motivo}]}], paginacion}` | 404 |
 | PUT | `/importaciones/{id}/platillos` | ADMIN | RF-17 · HU-17 | `{decisiones: [{nombreNormalizado, decision: ASOCIAR\|CREAR, platilloId?, nombreFinal?}]}` → 200 pendientes restantes | 404 · 409 `IMPORTACION_CERRADA` · 422 |
 | POST | `/importaciones/{id}/platillos/aceptar-propuestas` | ADMIN | RF-17 · HU-17 | → 200 | 404 · 409 |
-| PUT | `/importaciones/{id}/semanas` | ADMIN | RF-16 · HU-16 | `{decisiones: [{semanaInicio, decision: OMITIR\|REEMPLAZAR}]}` → 200 | 404 · 409 |
-| POST | `/importaciones/{id}/confirmar` ⟳ | ADMIN | RF-16–RF-18 | → 200 `{reporte: {semanasCreadas, reemplazadas, omitidas, platillosCreados, aliasCreados, despensaCargada}}` | 404 · 409 `IMPORTACION_CERRADA` · 422 `FILAS_CON_ERROR`, `DECISIONES_PENDIENTES` |
-| POST | `/importaciones/{id}/cancelar` | ADMIN | RF-16 | → 200 | 404 · 409 |
+| PUT | `/importaciones/{id}/semanas` | ADMIN | RF-16 · HU-16 | `{revision, decisiones: [{semanaInicio, decision: OMITIR\|REEMPLAZAR}]}` → 200 vista previa con nueva revisión | 404 · 409 · 422 |
+| POST | `/importaciones/{id}/confirmar` ⟳ | ADMIN | RF-16 · HU-16 | `{revision}` → 201 `{semanasCreadas, reemplazadas, omitidas, platillosCreados, aliasCreados, despensaCargada}`; repetir devuelve el mismo reporte | 404 · 409 `IMPORTACION_CERRADA`, `VISTA_DESACTUALIZADA`, `SEMANA_MODIFICADA` · 422 `FILAS_CON_ERROR`, `PLATILLOS_PENDIENTES`, `SIN_SEMANAS` |
+| POST | `/importaciones/{id}/cancelar` | ADMIN | RF-16 | `{revision}` → 201 vista cerrada, idempotente | 404 · 409 |
 | GET | `/importaciones/{id}/conciliacion` | ADMIN | RF-18 · HU-18 | → 200 `{semanas, gasto: {min, max, promedio}, listas: [{nombre, productos, total}]}` | 404 |
+
+La implementación local de HU-16 y su contrato completo se detallan en
+[Importación histórica](importacion-historica.md). Las rutas marcadas HU-17/HU-18 siguen pendientes.
 
 ### 2.5 M05 — Motor de sugerencias
 

@@ -1,5 +1,6 @@
 # Datos familiares (fotos del cuaderno): no se versionan
 imagenes/
+datos-privados/
 
 # Dependencias y builds
 node_modules/

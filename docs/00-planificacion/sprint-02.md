@@ -1,0 +1,95 @@
+# Sprint 2 — Carga inicial del cuaderno
+
+Historias previstas: HU-04, HU-08, HU-15, HU-16, HU-17 y HU-18.
+
+## HU-04 — Recuperar contraseña
+
+Implementación local en preparación para revisión del PO:
+
+- Solicitud pública con mensaje neutro para correos registrados, desconocidos e inactivos.
+- Enlace aleatorio de 32 bytes, hash SHA-256 en la base y vigencia de una hora.
+- Validación del enlace al abrirlo; consumo único y atómico al guardar la nueva contraseña.
+- Reinicio de intentos fallidos y revocación de refresh y tokens de acceso anteriores.
+- Pantallas accesibles desde Iniciar sesión, correo HTML/texto y manual actualizado.
+- Sin cambios de esquema: reutiliza `token_recuperacion` y `sesiones_invalidas_antes_de`.
+
+Las rutas de recuperación usan el mismo límite de solicitudes por IP que el resto de `/auth`.
+El nuevo endpoint `/auth/validar-recuperacion` comprueba la vigencia sin consumir el enlace
+y permite informar de enlaces vencidos al abrirlos, antes de pedir una contraseña.
+
+## Verificación local
+
+- API: 218 pruebas unitarias aprobadas.
+- Integración: las 149 pruebas existentes aprobaron con el guard actualizado; las siete
+  pruebas nuevas de HU-04 aprobaron tras corregir los datos de prueba. Incluyen uso
+  concurrente, expiración, reutilización, sesiones previas y confirmación de contraseña.
+- Interfaz: siete escenarios nuevos de recuperación y pruebas del contrato HTTP y de
+  limpieza de sesión. Verificación final de regresión y compilación registrada en el
+  [reporte de HU-04](../03-pruebas/reportes/RE-HU-04-2026-10-26.md).
+
+## Pendientes
+
+- Revisión del PO y prueba de entrega con SMTP real en el entorno configurado.
+- HU-17 y HU-18 todavía no implementadas; HU-16 se detalla abajo.
+
+## HU-08 — Inicio de semana y planificación
+
+Implementación local para revisión del PO, sin migraciones:
+
+- Selectores de día con vista previa antes de guardar; consulta disponible para miembros.
+- Fechas de calendario en America/Guatemala y próxima fecha de planificación.
+- Transiciones de uno a seis días posteriores al último aprobado, conservando todos los aprobados.
+- Borrador de transición persistido y ajustable mientras no tenga platillos.
+- Control de versión y transacción para evitar sobrescrituras entre administradores.
+- Conflicto explícito si otro borrador ocupa las fechas de transición; no se pierde contenido.
+
+El día queda guardado para HU-41. El envío efectivo del recordatorio depende del módulo
+de notificaciones, previsto para el Sprint 6. La fecha calculada es la siguiente
+ocurrencia del día de planificación estrictamente posterior a hoy.
+
+Verificación: 231 unitarias de API, 167 pruebas web y 31 pruebas de integración de
+configuración aprobadas. Detalles en el [reporte de HU-08](../03-pruebas/reportes/RE-HU-08-2026-10-26.md).
+
+## Validación manual local confirmada
+
+El PO confirmó en la sesión que funcionaron los flujos de la guía local: cuentas, hogar,
+comensales, catálogo, presupuesto, configuración de semana y recuperación de contraseña.
+Esto no incluye entrega real por SMTP ni validación Android o despliegue.
+
+## HU-15 — Captura histórica manual
+
+Implementación local para revisión, sin migraciones:
+
+- Acceso desde Inicio al historial paginado y filtrable del hogar.
+- Captura domingo–sábado con los tres tiempos y días sin dato.
+- Búsqueda y creación de platillos en línea, gasto semanal opcional y notas.
+- Registro Histórico en transacción, sin generar lista de compras.
+- Confirmación explícita y versión esperada para reemplazos.
+- Protección de menús no históricos, semanas solapadas y datos de otros hogares.
+
+La captura del cuaderno conserva domingo–sábado aunque el hogar haya cambiado su
+calendario futuro con HU-08. Los platillos se validan por hogar, sin imponer al pasado
+los tiempos activos de la configuración actual. Un platillo creado desde el buscador
+queda en el catálogo aunque después se cancele la captura.
+
+Verificación: 174 pruebas compartidas (100 % de cobertura), 243 unitarias de API,
+177 pruebas web y 11 de integración histórica aprobadas. Ver el
+[reporte de HU-15](../03-pruebas/reportes/RE-HU-15-2026-10-26.md).
+
+## HU-16 — Importación histórica CSV/XLSX
+
+Implementación local para revisión del PO, sin migraciones:
+
+- Plantillas descargables y diccionario; 5 MB y 5000 filas como límites.
+- Vista previa persistida con errores por fila y columna, paginación y gastos por semana.
+- Semanas domingo–sábado terminadas; coincidencia exacta de nombres y aliases del hogar.
+- Omitir por defecto las semanas existentes; reemplazo explícito de históricas con versión.
+- Confirmación atómica e idempotente, protección contra cambios concurrentes y cancelación.
+- Interfaz accesible desde Historial y notas importadas visibles en el detalle de comidas.
+
+La conciliación asistida de nombres y la carga de listas/cuaderno siguen previstas en
+HU-17/HU-18. Los platillos desconocidos bloquean la confirmación hasta corregir el
+catálogo y volver a cargar. El gasto conserva la restricción positiva de HU-15 y SQL.
+
+Diseño y contrato: [Importación histórica](../02-diseno/importacion-historica.md).
+Validación y límites: [reporte HU-16](../03-pruebas/reportes/RE-HU-16-2026-10-27.md).

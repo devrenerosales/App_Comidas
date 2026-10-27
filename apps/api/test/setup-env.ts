@@ -7,3 +7,6 @@ process.env.JWT_REFRESH_SECRET = 'e2e-refresh-de-prueba-con-32-caracteres!';
 // Límite alto en e2e; la prueba de throttling lo baja con su propio proveedor.
 process.env.AUTH_LIMITE_POR_MINUTO = '1000';
 process.env.CORS_ORIGIN = 'http://localhost:5173';
+// Enlaces y correo de prueba aislados de la configuración local de despliegue.
+process.env.APP_URL = 'http://localhost:5173';
+process.env.SMTP_HOST = '';

@@ -5,6 +5,8 @@ import CrearCuenta from './pages/CrearCuenta';
 import CrearHogar from './pages/CrearHogar';
 import IniciarSesion from './pages/IniciarSesion';
 import { Pestanas } from './Pestanas';
+import RecuperarContrasena from './pages/RecuperarContrasena';
+import RestablecerContrasena from './pages/RestablecerContrasena';
 
 /**
  * Rutas de la app: acceso público (login, registro), "Aceptar invitación" (con o sin sesión),
@@ -13,6 +15,12 @@ import { Pestanas } from './Pestanas';
 export function Rutas() {
   return (
     <Switch>
+      <Route exact path="/recuperar">
+        <RecuperarContrasena />
+      </Route>
+      <Route exact path="/restablecer/:token">
+        <RestablecerContrasena />
+      </Route>
       <RutaVisitante exact path="/login">
         <IniciarSesion />
       </RutaVisitante>
