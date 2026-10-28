@@ -73,10 +73,55 @@ como gasto semanal, sin repartirlo entre comidas. Las notas admiten 200 caracter
 por comida y quedan visibles en el detalle del historial.
 
 Los nombres se buscan en el catálogo del hogar y sus nombres alternativos, ignorando
-mayúsculas y tildes. Si hay nombres desconocidos, agrégalos al catálogo y vuelve a
-cargar el archivo. La conciliación asistida de nombres y la carga inicial del cuaderno
-con listas corresponden a HU-17 y HU-18 y siguen pendientes. Las hojas con datos
-distintas de Menus e Instrucciones se rechazan para evitar ignorar información.
+mayúsculas y tildes. Los que coinciden se asocian solos. Los demás aparecen en
+**Platillos por resolver**, con una propuesta:
+
+- **Asociar a «platillo» (85 %)** cuando hay uno muy parecido (80 % o más).
+- **Crear nuevo** cuando no hay nada parecido.
+
+Para cada uno pulsa **Aceptar propuesta**, o abre **Otras opciones** para crearlo con otro
+nombre (por ejemplo, corrigiendo la ortografía) o buscar y asociar un platillo existente.
+**Aceptar todas las propuestas** resuelve todos de una vez. No puedes confirmar mientras
+falten platillos: la pantalla indica cuántos.
+
+Al confirmar, los platillos nuevos se crean sin ingredientes y marcados como incompletos,
+con el tiempo de comida de sus filas y la proteína del archivo. El nombre que escribiste
+se recuerda como nombre alterno: la próxima vez que lo importes se asocia sin preguntar.
+Si resuelves nombres de semanas que decidas omitir, no se crea nada para ellos.
+Las hojas con datos distintas de Menus e Instrucciones se rechazan para evitar ignorar información.
 
 La vista previa tiene una dirección propia que puedes volver a abrir. Después de
 confirmar muestra el reporte; repetir una solicitud de confirmación no duplica menús.
+
+## Carga inicial del cuaderno
+
+Para cargar de una vez las semanas del cuaderno y sus listas, marca **Carga inicial del
+cuaderno** en la pantalla de importación. Descarga la **Plantilla Excel del cuaderno** (hojas
+Menus y Listas) o la **Plantilla de listas CSV**, y sube tus datos:
+
+- Un Excel con las hojas Menus y Listas, o
+- el CSV de menús como archivo de menús y el CSV de listas como archivo de listas.
+
+Cada fila de la hoja Listas es un producto, con `fecha`, `lista`, `tipo` (despensa o
+compras), `producto`, `cantidad` y `unidad_compra`. Son opcionales `presentacion` (por
+ejemplo 2 lb), `precio_gtq` y `supermercado`. Un producto no puede repetirse en la despensa.
+
+Antes de confirmar verás un resumen por lista: productos, total de precios y cuántos
+productos son nuevos en el catálogo. Si hay errores, se muestran por fila; cambia **Hoja a
+revisar** para ver los de Menús o los de Listas. No se guarda nada hasta que no queden errores
+ni platillos por resolver.
+
+Al confirmar:
+
+- Las semanas quedan como históricas, con origen cuaderno.
+- Los productos de las listas de **despensa** se registran como despensa de tu hogar, con
+  frecuencia **mensual** (provisional). Los de las listas de **compras** solo se añaden al
+  catálogo.
+- Los productos que no existían se crean en el catálogo en la categoría **Otros**, para que
+  puedas reclasificarlos después. Los que ya existían se reutilizan.
+
+Verás el **Reporte de conciliación** con el gasto semanal mínimo, máximo y promedio de las
+semanas que traen gasto, y el total de cada lista. Compáralo con las fotos. Si una cifra no
+coincide, corrige el archivo, vuelve a cargarlo y elige **Reemplazar** en las semanas
+afectadas. Repetir la carga no duplica semanas, productos ni despensa: actualiza la cantidad
+y el precio de referencia de lo que ya estaba.

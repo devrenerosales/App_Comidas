@@ -48,6 +48,8 @@ function abrir({ vista = VISTA, nuevo = false, rol = 'ADMIN', fallo = false } = 
     confirmar: vi.fn().mockResolvedValue({}),
     cancelar: vi.fn().mockResolvedValue({ ...vista, revision: null, estado: 'CANCELADA' }),
     filas: vi.fn().mockResolvedValue({ datos: [], paginacion: { totalPaginas: 0 } }),
+    platillos: vi.fn().mockResolvedValue({ datos: [], paginacion: { totalPaginas: 0 } }),
+    decidirPlatillos: vi.fn(),
   };
   if (fallo)
     api.confirmar.mockRejectedValue(
@@ -106,7 +108,7 @@ describe('Importación histórica', () => {
         puedeConfirmar: false,
       },
     });
-    expect(await screen.findByText(/Estos platillos/)).toHaveTextContent('Caldito');
+    expect(await screen.findByText(/Falta 1 platillo por resolver/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirmar importación' })).toBeDisabled();
     expect(screen.getByRole('alert')).toHaveTextContent('Corrige los errores');
     expect(api.confirmar).not.toHaveBeenCalled();
@@ -150,6 +152,15 @@ describe('Importación histórica', () => {
     expect(peticion).toHaveBeenLastCalledWith('/importaciones/i1/semanas', {
       metodo: 'PUT',
       cuerpo: { revision: 'r1', decisiones: [{ semanaInicio: '2025-04-13', decision: 'OMITIR' }] },
+    });
+    await api.platillos('i1', 'revisar', 2);
+    expect(peticion).toHaveBeenLastCalledWith(
+      '/importaciones/i1/platillos?estado=revisar&pagina=2',
+    );
+    await api.decidirPlatillos('i1', 'r1', { aceptarPropuestas: true });
+    expect(peticion).toHaveBeenLastCalledWith('/importaciones/i1/platillos', {
+      metodo: 'PUT',
+      cuerpo: { revision: 'r1', aceptarPropuestas: true },
     });
     await api.cancelar('i1', 'r1');
     expect(peticion).toHaveBeenLastCalledWith('/importaciones/i1/cancelar', {

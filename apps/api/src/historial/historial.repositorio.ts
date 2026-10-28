@@ -42,6 +42,7 @@ export class HistorialRepositorio {
     datos: CapturarSemanaDto,
     ahora: Date,
     importacionId?: string,
+    origen: 'IMPORTACION' | 'CUADERNO' = 'IMPORTACION',
   ) {
     // Serializa también la primera captura, cuando todavía no existe la fila de semana.
     const [familia] = await tx
@@ -103,7 +104,7 @@ export class HistorialRepositorio {
       );
     const valores = {
       ...valoresHistoricos(datos, usuarioId, ahora),
-      ...(importacionId ? { importacionId, origen: 'IMPORTACION' as const } : {}),
+      ...(importacionId ? { importacionId, origen } : {}),
     };
     const [semana] = anterior
       ? await tx

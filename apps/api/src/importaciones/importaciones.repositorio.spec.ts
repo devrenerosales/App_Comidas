@@ -4,7 +4,7 @@ import { ImportacionesRepositorio } from './importaciones.repositorio';
 import { validarFilas } from './importaciones.parser';
 
 // Doble del transporte SQL. La atomicidad y los filtros de hogar se prueban en PostgreSQL.
-function preparar(resultados: unknown[][]) {
+function preparar(resultados: unknown[][], sugerencias: unknown[] = []) {
   const escrituras: { operacion: string; valores: unknown }[] = [];
   const consulta = (resultado: unknown[]) => {
     const cadena = {
@@ -16,6 +16,7 @@ function preparar(resultados: unknown[][]) {
       offset: jest.fn(),
       leftJoin: jest.fn(),
       returning: jest.fn(),
+      onConflictDoNothing: jest.fn(),
       then: (bien: (r: unknown[]) => unknown, mal?: (e: unknown) => unknown) =>
         Promise.resolve(resultado).then(bien, mal),
     };
@@ -28,6 +29,7 @@ function preparar(resultados: unknown[][]) {
       'offset',
       'leftJoin',
       'returning',
+      'onConflictDoNothing',
     ] as const)
       cadena[metodo].mockReturnValue(cadena);
     return cadena;
@@ -53,6 +55,7 @@ function preparar(resultados: unknown[][]) {
   });
   const tx = {
     select,
+    execute: jest.fn(async () => ({ rows: sugerencias })),
     insert: jest.fn(() => mutar('insert')),
     update: jest.fn(() => mutar('update')),
     delete: jest.fn(() => mutar('delete')),
@@ -87,7 +90,8 @@ const PLATO = {
   nombreOriginal: 'Sopa',
   nombreNormalizado: 'sopa',
   platilloId: 'p1',
-  nombre: 'Sopa',
+  decision: 'ASOCIAR',
+  similitud: '1.0000',
 };
 const FILAS = validarFilas(
   [
@@ -153,7 +157,7 @@ describe('Orquestación segura de importaciones', () => {
       CASA,
       [{ ...CABECERA, estado: 'CON_ERRORES', filasConError: 1 }],
       [SEMANA],
-      [{ ...PLATO, platilloId: null }],
+      [{ ...PLATO, platilloId: null, decision: 'PENDIENTE' }],
     ]);
     expect(
       await p.repo.crear(
@@ -179,7 +183,9 @@ describe('Orquestación segura de importaciones', () => {
   });
   it('pagina filas y conserva el total de errores', async () => {
     const p = preparar([[CABECERA], [{ total: 2 }], [{ numeroFila: 12 }]]);
-    expect(await p.repo.filas('h1', 'i1', { soloErrores: 'true', pagina: 2, tamano: 1 })).toEqual({
+    expect(
+      await p.repo.filas('h1', 'i1', { soloErrores: 'true', hoja: 'MENUS', pagina: 2, tamano: 1 }),
+    ).toEqual({
       datos: [{ numeroFila: 12 }],
       paginacion: { pagina: 2, tamano: 1, total: 2, totalPaginas: 2 },
     });
@@ -196,9 +202,14 @@ describe('Orquestación segura de importaciones', () => {
     expect(p.escrituras).toHaveLength(0);
   });
   it('no confirma nombres pendientes ni un archivo con todas las semanas omitidas', async () => {
-    const pendiente = preparar([CASA, [CABECERA], [{ ...PLATO, platilloId: null }]]);
+    const pendiente = preparar([
+      CASA,
+      [CABECERA],
+      [{ ...PLATO, platilloId: null, decision: 'PENDIENTE' }],
+    ]);
     await expect(pendiente.repo.confirmar('h1', 'u1', 'i1', 'r1', HOY)).rejects.toMatchObject({
       codigo: 'PLATILLOS_PENDIENTES',
+      detalle: 'Falta 1 platillo por resolver',
     });
     const omitida = preparar([
       CASA,
@@ -231,6 +242,7 @@ describe('Orquestación segura de importaciones', () => {
       expect.objectContaining({ fechaInicio: SEMANA.semanaInicio, reemplazar: false }),
       HOY,
       'i1',
+      'IMPORTACION',
     );
     expect(p.escrituras[0]!.valores).toMatchObject({ estado: 'CONFIRMADA', confirmadaEn: HOY });
   });
@@ -272,5 +284,87 @@ describe('Orquestación segura de importaciones', () => {
     ]);
     await repetida.repo.cancelar('h1', 'i1', 'r1');
     expect(repetida.escrituras).toHaveLength(0);
+  });
+  it('guarda la sugerencia más parecida de cada nombre pendiente y la similitud exacta de los automáticos', async () => {
+    const filas = validarFilas(
+      [
+        { numeroFila: 1, valores: ['fecha', 'tiempo_comida', 'platillo'] },
+        { numeroFila: 2, valores: ['2025-04-06', 'almuerzo', 'Sopa'] },
+        { numeroFila: 3, valores: ['2025-04-07', 'almuerzo', 'Tortas de carne'] },
+      ],
+      '2026-10-27',
+    );
+    const p = preparar(
+      [CASA, [{ id: 'p1', nombreNormalizado: 'sopa' }], [], [], CASA, [CABECERA], [], [], []],
+      [{ nombre: 'tortas de carne', id: 'p2', similitud: 0.85 }],
+    );
+    await p.repo.crear(
+      'h1',
+      'u1',
+      { originalname: 'menus.csv', buffer: Buffer.from('csv'), size: 3 },
+      'CSV',
+      filas,
+    );
+    expect(p.db.execute).toHaveBeenCalledTimes(1);
+    const guardados = p.escrituras.find(
+      (e) => Array.isArray(e.valores) && 'nombreNormalizado' in (e.valores[0] as object),
+    )!.valores as Record<string, unknown>[];
+    expect(guardados).toEqual([
+      expect.objectContaining({
+        nombreNormalizado: 'sopa',
+        decision: 'ASOCIAR',
+        platilloSugeridoId: 'p1',
+        similitud: '1.0000',
+      }),
+      expect.objectContaining({
+        nombreNormalizado: 'tortas de carne',
+        decision: 'PENDIENTE',
+        platilloSugeridoId: 'p2',
+        similitud: '0.8500',
+      }),
+    ]);
+  });
+  it('crea el platillo incompleto con los tiempos de sus filas y guarda el alias al confirmar', async () => {
+    const nuevo = {
+      ...PLATO,
+      nombreOriginal: 'Hilachas',
+      nombreNormalizado: 'sopa',
+      platilloId: null,
+      decision: 'CREAR',
+      similitud: null,
+      nombreFinal: 'Hilachas de res',
+      proteinaPrincipal: 'RES',
+    };
+    const p = preparar([CASA, [CABECERA], [nuevo], FILAS.map((datos) => ({ datos })), [SEMANA]]);
+    expect(await p.repo.confirmar('h1', 'u1', 'i1', 'r1', HOY)).toMatchObject({
+      semanasCreadas: 1,
+      platillosCreados: 1,
+      aliasCreados: 1,
+    });
+    const valores = p.escrituras.map((e) => e.valores as Record<string, unknown>);
+    expect(valores).toContainEqual(
+      expect.objectContaining({
+        nombre: 'Hilachas de res',
+        nombreNormalizado: 'hilachas de res',
+        proteinaPrincipal: 'RES',
+      }),
+    );
+    expect(valores).toContainEqual([expect.objectContaining({ tiempo: 'ALMUERZO' })]);
+    expect(valores).toContainEqual(
+      expect.objectContaining({
+        alias: 'Hilachas',
+        aliasNormalizado: 'sopa',
+        origen: 'IMPORTACION',
+      }),
+    );
+    expect(p.historial.guardarEnTransaccion).toHaveBeenCalledWith(
+      expect.anything(),
+      'h1',
+      'u1',
+      expect.objectContaining({ detalles: [expect.objectContaining({ platilloId: 'i1' })] }),
+      HOY,
+      'i1',
+      'IMPORTACION',
+    );
   });
 });
