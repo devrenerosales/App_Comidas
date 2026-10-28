@@ -10,6 +10,7 @@ import {
 } from '../api/importaciones';
 import { PaginaBase } from './PaginaBase';
 import ResolverPlatillos from './ResolverPlatillos';
+import { ListasPrevia, ReporteConciliacion } from './ResumenCuaderno';
 import './acceso.css';
 import './hogar.css';
 
@@ -29,6 +30,9 @@ export default function ImportarHistorial() {
   const [paginas, setPaginas] = useState(0);
   const [soloErrores, setSoloErrores] = useState(true);
   const [intento, setIntento] = useState(0);
+  const [cuaderno, setCuaderno] = useState(false);
+  const [listasArchivo, setListasArchivo] = useState<File | null>(null);
+  const [hoja, setHoja] = useState<'MENUS' | 'LISTAS'>('MENUS');
   useEffect(() => {
     let activo = true;
     setVista(null);
@@ -56,8 +60,10 @@ export default function ImportarHistorial() {
       setFilas([]);
       return;
     }
-    api
-      .filas(id, pagina, soloErrores)
+    (hoja === 'LISTAS'
+      ? api.filas(id, pagina, soloErrores, 'LISTAS')
+      : api.filas(id, pagina, soloErrores)
+    )
       .then((r) => {
         if (activo) {
           setFilas(r.datos);
@@ -73,7 +79,7 @@ export default function ImportarHistorial() {
     return () => {
       activo = false;
     };
-  }, [api, id, pagina, soloErrores, vista]);
+  }, [api, id, pagina, soloErrores, hoja, vista]);
   async function ejecutar(accion: () => Promise<void>) {
     setOcupado(true);
     setError('');
@@ -85,13 +91,15 @@ export default function ImportarHistorial() {
       setOcupado(false);
     }
   }
-  async function descargar(formato: 'csv' | 'xlsx') {
+  async function descargar(formato: 'csv' | 'xlsx', hojaPlantilla?: 'listas' | 'cuaderno') {
     await ejecutar(async () => {
-      const blob = await api.plantilla(formato);
+      const blob = hojaPlantilla
+        ? await api.plantilla(formato, hojaPlantilla)
+        : await api.plantilla(formato);
       const url = URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;
-      enlace.download = `plantilla-menus.${formato}`;
+      enlace.download = `plantilla-${hojaPlantilla ?? 'menus'}.${formato}`;
       document.body.append(enlace);
       enlace.click();
       enlace.remove();
@@ -140,6 +148,33 @@ export default function ImportarHistorial() {
                     Plantilla Excel y diccionario
                   </button>
                 </div>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={cuaderno}
+                    disabled={ocupado}
+                    onChange={(e) => {
+                      setCuaderno(e.target.checked);
+                      if (!e.target.checked) setListasArchivo(null);
+                    }}
+                  />{' '}
+                  Carga inicial del cuaderno (incluye listas de despensa y compras)
+                </label>
+                {cuaderno && (
+                  <div className="mf-acciones">
+                    <p>
+                      Las semanas quedan con origen cuaderno y las listas de despensa se registran
+                      como despensa del hogar con frecuencia mensual. Usa un Excel con las hojas
+                      Menus y Listas, o un CSV de menús y otro de listas.
+                    </p>
+                    <button disabled={ocupado} onClick={() => void descargar('csv', 'listas')}>
+                      Plantilla de listas CSV
+                    </button>{' '}
+                    <button disabled={ocupado} onClick={() => void descargar('xlsx', 'cuaderno')}>
+                      Plantilla Excel del cuaderno
+                    </button>
+                  </div>
+                )}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -149,7 +184,9 @@ export default function ImportarHistorial() {
                           setError('El archivo admite hasta 5 MB');
                           return;
                         }
-                        const r = await api.cargar(archivo);
+                        const r = cuaderno
+                          ? await api.cargar(archivo, { listas: listasArchivo ?? undefined })
+                          : await api.cargar(archivo);
                         history.push(`/historial/importar/${r.id}`);
                       });
                   }}
@@ -163,6 +200,17 @@ export default function ImportarHistorial() {
                       onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
                     />
                   </label>
+                  {cuaderno && (
+                    <label>
+                      Archivo de listas (CSV, opcional si el Excel trae la hoja Listas){' '}
+                      <input
+                        type="file"
+                        accept=".csv"
+                        disabled={ocupado}
+                        onChange={(e) => setListasArchivo(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  )}
                   <button className="mf-boton mf-boton--primario" disabled={ocupado || !archivo}>
                     Revisar archivo
                   </button>
@@ -183,14 +231,20 @@ export default function ImportarHistorial() {
                   <p role="status">
                     Importación confirmada: {vista.reporte.semanasCreadas} semanas creadas,{' '}
                     {vista.reporte.reemplazadas} reemplazadas y {vista.reporte.omitidas} omitidas.
+                    {vista.reporte.productosCreados > 0 &&
+                      ` Se crearon ${vista.reporte.productosCreados} productos en el catálogo.`}
+                    {vista.reporte.despensaCargada > 0 &&
+                      ` Se registraron ${vista.reporte.despensaCargada} productos de despensa.`}
                     {vista.reporte.platillosCreados > 0 &&
                       ` Se crearon ${vista.reporte.platillosCreados} platillos nuevos sin ingredientes.`}
                     {vista.reporte.aliasCreados > 0 &&
                       ` Se recordaron ${vista.reporte.aliasCreados} nombres alternos.`}
                   </p>
                 )}
+                {vista.reporte && <ReporteConciliacion reporte={vista.reporte} />}
                 {vista.revision && (
                   <>
+                    <ListasPrevia listas={vista.listas ?? []} />
                     <ResolverPlatillos
                       vista={vista}
                       ocupado={ocupado}
@@ -255,6 +309,21 @@ export default function ImportarHistorial() {
                       </section>
                     ))}
                     <h3>Revisión por fila</h3>
+                    {!!vista.listas?.length && (
+                      <label>
+                        Hoja a revisar{' '}
+                        <select
+                          value={hoja}
+                          onChange={(e) => {
+                            setHoja(e.target.value as 'MENUS' | 'LISTAS');
+                            setPagina(1);
+                          }}
+                        >
+                          <option value="MENUS">Menús</option>
+                          <option value="LISTAS">Listas</option>
+                        </select>
+                      </label>
+                    )}
                     <label>
                       <input
                         type="checkbox"
@@ -274,8 +343,10 @@ export default function ImportarHistorial() {
                     <ul>
                       {filas.map((f) => (
                         <li key={f.numeroFila}>
-                          Fila {f.numeroFila}: {f.datos.fecha} · {f.datos.tiempo} ·{' '}
-                          {f.datos.platillo}
+                          Fila {f.numeroFila}: {f.datos.fecha} ·{' '}
+                          {hoja === 'LISTAS'
+                            ? `${f.datos.lista} · ${f.datos.producto}`
+                            : `${f.datos.tiempo} · ${f.datos.platillo}`}
                           {f.errores.map((e, i) => (
                             <p key={i}>
                               {e.columna}: {e.motivo}

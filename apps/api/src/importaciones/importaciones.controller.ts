@@ -9,11 +9,11 @@ import {
   Put,
   Query,
   Res,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Rol } from '@menu/shared';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
@@ -34,7 +34,13 @@ import {
   PlatillosConsultaDto,
   RevisionDto,
 } from './importaciones.dto';
-import { generarPlantilla, leerArchivo, validarFilas } from './importaciones.parser';
+import {
+  generarPlantilla,
+  leerArchivo,
+  leerListasCsv,
+  validarFilas,
+  validarListas,
+} from './importaciones.parser';
 import { LIMITE_ARCHIVO, type ArchivoImportacion } from './importaciones.tipos';
 export const RELOJ_IMPORTACIONES = Symbol('RELOJ_IMPORTACIONES');
 
@@ -48,7 +54,7 @@ export class ImportacionesController {
   ) {}
   @Get('plantilla')
   async plantilla(@Query() consulta: PlantillaDto, @Res() respuesta: Response) {
-    const buffer = await generarPlantilla(consulta.formato);
+    const buffer = await generarPlantilla(consulta.formato, consulta.hoja);
     respuesta.setHeader(
       'Content-Type',
       consulta.formato === 'csv'
@@ -57,25 +63,56 @@ export class ImportacionesController {
     );
     respuesta.setHeader(
       'Content-Disposition',
-      `attachment; filename="plantilla-menus.${consulta.formato}"`,
+      `attachment; filename="plantilla-${consulta.hoja === 'listas' ? 'listas' : 'menus'}.${consulta.formato}"`,
     );
     respuesta.setHeader('Cache-Control', 'no-store');
     respuesta.send(buffer);
   }
   @Post()
   @UseInterceptors(
-    FileInterceptor('archivo', { limits: { fileSize: LIMITE_ARCHIVO, files: 1, fields: 1 } }),
+    FileFieldsInterceptor(
+      [
+        { name: 'archivo', maxCount: 1 },
+        { name: 'listas', maxCount: 1 },
+      ],
+      { limits: { fileSize: LIMITE_ARCHIVO, files: 2, fields: 1 } },
+    ),
   )
   async cargar(
     @HogarActual('hogarId') hogarId: string,
     @UsuarioActual('id') usuarioId: string,
-    @UploadedFile() archivo: ArchivoImportacion | undefined,
-    @Body() _datos: ArchivoDto,
+    @UploadedFiles() archivos: Record<string, ArchivoImportacion[]> | undefined,
+    @Body() datos: ArchivoDto,
   ) {
+    const archivo = archivos?.['archivo']?.[0];
+    const listasCsv = archivos?.['listas']?.[0];
     if (!archivo) throw new Problema(400, 'ARCHIVO_REQUERIDO', 'Selecciona un archivo');
-    const { formato, entradas } = await leerArchivo(archivo);
-    const filas = validarFilas(entradas, fechaLocal(this.reloj()));
-    return this.repositorio.crear(hogarId, usuarioId, archivo, formato, filas);
+    const cuaderno = datos.origen === 'CUADERNO';
+    if (listasCsv && !cuaderno)
+      throw new Problema(
+        422,
+        'LISTAS_REQUIEREN_CUADERNO',
+        'Las listas solo se cargan en la carga inicial del cuaderno',
+      );
+    const { formato, entradas, entradasListas } = await leerArchivo(archivo, {
+      conListas: cuaderno,
+    });
+    if (listasCsv && entradasListas)
+      throw new Problema(
+        422,
+        'LISTAS_DUPLICADAS',
+        'El Excel ya trae la hoja Listas: no envíes también un CSV de listas',
+      );
+    const hoy = fechaLocal(this.reloj());
+    const crudas = entradasListas ?? (listasCsv ? leerListasCsv(listasCsv) : null);
+    return this.repositorio.crear(
+      hogarId,
+      usuarioId,
+      archivo,
+      formato,
+      validarFilas(entradas, hoy),
+      { origen: datos.origen, listas: crudas ? validarListas(crudas, hoy) : [] },
+    );
   }
   @Get(':id')
   obtener(

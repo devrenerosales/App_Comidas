@@ -183,7 +183,9 @@ describe('Orquestación segura de importaciones', () => {
   });
   it('pagina filas y conserva el total de errores', async () => {
     const p = preparar([[CABECERA], [{ total: 2 }], [{ numeroFila: 12 }]]);
-    expect(await p.repo.filas('h1', 'i1', { soloErrores: 'true', pagina: 2, tamano: 1 })).toEqual({
+    expect(
+      await p.repo.filas('h1', 'i1', { soloErrores: 'true', hoja: 'MENUS', pagina: 2, tamano: 1 }),
+    ).toEqual({
       datos: [{ numeroFila: 12 }],
       paginacion: { pagina: 2, tamano: 1, total: 2, totalPaginas: 2 },
     });
@@ -240,6 +242,7 @@ describe('Orquestación segura de importaciones', () => {
       expect.objectContaining({ fechaInicio: SEMANA.semanaInicio, reemplazar: false }),
       HOY,
       'i1',
+      'IMPORTACION',
     );
     expect(p.escrituras[0]!.valores).toMatchObject({ estado: 'CONFIRMADA', confirmadaEn: HOY });
   });
@@ -361,6 +364,7 @@ describe('Orquestación segura de importaciones', () => {
       expect.objectContaining({ detalles: [expect.objectContaining({ platilloId: 'i1' })] }),
       HOY,
       'i1',
+      'IMPORTACION',
     );
   });
 });

@@ -15,10 +15,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 export class ArchivoDto {
-  @IsOptional() @IsIn(['ARCHIVO']) origen: string = 'ARCHIVO';
+  @IsOptional() @IsIn(['ARCHIVO', 'CUADERNO']) origen: 'ARCHIVO' | 'CUADERNO' = 'ARCHIVO';
 }
 export class PlantillaDto {
   @IsIn(['csv', 'xlsx']) formato: 'csv' | 'xlsx' = 'xlsx';
+  @IsOptional() @IsIn(['menus', 'listas', 'cuaderno']) hoja: 'menus' | 'listas' | 'cuaderno' =
+    'menus';
 }
 export class RevisionDto {
   @IsUUID('4') revision!: string;
@@ -60,6 +62,7 @@ export class PlatillosConsultaDto {
 }
 export class FilasDto {
   @IsOptional() @IsIn(['true', 'false']) soloErrores?: string;
+  @IsOptional() @IsIn(['MENUS', 'LISTAS']) hoja: 'MENUS' | 'LISTAS' = 'MENUS';
   @Type(() => Number) @IsInt() @Min(1) pagina: number = 1;
   @Type(() => Number) @IsInt() @Min(1) @Max(100) tamano: number = 50;
 }

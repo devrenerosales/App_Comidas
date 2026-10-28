@@ -113,3 +113,22 @@ umbral o mantener 80 %. Detalle en el [reporte de HU-17](../03-pruebas/reportes/
 
 Verificación: 316 unitarias y 197 de integración de API, 196 pruebas web, lint y tipos en verde.
 Diseño y contrato: [Importación histórica](../02-diseno/importacion-historica.md).
+
+## HU-18 — Carga inicial del cuaderno
+
+Implementación local para revisión del PO, sin migraciones:
+
+- Opción **Carga inicial del cuaderno** en la importación: Excel con hojas Menus y Listas, o
+  dos CSV. Las semanas quedan históricas con origen cuaderno.
+- Hoja Listas validada por fila. Los productos se asocian al catálogo o se crean (categoría
+  Otros) y los de despensa se registran como despensa del hogar con frecuencia mensual.
+- Reporte de conciliación: gasto semanal mínimo, máximo y promedio, y total por lista.
+- Carga repetible: no duplica semanas, productos ni despensa.
+
+La transcripción de las fotos ya existía; los dos CSV reales validan sin errores. La carga real
+espera tus respuestas a las dudas de la hoja de revisión (fechas inferidas, semanas sin total,
+totales que no cuadran, "Comida de pajarito"). Detalle y decisiones en el
+[reporte de HU-18](../03-pruebas/reportes/RE-HU-18-2026-10-28.md).
+
+Verificación: 350 unitarias y 208 de integración de API, 205 pruebas web, lint, tipos y build
+en verde. Con esto las seis historias del Sprint 2 están implementadas en local.

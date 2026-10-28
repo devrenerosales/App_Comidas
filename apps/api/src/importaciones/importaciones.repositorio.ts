@@ -25,10 +25,19 @@ import {
 import { fechaLocal } from '../configuracion/semanas';
 import type {
   ArchivoImportacion,
+  FilaLista,
   FilaMenu,
   MetadatosVista,
   ReporteImportacion,
 } from './importaciones.tipos';
+import {
+  codigosDeUnidad,
+  materializarListas,
+  productosExistentes,
+  resumirGasto,
+  resumirListas,
+  validarPresentaciones,
+} from './importaciones.listas';
 import type {
   DecisionesDto,
   DecisionesPlatillosDto,
@@ -62,9 +71,12 @@ export class ImportacionesRepositorio {
     archivo: ArchivoImportacion,
     formato: 'CSV' | 'XLSX',
     filas: FilaMenu[],
+    opciones: { origen?: 'ARCHIVO' | 'CUADERNO'; listas?: FilaLista[] } = {},
   ) {
+    const listas = opciones.listas ?? [];
     const id = await this.db.transaction(async (tx) => {
       await this.bloquearHogar(tx, hogarId);
+      if (listas.length) validarPresentaciones(listas, await codigosDeUnidad(tx));
       const canonicos = await tx
         .select({ id: platillo.id, nombreNormalizado: platillo.nombreNormalizado })
         .from(platillo)
@@ -84,7 +96,9 @@ export class ImportacionesRepositorio {
           plan.flatMap((s) => (s.instantanea ? [[s.semanaInicio, s.instantanea]] : [])),
         ),
       };
-      const errores = filas.filter((f) => f.errores.length).length;
+      const errores =
+        filas.filter((f) => f.errores.length).length +
+        listas.filter((f) => f.errores.length).length;
       const [cabecera] = await tx
         .insert(importacion)
         .values({
@@ -97,8 +111,9 @@ export class ImportacionesRepositorio {
               .slice(0, 200) || 'archivo',
           formato,
           tamanoBytes: archivo.buffer.length,
+          origen: opciones.origen ?? 'ARCHIVO',
           estado: errores ? 'CON_ERRORES' : 'VISTA_PREVIA',
-          totalFilas: filas.length,
+          totalFilas: filas.length + listas.length,
           filasConError: errores,
           reporte,
         })
@@ -115,6 +130,18 @@ export class ImportacionesRepositorio {
             errores: f.errores,
             valida: !f.errores.length,
             semanaInicio: f.semanaInicio,
+          })),
+        );
+      for (let i = 0; i < listas.length; i += 300)
+        await tx.insert(importacionFila).values(
+          listas.slice(i, i + 300).map((f) => ({
+            importacionId,
+            hoja: 'LISTAS' as const,
+            numeroFila: f.numeroFila,
+            datos: f,
+            errores: f.errores,
+            valida: !f.errores.length,
+            semanaInicio: null,
           })),
         );
       const base = resolverNombres(filas, canonicos, aliases);
@@ -173,15 +200,23 @@ export class ImportacionesRepositorio {
       const pendientes = platos
         .filter((p) => p.decision === 'PENDIENTE')
         .map((p) => p.nombreOriginal);
+      const filasListas =
+        c.origen === 'CUADERNO' ? await this.filasListas(tx, id) : ([] as FilaLista[]);
+      const listas = resumirListas(
+        filasListas,
+        await productosExistentes(tx, [...new Set(filasListas.map((f) => f.nombreNormalizado))]),
+      );
       const vista = abierta(c) ? metadatos(c) : null;
       return {
         id: c.id,
         nombreArchivo: c.nombreArchivo,
         estado: c.estado,
+        origen: c.origen,
         revision: vista?.revision ?? null,
         totalFilas: c.totalFilas,
         filasConError: c.filasConError,
         pendientes,
+        listas,
         semanas: semanas.map((s) => ({
           semanaInicio: s.semanaInicio,
           fechaFin: diasSemanaHistorica(s.semanaInicio)[6]!,
@@ -195,7 +230,7 @@ export class ImportacionesRepositorio {
           abierta(c) &&
           !c.filasConError &&
           !pendientes.length &&
-          semanas.some((s) => s.decision !== 'OMITIR'),
+          (semanas.some((s) => s.decision !== 'OMITIR') || filasListas.length > 0),
         reporte: c.estado === 'CONFIRMADA' ? c.reporte : null,
       };
     });
@@ -204,6 +239,7 @@ export class ImportacionesRepositorio {
     await this.cabecera(this.db, hogarId, id);
     const filtro = and(
       eq(importacionFila.importacionId, id),
+      eq(importacionFila.hoja, consulta.hoja),
       consulta.soloErrores === 'true' ? eq(importacionFila.valida, false) : undefined,
     );
     const [conteo] = await this.db
@@ -231,6 +267,14 @@ export class ImportacionesRepositorio {
         totalPaginas: Math.ceil(total / consulta.tamano),
       },
     };
+  }
+  private async filasListas(db: Db | TransaccionHistorial, id: string) {
+    const filas = await db
+      .select({ datos: importacionFila.datos })
+      .from(importacionFila)
+      .where(and(eq(importacionFila.importacionId, id), eq(importacionFila.hoja, 'LISTAS')))
+      .orderBy(asc(importacionFila.numeroFila));
+    return filas.map((f) => f.datos as FilaLista);
   }
   private async bloquearHogar(tx: TransaccionHistorial, hogarId: string) {
     const [c] = await tx
@@ -419,8 +463,12 @@ export class ImportacionesRepositorio {
       if (sinResolver)
         throw new Problema(422, 'PLATILLOS_PENDIENTES', textoPendientes(sinResolver));
       const filas = (
-        await tx.select().from(importacionFila).where(eq(importacionFila.importacionId, id))
+        await tx
+          .select()
+          .from(importacionFila)
+          .where(and(eq(importacionFila.importacionId, id), eq(importacionFila.hoja, 'MENUS')))
       ).map((f) => f.datos as FilaMenu);
+      const listas = c.origen === 'CUADERNO' ? await this.filasListas(tx, id) : [];
       const semanas = await tx
         .select()
         .from(importacionSemana)
@@ -433,8 +481,11 @@ export class ImportacionesRepositorio {
         platillosCreados: 0,
         aliasCreados: 0,
         despensaCargada: 0,
+        productosCreados: 0,
+        gastoSemanal: null,
+        listas: [],
       };
-      if (semanas.every((s) => s.decision === 'OMITIR'))
+      if (semanas.every((s) => s.decision === 'OMITIR') && !listas.length)
         throw new Problema(422, 'SIN_SEMANAS', 'Selecciona al menos una semana para importar');
       const importadas = new Set(
         semanas.filter((s) => s.decision !== 'OMITIR').map((s) => s.semanaInicio),
@@ -448,6 +499,13 @@ export class ImportacionesRepositorio {
       );
       reporte.platillosCreados = resueltos.platillosCreados;
       reporte.aliasCreados = resueltos.aliasCreados;
+      if (listas.length) {
+        reporte.listas = resumirListas(
+          listas,
+          await productosExistentes(tx, [...new Set(listas.map((f) => f.nombreNormalizado))]),
+        );
+        Object.assign(reporte, await materializarListas(tx, hogarId, listas));
+      }
       for (const s of semanas) {
         if (s.decision === 'OMITIR') {
           reporte.omitidas++;
@@ -485,10 +543,21 @@ export class ImportacionesRepositorio {
         };
         const falla = validarCapturaHistorica(datos, fechaLocal(ahora));
         if (falla) throw new Problema(422, falla.codigo, falla.mensaje);
-        await this.historial.guardarEnTransaccion(tx, hogarId, usuarioId, datos, ahora, id);
+        await this.historial.guardarEnTransaccion(
+          tx,
+          hogarId,
+          usuarioId,
+          datos,
+          ahora,
+          id,
+          c.origen === 'CUADERNO' ? 'CUADERNO' : 'IMPORTACION',
+        );
         if (s.decision === 'CREAR') reporte.semanasCreadas++;
         else reporte.reemplazadas++;
       }
+      reporte.gastoSemanal = resumirGasto(
+        semanas.filter((s) => s.decision !== 'OMITIR').map((s) => s.gastoSemana),
+      );
       await tx
         .update(importacion)
         .set({ estado: 'CONFIRMADA', reporte, confirmadaEn: ahora, updatedAt: ahora })

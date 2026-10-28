@@ -94,3 +94,53 @@ carne" frente a "Tortitas de carne" da 78,95 %, por debajo del umbral, y se prop
 Las pruebas de integración usan un par que supera el umbral ("pepian de pollo" y
 "pepian de pollos", 82,35 %). El umbral es una constante; la decisión del PO sobre si
 conviene bajarlo queda pendiente.
+
+## Carga inicial del cuaderno (HU-18)
+
+Se usa el mismo flujo de importación con `origen=CUADERNO`. No requiere migración: usa
+`importacion.origen`, `importacion_fila.hoja = LISTAS`, `producto` y `despensa_item`.
+
+**Entrada.** Un Excel con las hojas `Menus` y `Listas`, o un CSV de menús (`archivo`) y otro de
+listas (`listas`) en la misma solicitud. En una importación normal la hoja Listas con datos
+se sigue rechazando, para no ignorarla por accidente. Las listas son opcionales: una carga
+de cuaderno puede traer solo menús.
+
+**Hoja Listas.** Una fila por producto, con las columnas `fecha`, `lista`, `tipo`
+(despensa o compras), `producto`, `cantidad`, `unidad_compra`, `presentacion`, `precio_gtq` y
+`supermercado`. Se valida en la carga y cualquier error bloquea todo el archivo, igual que en
+menús: fecha real y no futura; lista y producto de 1 a 80 caracteres; cantidad mayor que 0
+con hasta 3 decimales; unidad de hasta 20 caracteres; presentación como "2 lb" con una unidad
+que exista en el catálogo; precio de 0 a 99,999.99. No se admite el mismo producto dos veces
+en la despensa ni una lista que mezcle despensa y compras. `supermercado` se valida pero no se
+guarda: los precios formales llegan con M8.
+
+**Vista previa.** Devuelve `origen` y `listas`: por lista, productos, total de precios y
+cuántos productos son nuevos en el catálogo. Las filas de cada hoja se consultan por separado
+(`GET /{id}/filas?hoja=LISTAS`). Con listas, la importación se puede confirmar aunque todas
+las semanas se omitan, para repetir solo la carga de la despensa.
+
+**Al confirmar**, en la misma transacción que los menús:
+
+1. Las semanas se guardan como históricas con `origen=CUADERNO`.
+2. Cada producto de las listas se asocia al catálogo común por nombre normalizado, o se crea.
+   Si hay varios con ese nombre se prefiere el de la misma presentación y, si no, el más
+   antiguo. Un producto nuevo toma la categoría Otros, el tipo Despensa (Ingrediente si solo
+   está en listas de compras, Ambos si está en las dos) y la presentación de la fila, o 1
+   unidad si no la trae. Nunca se modifica un producto existente.
+3. Los productos de listas de despensa se registran como ítems del hogar con frecuencia
+   `MENSUAL` (provisional hasta confirmar PA-03), la cantidad de la fila y el precio como
+   `precio_referencia`. Los de listas de compras solo entran al catálogo.
+4. El reporte incluye `gastoSemanal` (mínimo, máximo y promedio al centavo de las semanas
+   importadas que traen gasto), `listas`, `productosCreados` y `despensaCargada`.
+
+**Repetir la carga** no duplica nada: las semanas existentes se omiten o se reemplazan por
+decisión (HU-16); los productos ya creados se reutilizan; y la despensa se actualiza por
+(hogar, producto): cambia cantidad y precio de referencia, reactiva el ítem y conserva la
+frecuencia que el hogar haya elegido.
+
+**Fallos controlados.** `CATALOGO_BASE_FALTANTE` (409) si faltan la categoría Otros o las
+unidades base, y `PRODUCTO_INACTIVO` (409) si el producto a crear ya existe inactivo con la
+misma presentación. Ambos revierten toda la confirmación.
+
+El reporte de conciliación no es una ruta aparte (el contrato la proponía como
+`GET /{id}/conciliacion`): viaja en la respuesta de confirmar y en la vista.
