@@ -10,7 +10,7 @@ Cuerpo del GitHub Issue, con etiquetas `defecto`, `sev:S_`, `prio:P_` y `M__` (b
 | Caso de prueba | PF-M_-__.__ (CA-__.__) o "Exploratoria" |
 | Severidad | S1 Crítica · S2 Alta · S3 Media · S4 Baja |
 | Prioridad | P1 · P2 · P3 · P4 |
-| Entorno | Local · CI · Servidor de casa |
+| Entorno | Local (laptop) · CI · Producción (Oracle Cloud) |
 | Plataforma | Chrome __ / Edge __ / Safari __ / Android __ (APK vX.Y.Z) |
 | Versión | `vX.Y.Z` · commit `abc1234` |
 | Reportado por / fecha | |

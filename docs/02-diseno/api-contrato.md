@@ -3,11 +3,11 @@
 | Campo | Valor |
 |---|---|
 | Documento | DIS-MF-003 |
-| Versión | 1.1 (RF-43, RF-44) |
+| Versión | 1.3 (HU-02: hogar e invitaciones) |
 | Fecha | 2026-10-22 |
 | Fase del ciclo de vida | 3. Diseño |
 | Base | `https://<host>/api/v1` |
-| Fuente | SRS-MF-001 v1.3, historias M01–M10, [`modelo-datos.md`](modelo-datos.md), [`schema.prisma`](schema.prisma) |
+| Fuente | SRS-MF-001 v1.3, historias M01–M10, [`modelo-datos.md`](modelo-datos.md), [`packages/db/src/schema`](../../packages/db/src/schema/) (Drizzle, ADR-010) |
 
 La especificación OpenAPI 3.1 se generará desde los controladores NestJS (`@nestjs/swagger`) en S1 y debe coincidir con este contrato; las diferencias se resuelven actualizando este documento en la misma rama.
 
@@ -15,7 +15,9 @@ La especificación OpenAPI 3.1 se generará desde los controladores NestJS (`@ne
 
 ### 1.1 Autenticación y roles
 
-- `Authorization: Bearer <accessToken>`. JWT firmado (HS256/EdDSA) con `sub` (usuarioId), `hogarId`, `rol`, `iat`, `exp`; vigencia 24 h (supuesto M01). Refresh token opaco de 30 días, rotativo (`POST /auth/refresh`).
+- `Authorization: Bearer <accessToken>`. JWT HS256 con `sub` (usuarioId), `hogarId`, `rol` (nulos si el usuario no tiene hogar), `iat`, `exp`; vigencia **15 min** (ADR-004, reemplaza el supuesto de 24 h de M01). Refresh token opaco de 30 días, rotativo (`POST /auth/refresh`); reutilizar uno ya rotado revoca su familia.
+- **Transporte del refresh (ADR-004):** la PWA lo recibe y lo envía en la cookie `mf_refresh` (`HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth`) y las respuestas **no** traen `refreshToken`. La app Android envía `X-Cliente: android` en todas las solicitudes y recibe/envía `refreshToken` en el cuerpo.
+- Errores 401 de autenticación: `NO_AUTENTICADO` (sin token), `TOKEN_EXPIRADO`, `TOKEN_INVALIDO`, `CREDENCIALES_INVALIDAS`, `SESION_INVALIDA` (refresh inexistente, vencido o cerrado), `SESION_REVOCADA` (reutilización detectada).
 - **El hogar se toma del token, nunca de la ruta.** Las rutas `/hogares/{id}/…` de las historias se normalizan a `/hogar/…` para evitar acceso a otro hogar por cambiar el id (RNF-06).
 - Roles en las tablas: **Público** (sin token) · **Auth** (token sin hogar) · **MIEMBRO** (incluye ADMIN, que hereda) · **ADMIN** (solo administrador, RN-10) · **ADMIN_SISTEMA** (`Usuario.esAdminSistema`, datos globales, D-07). El worker de precios no usa la API: escribe en la base y en la cola.
 
@@ -92,35 +94,40 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| POST | `/auth/registro` | Público | RF-01 · HU-01 | `{nombre, correo, contrasena}` → 201 `{usuario, accessToken, refreshToken, expiraEn, hogar: null}` | 400 · 409 `CORREO_REGISTRADO` · 422 `CONTRASENA_DEBIL` |
-| POST | `/auth/login` | Público | RF-01 · HU-01 | `{correo, contrasena, dispositivo?}` → 200 `{usuario, accessToken, refreshToken, expiraEn, hogar: {id, nombre, rol} \| null}` | 401 `CREDENCIALES_INVALIDAS` · 423 `CUENTA_BLOQUEADA` (`bloqueadoHasta`) |
-| POST | `/auth/refresh` | Público | RF-01 | `{refreshToken}` → 200 nuevo par (rota; reutilizar uno rotado revoca la familia) | 401 |
-| POST | `/auth/logout` | Auth | RF-01 | `{refreshToken}` → 204 | 401 |
+| POST | `/auth/registro` | Público | RF-01 · HU-01 | `{nombre, correo, contrasena}` → 201 `{usuario: {id, nombre, correo, esAdminSistema}, accessToken, refreshToken (solo Android), expiraEn, hogar: null}` + cookie `mf_refresh` (PWA) | 400 `VALIDACION` · 409 `CORREO_REGISTRADO` · 422 `CONTRASENA_DEBIL` · 429 |
+| POST | `/auth/login` | Público | RF-01 · HU-01 | `{correo, contrasena, dispositivo?}` → 200 `{usuario, accessToken, refreshToken (solo Android), expiraEn, hogar: {id, nombre, rol} \| null}` + cookie (PWA) | 400 · 401 `CREDENCIALES_INVALIDAS` · 423 `CUENTA_BLOQUEADA` (`bloqueadoHasta`) · 429 (`Retry-After`) |
+| POST | `/auth/refresh` | Público | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 200 misma forma que login con el nuevo par (rota; reutilizar uno rotado revoca la familia); trae `usuario` y `hogar` vigentes para restaurar la sesión al abrir la app | 401 `SESION_INVALIDA` · 401 `SESION_REVOCADA` · 429 |
+| POST | `/auth/logout` | Auth | RF-01 | `{refreshToken?}` (Android) o cookie (PWA) → 204; revoca la familia solo si el refresh es del usuario del token y borra la cookie | 401 |
 | POST | `/auth/recuperar` | Público | RF-04 · HU-04 | `{correo}` → 202 mensaje neutro siempre | 429 |
+| POST | `/auth/validar-recuperacion` | Público | RF-04 · HU-04 | `{token}` → 204 si el enlace está vigente; no lo consume | 410 `ENLACE_NO_VALIDO` · 422 · 429 |
 | POST | `/auth/restablecer` | Público | RF-04 · HU-04 | `{token, contrasena, confirmacion}` → 200; invalida sesiones previas | 410 `ENLACE_NO_VALIDO` · 422 |
 | GET | `/usuarios/yo` | Auth | RF-01 | → 200 `{id, nombre, correo, esAdminSistema, hogar \| null}` | 401 |
-| POST | `/hogares` | Auth (sin hogar) | RF-02 · HU-02 | `{nombre}` → 201 `{hogar, rol: "ADMIN", configuracion}` + nuevo `accessToken` con `hogarId` | 409 `YA_TIENE_HOGAR` · 422 |
-| GET | `/hogar` | MIEMBRO | RF-02 | → 200 `{id, nombre, miembros: [{usuarioId, nombre, rol}]}` | 401 |
-| PATCH | `/hogar` | ADMIN | RF-02 | `{nombre}` → 200 | 403 · 422 |
-| POST | `/hogar/invitaciones` | ADMIN | RF-02 · HU-02 | `{medio: CORREO\|ENLACE, correo?}` → 201 `{id, enlace, venceEn, correoEnviado}` | 403 · 409 `YA_ES_MIEMBRO` · 422 |
-| GET | `/hogar/invitaciones` | ADMIN | RF-02 | → 200 vigentes y usadas | 403 |
-| DELETE | `/hogar/invitaciones/{id}` | ADMIN | RF-02 | → 204 (revoca) | 403 · 404 |
-| GET | `/invitaciones/{token}` | Público | RF-02 · HU-02 | → 200 `{hogarNombre, venceEn}` | 410 `INVITACION_NO_VALIDA` |
-| POST | `/invitaciones/{token}/aceptar` | Auth | RF-02 · HU-02 | → 200 `{hogar, rol: "MIEMBRO"}` + nuevo `accessToken` | 409 `YA_TIENE_HOGAR` · 410 |
-| GET | `/hogar/comensales` | MIEMBRO | RF-03 · HU-03 | `?incluirInactivos=` → 200 `{comensales: [{id, nombre, tipo, factorPorcion, activo}], totales: {adultos, ninos, sumaFactores}}` | — |
-| POST | `/hogar/comensales` | ADMIN | RF-03 · HU-03 | `{nombre, tipo, factorPorcion?}` → 201 comensal + totales | 403 · 409 `NOMBRE_REPETIDO` · 422 `FACTOR_INVALIDO` |
-| PATCH | `/hogar/comensales/{id}` | ADMIN | RF-03 · D-02 | `{nombre?, tipo?, factorPorcion?}` → 200 | 403 · 404 · 409 · 422 |
-| DELETE | `/hogar/comensales/{id}` | ADMIN | RF-03 · HU-03 | → 200 inactivado + totales | 403 · 404 · 422 `ULTIMO_COMENSAL` |
+| POST | `/hogares` | Auth (sin hogar) | RF-02 · HU-02 | `{nombre}` (1–80, espacios recortados) → 201 `{hogar: {id, nombre, rol}, rol: "ADMIN", configuracion: {version, presupuestoSemanal, diaInicioSemana, diaPlanificacion, horaPlanificacion, tiempos: [{tiempo, activo, porcentaje}]}, accessToken, expiraEn}`; el nuevo `accessToken` lleva `hogarId` y `rol` | 409 `YA_TIENE_HOGAR` · 422 `NOMBRE_HOGAR_INVALIDO` |
+| GET | `/hogar` | MIEMBRO | RF-02 | → 200 `{id, nombre, miembros: [{usuarioId, nombre, correo, rol, desde}]}` (ADMIN primero) | 401 · 403 `SIN_HOGAR` |
+| PATCH | `/hogar` | ADMIN | RF-02 | `{nombre}` → 200 `{id, nombre}` | 403 `SOLO_ADMINISTRADOR` · 422 `NOMBRE_HOGAR_INVALIDO` |
+| POST | `/hogar/invitaciones` | ADMIN | RF-02 · HU-02 | `{medio: CORREO\|ENLACE, correo?}` → 201 `{id, medio, correo, estado, enlace, venceEn, creadaEn, correoEnviado, usadaEn, usadaPor}`; `enlace` = `APP_URL/invitacion/{token}` solo en esta respuesta. Por correo revoca las vigentes al mismo correo; si el SMTP falla responde 201 con `correoEnviado: false` (CU-01.2 E2) | 400 `VALIDACION` (medio) · 403 · 409 `YA_ES_MIEMBRO` · 422 `CORREO_INVALIDO` |
+| GET | `/hogar/invitaciones` | ADMIN | RF-02 | → 200 `[{id, medio, correo, estado: VIGENTE\|USADA\|REVOCADA\|VENCIDA, venceEn, creadaEn, correoEnviado, usadaEn, usadaPor}]` (las 50 más recientes, sin `enlace`) | 403 |
+| DELETE | `/hogar/invitaciones/{id}` | ADMIN | RF-02 | → 204 (revoca; repetir no es error) | 403 · 404 (no existe, otro hogar o id mal formado) · 409 `INVITACION_USADA` |
+| GET | `/invitaciones/{token}` | Público | RF-02 · HU-02 | → 200 `{hogarNombre, invitadoPor, medio, correo (enmascarado o null), venceEn}` | 410 `INVITACION_NO_VALIDA` · 429 |
+| POST | `/invitaciones/{token}/aceptar` | Auth | RF-02 · HU-02 | → 200 `{hogar: {id, nombre, rol}, rol: "MIEMBRO", accessToken, expiraEn}` | 403 `INVITACION_DE_OTRO_CORREO` · 409 `YA_TIENE_HOGAR` · 410 `INVITACION_NO_VALIDA` · 429 |
+| GET | `/hogar/comensales` | MIEMBRO | RF-03 · HU-03 | `?incluirInactivos=true\|1` → 200 `{comensales: [{id, nombre, tipo, factorPorcion, activo}], totales: {activos, adultos, ninos, sumaFactores}}`. Activos primero y luego por fecha de alta; `totales` siempre sobre los activos; `sumaFactores` = **total de porciones** (Σ factores, RN-07), p. ej. `"3.50"` | 401 · 403 `SIN_HOGAR` |
+| POST | `/hogar/comensales` | ADMIN | RF-03 · HU-03 | `{nombre (1–60, espacios recortados), tipo?: ADULTO\|NINO (ADULTO si se omite; solo informativa), factorPorcion?: número o texto decimal (1.00 si se omite)}` → 201 `{comensal, totales}` | 403 `SOLO_ADMINISTRADOR` ("Solo el administrador puede modificar comensales") · 409 `NOMBRE_REPETIDO` (sin distinguir mayúsculas, espacios ni tildes; si el repetido está inactivo trae `comensalId` y `activo: false`) · 422 `FACTOR_INVALIDO` · 422 `NOMBRE_COMENSAL_INVALIDO` · 400 `VALIDACION` (tipo desconocido, campos extra) |
+| PATCH | `/hogar/comensales/{id}` | ADMIN | RF-03 · D-02 | `{nombre?, tipo?, factorPorcion?}` → 200 `{comensal, totales}` | 403 · 404 (no existe, otro hogar o id mal formado) · 409 `NOMBRE_REPETIDO` · 422 `FACTOR_INVALIDO`, `NOMBRE_COMENSAL_INVALIDO` |
+| DELETE | `/hogar/comensales/{id}` | ADMIN | RF-03 · HU-03 | Quitar = inactivar (baja lógica; repetir no es error) → 200 `{comensal, totales}` | 403 · 404 · 422 `ULTIMO_COMENSAL` |
+| POST | `/hogar/comensales/{id}/reactivar` | ADMIN | RF-03 · HU-03 | → 200 `{comensal, totales}` | 403 · 404 |
+
+`factorPorcion` válido: 0.25 a 2.00 en pasos de 0.25 (D-02; reglas en `@menu/shared`: `esFactorPorcionValido`, `totalPorciones`; CHECK `comensal_factor_ck` en la base). Las escrituras bloquean la fila del hogar para que dos bajas simultáneas no dejen el hogar sin comensales activos. El total de porciones para HU-12/HU-28 se obtiene en la API con `ComensalesService.totalPorciones(hogarId)`.
 
 ### 2.2 M02 — Configuración
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}], diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos, proximaSemana: {desde, hasta}}` | — |
-| POST | `/hogar/configuracion/vista-previa` | ADMIN | RF-07 · HU-07 | `{tiempos: [..], distribucion?: [{tiempo, porcentaje}]}` → 200 `{actual[], nuevo[], aplicaDesde, menusAprobadosConservados[], borradoresADesactualizar[]}` sin guardar | 403 · 422 `COMBINACION_TIEMPOS_INVALIDA`, `PORCENTAJES_NO_SUMAN_100` |
-| PUT | `/hogar/configuracion/tiempos` | ADMIN | RF-05, RF-07 · HU-05, HU-07 | `{version, tiempos: [{tiempo, porcentaje}]}` → 200 configuración + `borradoresDesactualizados` | 403 · 409 `VERSION_DESACTUALIZADA` · 422 |
-| PUT | `/hogar/configuracion/presupuesto` | ADMIN | RF-06 · HU-06 | `{version, presupuestoSemanal, modo: PORCENTAJE\|MONTO, distribucion: [{tiempo, porcentaje? , monto?}]}` → 200 (guarda en %) | 403 · 409 · 422 `PRESUPUESTO_INVALIDO`, `PORCENTAJES_NO_SUMAN_100`, `MONTOS_NO_SUMAN_PRESUPUESTO` |
-| PUT | `/hogar/configuracion/semana` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 `{…, semanaTransicion: {desde, hasta} \| null, proximaSemana}` | 403 · 409 · 422 |
+| GET | `/hogar/configuracion` | MIEMBRO | RF-05–RF-08 | → 200 `{version, presupuestoSemanal, tiempos: [{tiempo, activo, porcentaje, monto}] (siempre las 3 filas; inactivas en "0.00"), diaInicioSemana, diaPlanificacion, horaPlanificacion, pesos: {preferencia, novedad, ahorro, afinidad}, actualizadoEn, proximaSemana: {desde, hasta}, semanaTransicion: {desde, hasta} \| null, proximaPlanificacion}`; fechas locales `AAAA-MM-DD` | 403 `SIN_HOGAR` |
+| POST | `/hogar/configuracion/vista-previa` | ADMIN | RF-07 · HU-07 | `{tiempos: [..], presupuestoSemanal?, distribucion?: [{tiempo, porcentaje}]}` → 200 `{version, presupuestoSemanal, actual: [{tiempo, porcentaje, monto}], nuevo: [..], impacto: [{tiempo, cambio: AGREGADO\|QUITADO\|MODIFICADO\|SIN_CAMBIO, actual \| null, nuevo \| null, diferenciaMonto}], aplicaDesde, menusAprobadosConservados: [{id, fechaInicio, fechaFin}], borradoresADesactualizar: [..]}` sin guardar; sin `distribucion` propone RN-06 / D-01 | 400 · 403 `SOLO_ADMINISTRADOR` · 422 `COMBINACION_TIEMPOS_INVALIDA`, `PORCENTAJES_NO_SUMAN_100`, `DISTRIBUCION_INVALIDA`, `PRESUPUESTO_INVALIDO` |
+| PUT | `/hogar/configuracion/tiempos` | ADMIN | RF-05, RF-07 · HU-05, HU-07 | `{version, tiempos: [{tiempo, porcentaje}], presupuestoSemanal?}` (solo los tiempos activos) → 200 configuración (forma del GET) + `borradoresDesactualizados: [{id, fechaInicio, fechaFin}]` | 400 · 403 · 409 `VERSION_DESACTUALIZADA` · 422 (mismos códigos que la vista previa) |
+| PUT | `/hogar/configuracion/presupuesto` | ADMIN | RF-06 · HU-06 | `{version, presupuestoSemanal, modo?: PORCENTAJE\|MONTO, distribucion?: [{tiempo, porcentaje? , monto?}]}` → 200 configuración + `borradoresDesactualizados` (guarda en %; sin `distribucion` conserva los % y recalcula montos) | 400 · 403 · 409 · 422 `PRESUPUESTO_INVALIDO`, `PORCENTAJES_NO_SUMAN_100`, `MONTOS_NO_SUMAN_PRESUPUESTO`, `DISTRIBUCION_INVALIDA` |
+| POST | `/hogar/configuracion/semana/vista-previa` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 `{version, semanaTransicion, proximaSemana, proximaPlanificacion}`; sin escrituras | 403 · 409 `VERSION_DESACTUALIZADA` · 422 `DIA_SEMANA_INVALIDO` |
+| PUT | `/hogar/configuracion/semana` | ADMIN | RF-08 · HU-08 | `{version, diaInicioSemana, diaPlanificacion}` → 200 configuración completa con `semanaTransicion`, `proximaSemana` y `proximaPlanificacion`; crea o ajusta el borrador de transición vacío en la misma transacción | 403 · 409 `VERSION_DESACTUALIZADA` / `SEMANA_EN_CONFLICTO` · 422 `DIA_SEMANA_INVALIDO` |
 | GET | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | → 200 `[{supermercadoId, nombre, preferido}]` | — |
 | PUT | `/hogar/preferencias/supermercados` | MIEMBRO | RF-09 · HU-09 | `{preferidos: [supermercadoId]}` → 200 | 422 `SIN_SUPERMERCADO_PREFERIDO` |
 | GET | `/hogar/preferencias/marcas` | MIEMBRO | RF-09 | → 200 `[{productoId, producto, marca}]` | — |
@@ -128,41 +135,59 @@ Columnas: método · ruta · rol · RF/HU · solicitud → respuesta (resumen) �
 | GET | `/hogar/preferencias/gustos` | MIEMBRO | RF-10 · HU-10 | → 200 `{ingredientesExcluidos: [producto], favoritos: [platillo]}` | — |
 | PUT | `/hogar/preferencias/gustos` | MIEMBRO | RF-10 · HU-10 | `{ingredientesExcluidos: [productoId], favoritos: [platilloId]}` → 200 `{…, impacto: {platillosExcluidos: [{id, nombre}]}, advertencias: [FAVORITO_CON_EXCLUIDO]}` | 404 · 422 `INACTIVO` |
 
+Notas de implementación de la configuración (HU-05, HU-06, HU-07, rama `feature/HU-05-07-configuracion`):
+- Montos calculados con enteros (centavos) en `@menu/shared`: monto = presupuesto × % redondeado a centavos; la diferencia de redondeo va al almuerzo (o al tiempo de mayor %). El modo monto convierte a % con 2 decimales y su redondeo también va al almuerzo.
+- RN-10: los guardados y la vista previa responden 403 `SOLO_ADMINISTRADOR` antes de validar el cuerpo; el `detail` es "Solo el administrador puede cambiar los tiempos de comida" (vista previa y tiempos) o "Solo el administrador puede cambiar esta configuración" (presupuesto).
+- Versión optimista: la escritura se hace con `UPDATE … WHERE version = :version`; si no actualiza filas, 409 `VERSION_DESACTUALIZADA` "La configuración cambió, revisa de nuevo". Guardar valores idénticos no sube la versión.
+- Al guardar un cambio efectivo (tiempos, % o presupuesto) se marcan `desactualizado = true` los menús en BORRADOR con `fechaFin` ≥ hoy (America/Guatemala); los APROBADOS e HISTÓRICOS no se tocan (D-04).
+- `aplicaDesde` = inicio de la próxima semana (primer `diaInicioSemana` posterior a hoy), saltando las semanas consecutivas con menú aprobado.
+
 ### 2.3 M03 — Catálogo
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| GET | `/platillos` | MIEMBRO | RF-11 · HU-11 | `?q&tiempo&proteina&etiqueta&ingrediente&estado=ACTIVO\|INACTIVO\|INCOMPLETO&pagina&tamano` → 200 paginado `{id, nombre, tiempos, proteinaPrincipal, etiquetas, favorito, incompleto, calificacionPromedio}` | 400 |
-| POST | `/platillos` | MIEMBRO | RF-11 · HU-11 | `{nombre, tiempos[], proteinaPrincipal, etiquetas[]}` → 201 | 409 `PLATILLO_DUPLICADO` (`existenteId`) · 422 `SIN_TIEMPO`, `NOMBRE_LARGO`, `MAX_ETIQUETAS` |
-| GET | `/platillos/{id}` | MIEMBRO | RF-11, RF-12 | → 200 con ingredientes, alias, advertencias (`INGREDIENTE_INACTIVO`) | 404 |
-| PATCH | `/platillos/{id}` | MIEMBRO | RF-11 | campos parciales → 200 | 404 · 409 · 422 |
-| POST | `/platillos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-11 · HU-11 | → 200 | 404 |
-| PUT | `/platillos/{id}/ingredientes` | MIEMBRO | RF-12 · HU-12 | `{porcionesBase, ingredientes: [{productoId, cantidad, unidadId}]}` → 200 `{…, vistaPrevia: {sumaFactores, ingredientes: [{productoId, cantidadEscalada, unidad}]}}` | 404 · 422 `UNIDAD_INCOMPATIBLE`, `CANTIDAD_INVALIDA`, `PRODUCTO_REPETIDO` |
-| GET / POST / DELETE | `/platillos/{id}/alias[/{aliasId}]` | MIEMBRO | RF-17 | `{alias}` → 201 / 204 | 409 `ALIAS_EN_USO` |
-| GET | `/productos` | MIEMBRO | RF-13 · HU-13 | `?q&tipo&categoria&activo&pagina` → 200 paginado `{id, nombre, tipo, categoria, unidadCompra, presentacion: {cantidad, unidad}, etiqueta: "Arroz · bolsa 2 lb"}` | — |
-| POST | `/productos` | MIEMBRO | RF-13 · HU-13 | `{nombre, tipo, categoriaId, unidadCompra, presentacionCantidad, presentacionUnidadId}` → 201 | 409 `PRODUCTO_DUPLICADO` · 422 `PRESENTACION_INVALIDA` |
-| PATCH | `/productos/{id}` | MIEMBRO | RF-13 | parcial → 200 | 404 · 409 · 422 |
-| POST | `/productos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-13 | → 200 `{platillosAfectados}` | 404 |
-| PUT | `/productos/{id}/equivalencias` | MIEMBRO | RF-12, RF-28 | `[{unidadId, factor}]` → 200 | 422 |
+| GET | `/platillos` | MIEMBRO | RF-11 · HU-11 | `?q&tiempo&proteina&etiqueta&ingrediente&estado=ACTIVO\|INACTIVO\|INCOMPLETO&pagina&tamano` (por defecto `ACTIVO`; `INCOMPLETO` = activos sin ingredientes) → 200 paginado `{id, nombre, tiempos, proteinaPrincipal, etiquetas, porcionesBase, favorito, incompleto, activo, calificacionPromedio, ingredientesInactivos}`; con `q`, ordenado por similitud | 400 |
+| POST | `/platillos` | MIEMBRO | RF-11 · HU-11 | `{nombre, tiempos[], proteinaPrincipal?, etiquetas[]?}` → 201 detalle (proteína por defecto `OTRA`) | 409 `PLATILLO_DUPLICADO` (`existenteId`, `existenteNombre`) · 422 `NOMBRE_OBLIGATORIO`, `NOMBRE_LARGO`, `SIN_TIEMPO`, `MAX_ETIQUETAS`, `ETIQUETA_LARGA` |
+| GET | `/platillos/{id}` | MIEMBRO | RF-11, RF-12 | → 200 resumen + `ingredientes: [{id, producto: {id, nombre, etiqueta, activo, presentacionUnidad}, cantidad, unidad}]` + `advertencias: [{codigo: INGREDIENTE_INACTIVO, mensaje, productoId}]` | 404 (no existe, otro hogar o id mal formado) |
+| PATCH | `/platillos/{id}` | MIEMBRO | RF-11 | `{nombre?, tiempos?, proteinaPrincipal?, etiquetas?, favorito?}` → 200 detalle | 404 · 409 · 422 |
+| POST | `/platillos/{id}/inactivar` · `/reactivar` | MIEMBRO | RF-11 · HU-11 | → 200 detalle | 404 |
+| PUT | `/platillos/{id}/ingredientes` | MIEMBRO | RF-12 · HU-12 | `{porcionesBase: 1..20, ingredientes: [{productoId, cantidad, unidadId}]}` (máx. 50; lista vacía = "Incompleto") → 200 detalle + `vistaPrevia` | 404 · 422 `PORCIONES_INVALIDAS`, `CANTIDAD_INVALIDA`, `UNIDAD_INCOMPATIBLE`, `PRODUCTO_REPETIDO`, `PRODUCTO_INACTIVO`, `PRODUCTO_NO_EXISTE`, `UNIDAD_NO_EXISTE` con `errores[].campo = ingredientes.N.<campo>` |
+| GET | `/platillos/{id}/vista-previa` | MIEMBRO | RF-12 · RN-07 | `?sumaFactores=0.25..200` (opcional) → 200 `{porcionesBase, sumaFactores, origen: COMENSALES\|PARAMETRO\|PORCIONES_BASE, ingredientes: [{productoId, nombre, cantidadBase, cantidadEscalada, unidad}]}` | 400 · 404 |
+| GET / POST / DELETE | `/platillos/{id}/alias[/{aliasId}]` | MIEMBRO | RF-17 | `{alias}` → 201 / 204 (S2) | 409 `ALIAS_EN_USO` |
+| GET | `/productos` | MIEMBRO | RF-13 · HU-13 | `?q&tipo&categoria=<codigo>&activo=true\|false\|todos&pagina&tamano` (por defecto solo activos) → 200 paginado `{id, nombre, tipo, categoria: {id, codigo, nombre}, unidadCompra, presentacion: {cantidad, unidad}, etiqueta: "Arroz · bolsa 2 lb", activo}`; `tipo=DESPENSA` o `INGREDIENTE` incluye `AMBOS` | 400 |
+| GET | `/productos/{id}` | MIEMBRO | RF-13 | → 200 producto | 404 |
+| POST | `/productos` | MIEMBRO | RF-13 · HU-13 | `{nombre, tipo, categoriaId, unidadCompra, presentacionCantidad, presentacionUnidadId}` → 201 | 409 `PRODUCTO_DUPLICADO` (`existenteId`, `existente`) · 422 `PRESENTACION_INVALIDA`, `NOMBRE_OBLIGATORIO`, `NOMBRE_LARGO`, `UNIDAD_COMPRA_INVALIDA`, `CATEGORIA_NO_EXISTE`, `UNIDAD_NO_EXISTE` |
+| PATCH | `/productos/{id}` | ADMIN_SISTEMA | RF-13 | parcial → 200 | 403 `SOLO_ADMIN_SISTEMA` · 404 · 409 · 422 `MAGNITUD_EN_USO` |
+| POST | `/productos/{id}/inactivar` · `/reactivar` | ADMIN_SISTEMA | RF-13 · HU-13 | → 200 `{producto, platillosAfectados: [{id, nombre}]}` (solo platillos del hogar de quien llama) | 403 · 404 |
+| PUT | `/productos/{id}/equivalencias` | MIEMBRO | RF-12, RF-28 | `[{unidadId, factor}]` → 200 (S4) | 422 |
 | GET | `/unidades` · `/categorias` · `/supermercados` | MIEMBRO | RF-12, RF-13, RF-09 | → 200 catálogos semilla | — |
 | PUT | `/menus/{menuId}/detalles/{detalleId}/calificacion` | MIEMBRO | RF-14 · HU-14 | `{valor: 1..5}` → 200 `{valor, platillo: {id, calificacionPromedio, calificacionConteo}}` | 404 · 409 `MENU_NO_APROBADO` · 422 `CALIFICACION_FUERA_DE_RANGO`, `FECHA_FUTURA` |
+
+Notas de implementación (HU-11, HU-12, HU-13, rama `feature/HU-11-13-catalogo-platillos`):
+- Editar, inactivar y reactivar productos pasa de MIEMBRO a **ADMIN_SISTEMA** porque el catálogo es común a todos los hogares (D-05); crear sigue abierto a cualquier miembro (CA-12.2, CA-13.1).
+- Nuevo `GET /platillos/{id}/vista-previa`: la Σ factores sale de los comensales activos del hogar (RN-07) o del parámetro `sumaFactores`; sin comensales activos no se escala (`PORCIONES_BASE`).
+- Cantidades y presentaciones se aceptan como número o texto decimal (> 0, hasta 3 decimales) y se devuelven como texto (`"2.000"`); `cantidadEscalada` con 3 decimales.
+- Búsqueda `?q` sin tildes ni mayúsculas: `LIKE` o `word_similarity` (pg_trgm) ≥ 0.5 sobre `nombre_normalizado`.
 
 ### 2.4 M04 — Carga histórica
 
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
-| POST | `/historial/semanas` | ADMIN | RF-15 · HU-15 | `{fechaInicio, detalles: [{fecha, tiempo, platilloId}], gastoReal?, notas?, reemplazar: false}` → 201 menú HISTORICO | 403 · 409 `SEMANA_EXISTENTE` (reintentar con `reemplazar: true`) · 422 `SEMANA_NO_TERMINADA`, `SIN_PLATILLOS`, `GASTO_INVALIDO` |
-| GET | `/historial/semanas` | MIEMBRO | RF-15 | `?desde&hasta&pagina` → 200 paginado | — |
-| GET | `/importaciones/plantilla` | ADMIN | RF-16 | `?formato=xlsx\|csv` → 200 archivo | 403 |
-| POST | `/importaciones` | ADMIN | RF-16, RF-18 · HU-16, HU-18 | `multipart: archivo, origen=ARCHIVO\|CUADERNO` → 201 `{id, estado, resumen: {semanas, filas, filasConError, platillosNuevos, semanasExistentes}}` | 403 · 413 (> 5 MB) · 415 · 422 `COLUMNA_FALTANTE`, `DEMASIADAS_FILAS` |
-| GET | `/importaciones/{id}` | ADMIN | RF-16 | → 200 vista previa: semanas (gasto, decisión), platillos (propuesta, similitud), totales | 404 |
-| GET | `/importaciones/{id}/filas` | ADMIN | RF-16 | `?soloErrores=true&pagina` → 200 `[{hoja, numeroFila, errores: [{columna, motivo}]}]` | 404 |
-| PUT | `/importaciones/{id}/platillos` | ADMIN | RF-17 · HU-17 | `{decisiones: [{nombreNormalizado, decision: ASOCIAR\|CREAR, platilloId?, nombreFinal?}]}` → 200 pendientes restantes | 404 · 409 `IMPORTACION_CERRADA` · 422 |
-| POST | `/importaciones/{id}/platillos/aceptar-propuestas` | ADMIN | RF-17 · HU-17 | → 200 | 404 · 409 |
-| PUT | `/importaciones/{id}/semanas` | ADMIN | RF-16 · HU-16 | `{decisiones: [{semanaInicio, decision: OMITIR\|REEMPLAZAR}]}` → 200 | 404 · 409 |
-| POST | `/importaciones/{id}/confirmar` ⟳ | ADMIN | RF-16–RF-18 | → 200 `{reporte: {semanasCreadas, reemplazadas, omitidas, platillosCreados, aliasCreados, despensaCargada}}` | 404 · 409 `IMPORTACION_CERRADA` · 422 `FILAS_CON_ERROR`, `DECISIONES_PENDIENTES` |
-| POST | `/importaciones/{id}/cancelar` | ADMIN | RF-16 | → 200 | 404 · 409 |
-| GET | `/importaciones/{id}/conciliacion` | ADMIN | RF-18 · HU-18 | → 200 `{semanas, gasto: {min, max, promedio}, listas: [{nombre, productos, total}]}` | 404 |
+| POST | `/historial/semanas` | ADMIN | RF-15 · HU-15 | `{fechaInicio, detalles: [{fecha, tiempo, platilloId}], gastoReal?, notas?, reemplazar?: false, version?}` → 201 `{id, fechaInicio, fechaFin, estado: HISTORICO, origen: CAPTURA_MANUAL, gastoReal, notas, version}`; domingo–sábado, al menos una comida y máximo 21; gasto opcional positivo hasta 99999.99 | 403 · 409 `SEMANA_EXISTENTE` (trae `semana: {id, version, fechaInicio, gastoReal}`; confirmar con `reemplazar: true` y esa `version`), `VERSION_DESACTUALIZADA`, `SEMANA_PROTEGIDA`, `SEMANA_SOLAPADA` · 422 `INICIO_SEMANA_INVALIDO`, `SEMANA_NO_TERMINADA`, `SIN_PLATILLOS`, `FECHA_FUERA_DE_SEMANA`, `COMIDA_DUPLICADA`, `PLATILLO_NO_VALIDO`, `GASTO_INVALIDO` |
+| GET | `/historial/semanas` | MIEMBRO | RF-15 | `?desde&hasta&pagina&tamano` → 200 `{datos: [{id, fechaInicio, fechaFin, estado, origen, gastoReal, notas, version, detalles: [{fecha, tiempo, platilloId, nombre}]}], paginacion}`; filtro inclusivo por inicio, orden de semanas descendente y comidas cronológico; 20 por página por defecto, máximo 100 | 400 paginación inválida · 422 `FECHAS_INVALIDAS` |
+| GET | `/importaciones/plantilla` | ADMIN | RF-16 | `?formato=xlsx\|csv&hoja=menus\|listas\|cuaderno` (predeterminado `menus`) → 200 archivo. `hoja=listas` con `csv` devuelve la plantilla de listas; `hoja=cuaderno` con `xlsx` añade la hoja Listas | 403 |
+| POST | `/importaciones` | ADMIN | RF-16 · RF-18 · HU-16 · HU-18 | `multipart: archivo, listas?, origen=ARCHIVO\|CUADERNO` → 201 vista previa. `listas` (CSV) y la hoja Listas del Excel solo con `CUADERNO`; no pueden venir las dos a la vez | 403 · 413 (> 5 MB) · 415 · 422 `COLUMNA_FALTANTE`, `DEMASIADAS_FILAS`, `LISTAS_REQUIEREN_CUADERNO`, `LISTAS_DUPLICADAS` |
+| GET | `/importaciones/{id}` | ADMIN | RF-16 | → 200 `{id, nombreArchivo, estado, revision, totalFilas, filasConError, pendientes, semanas, puedeConfirmar, reporte}`; `pendientes` lista los nombres de platillo sin decisión (HU-17) | 404 |
+| GET | `/importaciones/{id}/filas` | ADMIN | RF-16 | `?hoja=MENUS\|LISTAS&soloErrores=true&pagina&tamano` (predeterminado `MENUS`) → 200 `{datos: [{numeroFila, datos, errores: [{columna, motivo}]}], paginacion}` | 404 |
+| GET | `/importaciones/{id}/platillos` | ADMIN | RF-17 · HU-17 | `?estado=pendientes\|revisar\|todos&pagina&tamano` (predeterminado `pendientes`; `revisar` excluye los asociados automáticamente) → 200 `{datos: [{nombreOriginal, nombreNormalizado, proteinaPrincipal, decision, automatica, propuesta: {accion: ASOCIAR\|CREAR, platilloId, platillo, similitud}, platilloId, platillo, nombreFinal}], resumen: {total, pendientes}, paginacion}` | 404 |
+| PUT | `/importaciones/{id}/platillos` | ADMIN | RF-17 · HU-17 | `{revision, aceptarPropuestas?, decisiones?: [{nombreNormalizado, decision: ASOCIAR\|CREAR, platilloId?, nombreFinal?}]}` → 200 vista con nueva revisión. Al menos uno de los dos campos; las decisiones explícitas ganan sobre `aceptarPropuestas` | 404 · 409 `IMPORTACION_CERRADA`, `VISTA_DESACTUALIZADA`, `NOMBRE_EN_USO` · 422 `DECISION_INVALIDA`, `SIN_DECISIONES`, `NOMBRE_DUPLICADO` |
+| PUT | `/importaciones/{id}/semanas` | ADMIN | RF-16 · HU-16 | `{revision, decisiones: [{semanaInicio, decision: OMITIR\|REEMPLAZAR}]}` → 200 vista previa con nueva revisión | 404 · 409 · 422 |
+| POST | `/importaciones/{id}/confirmar` ⟳ | ADMIN | RF-16 · HU-16 | `{revision}` → 201 `{semanasCreadas, reemplazadas, omitidas, platillosCreados, aliasCreados, despensaCargada}`; repetir devuelve el mismo reporte | 404 · 409 `IMPORTACION_CERRADA`, `VISTA_DESACTUALIZADA`, `SEMANA_MODIFICADA` · 422 `FILAS_CON_ERROR`, `PLATILLOS_PENDIENTES` ("Faltan N platillos por resolver"), `SIN_SEMANAS` · 409 `CATALOGO_MODIFICADO` |
+| POST | `/importaciones/{id}/cancelar` | ADMIN | RF-16 | `{revision}` → 201 vista cerrada, idempotente | 404 · 409 |
+| GET | `/importaciones/{id}/conciliacion` | ADMIN | RF-18 · HU-18 | **No se implementó como ruta aparte.** El reporte de conciliación viaja en la respuesta de `POST /{id}/confirmar` y en `reporte` de la vista: `gastoSemanal {semanas, minimo, maximo, promedio}`, `listas [{lista, tipo, productos, total, nuevos}]`, `productosCreados`, `despensaCargada`. La vista previa trae `listas` y `origen` | — |
+
+La implementación local de HU-16 y su contrato completo se detallan en
+[Importación histórica](importacion-historica.md). Las rutas marcadas HU-17/HU-18 siguen pendientes.
 
 ### 2.5 M05 — Motor de sugerencias
 
@@ -446,6 +471,17 @@ Respuesta 200 (el mismo cuerpo se devuelve si la solicitud se repite con la mism
 `promedioCompra` = (26.50 + 27.00 + 28.10) ÷ 3 = 27.20 (RN-12; la compra del 12/07/2026 queda fuera de las 12 semanas). `gastoSugerido` = suma de `precioReal` de la lista; la app lo usa para prellenar `PUT /menus/{id}/gasto-real` si todavía no hay gasto registrado (RF-27).
 
 ## 4. Diferencias con las rutas de las historias
+
+Cambios de la versión 1.3 (HU-02):
+- `POST /hogares` y `POST /invitaciones/{token}/aceptar` devuelven `hogar` con `rol` (además de `rol` suelto) y `expiraEn` del nuevo token.
+- `GET /hogar` agrega `correo` y `desde` a cada miembro; sin hogar, las rutas `/hogar/…` responden 403 `SIN_HOGAR`.
+- `HogarGuard` toma `hogarId` y `rol` de `miembro_hogar` en cada solicitud (no del token): un token anterior a unirse o a un cambio de rol no da más ni menos acceso. RN-10 responde 403 `SOLO_ADMINISTRADOR`.
+- Invitaciones: respuesta completa con `estado`; `GET /invitaciones/{token}` agrega `invitadoPor`, `medio` y `correo` enmascarado; la invitación por correo solo la acepta la cuenta de ese correo (403 `INVITACION_DE_OTRO_CORREO`); `DELETE` de una ya usada → 409 `INVITACION_USADA`. 410 se usa para vencida, usada, revocada o inexistente.
+- Validación del nombre del hogar y del correo invitado como 422 con código propio (`NOMBRE_HOGAR_INVALIDO`, `CORREO_INVALIDO`).
+- `/invitaciones/*` comparte el límite por IP de `/auth/*` (10/min). El token es de 32 bytes base64url; se guarda su HMAC-SHA256.
+
+Cambios de la versión 1.2 (HU-01): vigencia del acceso de 15 min; `refreshToken` en el cuerpo solo para Android (`X-Cliente: android`), cookie HttpOnly en la PWA; `refresh` y `logout` aceptan el refresh del cuerpo o de la cookie; `refresh` devuelve también `usuario` y `hogar`; `expiraEn` es el instante ISO 8601 UTC de vencimiento del acceso; los 429 incluyen `Retry-After`.
+
 
 | Historia | Ruta en la historia | Ruta del contrato | Motivo |
 |---|---|---|---|

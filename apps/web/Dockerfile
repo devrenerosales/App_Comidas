@@ -3,7 +3,10 @@
 #   docker build -f apps/web/Dockerfile -t menu-web .
 ARG NODE_VERSION=20.18.0
 
-FROM node:${NODE_VERSION}-alpine AS build
+# La salida del build es estática (independiente de la arquitectura): se compila en la
+# plataforma nativa del runner ($BUILDPLATFORM) y solo la etapa nginx es multi-arch
+# (linux/amd64 y linux/arm64 para Oracle Ampere A1, ADR-009). Evita compilar bajo QEMU.
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 WORKDIR /repo

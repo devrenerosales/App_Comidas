@@ -1,5 +1,6 @@
 # Datos familiares (fotos del cuaderno): no se versionan
 imagenes/
+datos-privados/
 
 # Dependencias y builds
 node_modules/
@@ -28,3 +29,6 @@ desktop.ini
 apps/web/dev-dist/
 apps/web/android/
 apps/web/ios/
+
+# Worktrees de agentes
+.claude/

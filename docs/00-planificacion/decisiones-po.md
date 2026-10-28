@@ -12,7 +12,13 @@ Decisiones que cierran los supuestos de la fase de requerimientos. Cada una se r
 | D-06 | 2026-10-22 | Las 18 fotos del cuaderno las transcribe Claude a la plantilla CSV en S2; el PO revisa. La app no lleva OCR de menús. | HU-18 |
 | D-07 | 2026-10-22 | La extracción automática de precios queda **apagada por sitio** hasta revisar los términos de uso. | RF-33, PA-02 · HU-33 |
 | D-08 | 2026-10-22 | El recordatorio de planificación llega el domingo a las 08:00 (hora de Guatemala). | HU-41 |
-| D-09 | 2026-10-22 | Hosting en **servidor propio en casa** con Docker Compose. Disponibilidad objetivo 95 % mensual. | R-05, RNF-03, PA-01 · ADR-002 |
+| D-09 | 2026-10-22 | ~~Hosting en servidor propio en casa~~ (reemplazada por D-11). Hosting en **servidor propio en casa** con Docker Compose. Disponibilidad objetivo 95 % mensual. | R-05, RNF-03, PA-01 · ADR-002 |
 | D-10 | 2026-10-22 | Nuevos requerimientos: lista de ingredientes con check y **avance por comida** hasta "Lista para preparar" (RF-43), y **precio real opcional** al comprar con precio promedio de compra por producto (RF-44). | SRS v1.3 · RN-12, RN-13 · HU-43, HU-44 (S4) |
+| D-11 | 2026-10-22 | Producción en **Oracle Cloud Always Free ARM (Ampere A1)**; la laptop existente queda para desarrollo y pruebas. Reemplaza D-09. Disponibilidad objetivo 99 % mensual. | R-05, RNF-03 · ADR-009 (reemplaza ADR-002) |
+| D-12 | 2026-10-22 | Dominio gratis **DuckDNS** con HTTPS automático (Caddy + Let's Encrypt). | ADR-009 · IE-04 |
+| D-13 | 2026-10-22 | Correo de invitaciones y recuperación con **Gmail + contraseña de aplicación** (SMTP), cambiable por configuración. | IE-03 · HU-02, HU-04 |
+| D-14 | 2026-10-22 | Se aprueba ADR-004: token de acceso de 15 min y refresh rotativo de 30 días. | HU-01 |
+| D-15 | 2026-10-22 | Se cambia Prisma por **Drizzle ORM** (TypeScript puro, sin motores binarios) para poder probar contra PostgreSQL real en todos los entornos. | R-01 · ADR-010 |
+| D-16 | 2026-10-23 | El **despliegue en Oracle Cloud se hace en el Sprint 6** (último). Hasta entonces la app se prueba en la laptop con `docker-compose.dev.yml` y `pnpm dev`; el correo queda en modo consola hasta configurar Gmail. | Plan de sprints · ADR-009 · despliegue.md |
 
 Se mantienen como propuestos, sin objeción del PO: las fórmulas de los factores del motor (M05, CU-05.2) y que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2).

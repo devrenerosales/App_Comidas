@@ -5,9 +5,11 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -46,9 +48,50 @@ export class VariablesEntorno {
   @MinLength(32)
   JWT_REFRESH_SECRET!: string;
 
+  /** Solicitudes por minuto e IP a /auth/* (api-contrato §1.6). */
+  @IsInt()
+  @Min(1)
+  AUTH_LIMITE_POR_MINUTO: number = 10;
+
   /** Uno o varios orígenes separados por coma. */
   @IsString()
   CORS_ORIGIN: string = 'http://localhost:5173';
+
+  /**
+   * URL pública de la app: base de los enlaces de invitación y recuperación (`APP_URL/invitacion/…`).
+   */
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })
+  APP_URL: string = 'http://localhost:5173';
+
+  /**
+   * Correo SMTP (D-13: Gmail con contraseña de aplicación, STARTTLS en 587). Vacío o sin definir:
+   * los correos se guardan en memoria y se registran en el log (desarrollo y pruebas).
+   */
+  @IsOptional()
+  @IsString()
+  SMTP_HOST?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  SMTP_PORT: number = 587;
+
+  /** Usuario y contraseña de aplicación: obligatorios si hay `SMTP_HOST`. */
+  @ValidateIf((env: VariablesEntorno) => Boolean(env.SMTP_HOST))
+  @IsString()
+  @MinLength(1, { message: 'SMTP_USER es obligatorio cuando se define SMTP_HOST' })
+  SMTP_USER?: string;
+
+  @ValidateIf((env: VariablesEntorno) => Boolean(env.SMTP_HOST))
+  @IsString()
+  @MinLength(1, { message: 'SMTP_PASS es obligatorio cuando se define SMTP_HOST' })
+  SMTP_PASS?: string;
+
+  /** Remitente, p. ej. `"Menú Familiar <cuenta@gmail.com>"`. */
+  @ValidateIf((env: VariablesEntorno) => Boolean(env.SMTP_HOST))
+  @IsString()
+  @MinLength(3, { message: 'SMTP_FROM es obligatorio cuando se define SMTP_HOST' })
+  SMTP_FROM?: string;
 
   @IsOptional()
   @IsString()

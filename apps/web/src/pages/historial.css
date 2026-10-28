@@ -1,0 +1,42 @@
+.mf-historial-campos {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  min-width: 0;
+}
+.mf-historial-campos legend {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.mf-historial-tabla {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.mf-historial-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+.mf-historial-tabla caption {
+  text-align: left;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.mf-historial-tabla th,
+.mf-historial-tabla td {
+  border-bottom: 1px solid var(--mf-borde);
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.mf-historial-tabla td p {
+  margin-top: 0;
+}
+.mf-historial-tabla button {
+  min-height: 44px;
+}
+.mf-historial-tabla time {
+  font-size: 0.8rem;
+  font-weight: 400;
+}

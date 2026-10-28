@@ -1,10 +1,20 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthModule } from './auth/auth.module';
+import { ComensalesModule } from './comensales/comensales.module';
+import { ConfiguracionModule } from './configuracion/configuracion.module';
+import { CatalogoModule } from './catalogo/catalogo.module';
+import { ProblemaFiltro } from './comun/problema.filter';
+import { CorreoModule } from './correo/correo.module';
 import { validarEntorno } from './config/env.validation';
+import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
-import { PrismaModule } from './prisma/prisma.module';
+import { HogarModule } from './hogar/hogar.module';
 import { RedisModule } from './redis/redis.module';
+import { HistorialModule } from './historial/historial.module';
+import { ImportacionesModule } from './importaciones/importaciones.module';
 
 @Module({
   imports: [
@@ -22,15 +32,28 @@ import { RedisModule } from './redis/redis.module';
           pinoHttp: {
             // Logs JSON estructurados; en test se silencian.
             level: entorno === 'test' ? 'silent' : entorno === 'production' ? 'info' : 'debug',
-            redact: ['req.headers.authorization', 'req.headers.cookie'],
+            redact: [
+              'req.headers.authorization',
+              'req.headers.cookie',
+              'res.headers["set-cookie"]',
+            ],
             autoLogging: { ignore: (req) => req.url === '/api/v1/health' },
           },
         };
       },
     }),
-    PrismaModule,
+    DatabaseModule,
     RedisModule,
     HealthModule,
+    AuthModule,
+    CorreoModule,
+    HogarModule,
+    ComensalesModule,
+    ConfiguracionModule,
+    CatalogoModule,
+    HistorialModule,
+    ImportacionesModule,
   ],
+  providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })
 export class AppModule {}

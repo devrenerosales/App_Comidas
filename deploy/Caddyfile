@@ -1,0 +1,34 @@
+# Caddy 2.8 — proxy inverso con HTTPS automático (Let's Encrypt) — ADR-009
+# DOMINIO viene del entorno del contenedor (docker-compose.yml ← .env),
+# p. ej. menufamiliar.duckdns.org. Con DOMINIO=localhost usa un certificado local (pruebas).
+{
+	# API de administración solo dentro del contenedor (la usa el healthcheck).
+	admin 127.0.0.1:2019
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# API NestJS (prefijo /api/v1). Sin caché.
+	handle /api/* {
+		header Cache-Control "no-store"
+		reverse_proxy api:3000
+	}
+
+	# PWA (nginx sirve estáticos y el fallback de la SPA).
+	handle {
+		reverse_proxy web:80
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,60 +1,33 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configurarApp } from '../src/app.setup';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { DB, PG_POOL } from '../src/database/database.constants';
 import { REDIS_CLIENT } from '../src/redis/redis.constants';
+import { crearAppConBd, describeConBd, redisSimulado, URL_BD_PRUEBAS } from './utils/base-datos';
 
-/**
- * El cliente Prisma y su motor solo existen tras `prisma generate` con acceso a binaries.prisma.sh
- * (en CI sí). Se revisa sin instanciar el cliente para no dejar errores asíncronos sueltos.
- */
-function clientePrismaGenerado(): boolean {
-  try {
-    const dirCliente = path.join(
-      path.dirname(require.resolve('@prisma/client')),
-      '..',
-      '..',
-      '.prisma',
-      'client',
-    );
-    return fs
-      .readdirSync(dirCliente)
-      .some(
-        (f) =>
-          /^libquery_engine.*\.node$/.test(f) && fs.statSync(path.join(dirCliente, f)).size > 0,
-      );
-  } catch {
-    return false;
-  }
+/** App con BD y Redis simulados (sin red). */
+async function crearAppSimulada(estado: { bdArriba: boolean; redisArriba: boolean }) {
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideProvider(PG_POOL)
+    .useValue({ ending: false, ended: false, end: () => Promise.resolve() })
+    .overrideProvider(DB)
+    .useValue({
+      execute: () =>
+        estado.bdArriba ? Promise.resolve({ rows: [] }) : Promise.reject(new Error('BD caída')),
+    })
+    .overrideProvider(REDIS_CLIENT)
+    .useValue(redisSimulado(estado.redisArriba))
+    .compile();
+  const app = configurarApp(moduleRef.createNestApplication());
+  await app.init();
+  return app;
 }
 
-async function crearApp(overrides?: { bdArriba: boolean; redisArriba: boolean }) {
-  let builder = Test.createTestingModule({ imports: [AppModule] });
-  if (overrides) {
-    builder = builder
-      .overrideProvider(PrismaService)
-      .useValue({
-        $queryRaw: () =>
-          overrides.bdArriba ? Promise.resolve([1]) : Promise.reject(new Error('BD caída')),
-        onModuleInit: () => undefined,
-        onModuleDestroy: () => undefined,
-      })
-      .overrideProvider(REDIS_CLIENT)
-      .useValue({
-        status: 'ready',
-        connect: () => Promise.resolve(),
-        disconnect: () => undefined,
-        ping: () =>
-          overrides.redisArriba
-            ? Promise.resolve('PONG')
-            : Promise.reject(new Error('Redis caído')),
-      });
-  }
-  const moduleRef = await builder.compile();
+/** App sin ningún mock: DATABASE_URL y REDIS_URL de setup-env apuntan a puertos cerrados. */
+async function crearAppReal() {
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = configurarApp(moduleRef.createNestApplication());
   await app.init();
   return app;
@@ -69,7 +42,7 @@ describe('GET /api/v1/health (e2e)', () => {
   });
 
   it('responde 200 "ok" cuando BD y Redis están arriba', async () => {
-    app = await crearApp({ bdArriba: true, redisArriba: true });
+    app = await crearAppSimulada({ bdArriba: true, redisArriba: true });
     const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
     expect(res.body).toMatchObject({
       status: 'ok',
@@ -78,28 +51,22 @@ describe('GET /api/v1/health (e2e)', () => {
   });
 
   it('responde 200 "degraded" cuando la BD está caída', async () => {
-    app = await crearApp({ bdArriba: false, redisArriba: true });
+    app = await crearAppSimulada({ bdArriba: false, redisArriba: true });
     const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
     expect(res.body.status).toBe('degraded');
     expect(res.body.checks.database.status).toBe('down');
   });
 
-  const itConPrisma = clientePrismaGenerado() ? it : it.skip;
-
-  itConPrisma(
-    'no falla con BD y Redis reales inalcanzables (sin mocks)',
-    async () => {
-      app = await crearApp();
-      const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
-      expect(res.body.status).toBe('degraded');
-      expect(res.body.checks.database.status).toBe('down');
-      expect(res.body.checks.redis.status).toBe('down');
-    },
-    15000,
-  );
+  it('no falla con BD y Redis reales inalcanzables (sin mocks)', async () => {
+    app = await crearAppReal();
+    const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+    expect(res.body.status).toBe('degraded');
+    expect(res.body.checks.database.status).toBe('down');
+    expect(res.body.checks.redis.status).toBe('down');
+  }, 15000);
 
   it('aplica cabeceras de seguridad (Helmet) y CORS', async () => {
-    app = await crearApp({ bdArriba: true, redisArriba: true });
+    app = await crearAppSimulada({ bdArriba: true, redisArriba: true });
     const res = await request(app.getHttpServer())
       .get('/api/v1/health')
       .set('Origin', 'http://localhost:5173')
@@ -109,7 +76,35 @@ describe('GET /api/v1/health (e2e)', () => {
   });
 
   it('responde 404 fuera del prefijo /api/v1', async () => {
-    app = await crearApp({ bdArriba: true, redisArriba: true });
+    app = await crearAppSimulada({ bdArriba: true, redisArriba: true });
     await request(app.getHttpServer()).get('/health').expect(404);
+  });
+});
+
+describeConBd('GET /api/v1/health contra PostgreSQL real (TEST_DATABASE_URL)', () => {
+  let app: INestApplication | undefined;
+
+  afterEach(async () => {
+    await app?.close();
+    app = undefined;
+  });
+
+  it('reporta la base "up" ejecutando select 1 en el servidor real', async () => {
+    app = await crearAppConBd(URL_BD_PRUEBAS as string);
+    const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+    expect(res.body).toMatchObject({
+      status: 'ok',
+      checks: { database: { status: 'up' }, redis: { status: 'up' } },
+    });
+    expect(res.body.checks.database.latencyMs).toBeLessThan(2000);
+  });
+
+  it('cierra el pool real al cerrar la aplicación', async () => {
+    app = await crearAppConBd(URL_BD_PRUEBAS as string);
+    await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+    const pool = app.get(PG_POOL);
+    await app.close();
+    app = undefined;
+    expect(pool.ended).toBe(true);
   });
 });

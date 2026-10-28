@@ -1,19 +1,22 @@
 # Modelo de datos — Menú Familiar
 
+> **Nota (2026-10-22, D-15 / [ADR-010](adr/ADR-010-drizzle-orm.md)):** la fuente de verdad del modelo es ahora el esquema **Drizzle ORM** en [`packages/db/src/schema/`](../../packages/db/src/schema/) (un archivo por dominio) y las migraciones SQL en [`packages/db/drizzle/`](../../packages/db/drizzle/). El antiguo `schema.prisma` se movió a [`historico/schema.prisma`](historico/schema.prisma) solo como referencia; la prueba `packages/db/test/fidelidad-prisma.test.ts` comprueba que el esquema Drizzle conserva sus tablas, columnas, tipos, nulabilidad, enums, únicos, índices y llaves foráneas. Los diagramas ER (§3) y el diccionario (§4) siguen vigentes; la columna **Campo** del diccionario es el nombre de la propiedad en Drizzle (`camelCase`).
+
 | Campo | Valor |
 |---|---|
 | Documento | DIS-MF-002 |
-| Versión | 1.1 (RF-43, RF-44) |
+| Versión | 1.2 (Drizzle ORM, D-15) |
 | Fecha | 2026-10-22 |
 | Fase del ciclo de vida | 3. Diseño |
-| Fuente | SRS-MF-001 v1.3 §6, decisiones D-01 a D-09, historias M01–M10 (incluye CU-07.6 y CU-07.7) |
-| Esquema | [`schema.prisma`](schema.prisma) — PostgreSQL 16, Prisma 5.22 (validado con `prisma validate` y `prisma format`) |
+| Fuente | SRS-MF-001 v1.3 §6, decisiones D-01 a D-09 y D-15, historias M01–M10 (incluye CU-07.6 y CU-07.7) |
+| Esquema | [`packages/db/src/schema/*.ts`](../../packages/db/src/schema/) — PostgreSQL 16, Drizzle ORM 0.45.3 (`hogar-config`, `catalogo-menus`, `compras-despensa`, `precios-notificaciones`, `enums`) · Histórico: [`historico/schema.prisma`](historico/schema.prisma) |
+| Migraciones | [`packages/db/drizzle/`](../../packages/db/drizzle/) — `0000_extensiones` (pg_trgm), `0001_init` (generada), `0002_reglas_integridad` (§6.1) |
 | Contrato API | [`api-contrato.md`](api-contrato.md) |
 
 ## 1. Alcance y convenciones
 
 - **49 modelos y 35 enums** en cuatro dominios: Hogar y configuración · Catálogo y menús (con importación) · Compras y despensa · Precios y notificaciones.
-- **Nombres:** modelos en español PascalCase, campos camelCase; tablas, columnas y tipos enum en snake_case (`@@map`/`@map`). Ejemplo: `MenuSemanal.fechaInicio` → `menu_semanal.fecha_inicio`.
+- **Nombres:** entidades en español PascalCase (tipos `MenuSemanal`, `MenuSemanalInsert`), tablas Drizzle y propiedades camelCase (`menuSemanal.fechaInicio`); tablas, columnas y tipos enum en snake_case. Ejemplo: `MenuSemanal.fechaInicio` → `menu_semanal.fecha_inicio`. Índices y llaves con nombre `<tabla>_<columnas>_idx|_key|_fkey`.
 - **Identificadores:** `uuid` (v4). Las tablas puente puras (`platillo_tiempo`, `platillo_etiqueta`) usan PK compuesta. `ListaItem.id` y `SyncCambio.id` los puede generar el cliente para trabajar sin conexión.
 - **Dinero:** `decimal(10,2)` en GTQ, redondeo "mitad hacia arriba" con aritmética decimal (nunca `float`). Porcentajes `decimal(5,2)`; pesos `decimal(3,2)`; factores del motor `decimal(5,4)`; cantidades `decimal(10,3)`.
 - **Tiempo:** fechas de calendario (semana, día del menú, fecha de precio) en `date`; instantes en `timestamptz(3)` (UTC). La zona `America/Guatemala` (R-02) se aplica en el servicio para calcular semanas, días y la hora del recordatorio.
@@ -627,13 +630,13 @@ erDiagram
 
 ## 4. Diccionario de datos
 
-Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo** · **Defecto** · **Regla / origen** (RF, RN, D, CU). Se omiten los campos de relación de Prisma (no son columnas).
+Columnas: **Campo** (propiedad Drizzle) · **Columna** (PostgreSQL) · **Tipo** · **Nulo** · **Defecto** · **Regla / origen** (RF, RN, D, CU). Las relaciones (`relations()` de Drizzle) no son columnas y se omiten.
 
 #### Usuario (`usuario`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `nombre` | `nombre` | varchar(80) | No | — | Obligatorio, ≤ 80 (RF-01) |
 | `correo` | `correo` | varchar(254) | No | — | UK; minúsculas, formato correo (RF-01, CA-01.2) |
 | `hashContrasena` | `hash_contrasena` | varchar(255) | No | — | argon2id; política ≥ 8 con letra y número (RNF-05) |
@@ -644,33 +647,33 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `esAdminSistema` | `es_admin_sistema` | boolean | No | false | Solo estos cambian el permiso de extracción por sitio (D-07) |
 | `activo` | `activo` | boolean | No | true | Baja lógica |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Hogar (`hogar`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `nombre` | `nombre` | varchar(80) | No | — | Obligatorio, ≤ 80 (RF-02) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MiembroHogar (`miembro_hogar`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `usuarioId` | `usuario_id` | uuid | No | — | FK usuario, UK: un hogar por usuario en v1 (CU-01.2) |
 | `rol` | `rol` | enum RolHogar | No | MIEMBRO | ADMIN o MIEMBRO (RN-10); el creador es ADMIN |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Invitacion (`invitacion`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `creadaPorId` | `creada_por_id` | uuid | No | — | FK usuario ADMIN (solo el administrador invita) |
 | `medio` | `medio` | enum MedioInvitacion | No | — | CORREO o ENLACE (RF-02) |
@@ -682,13 +685,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `revocadaEn` | `revocada_en` | timestamptz | Sí | — | Revocación manual por el ADMIN |
 | `correoEnviado` | `correo_enviado` | boolean | No | false | false si falló el SMTP (CU-01.2 E2) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### TokenRecuperacion (`token_recuperacion`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `usuarioId` | `usuario_id` | uuid | No | — | FK usuario |
 | `tokenHash` | `token_hash` | char(64) | No | — | UK; SHA-256 |
 | `venceEn` | `vence_en` | timestamptz | No | — | createdAt + 1 h (CU-01.4) |
@@ -699,7 +702,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `usuarioId` | `usuario_id` | uuid | No | — | FK usuario |
 | `tokenHash` | `token_hash` | char(64) | No | — | UK; SHA-256 del refresh token |
 | `familia` | `familia` | uuid | No | — | Cadena de rotación; reutilizar uno rotado revoca toda la familia |
@@ -713,7 +716,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `nombre` | `nombre` | varchar(60) | No | — | Obligatorio, ≤ 60 (RF-03) |
 | `nombreNormalizado` | `nombre_normalizado` | varchar(60) | No | — | UK con hogarId; repetido → 409 (CU-01.3 E1) |
@@ -721,13 +724,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `factorPorcion` | `factor_porcion` | decimal(3,2) | No | 1.00 | 0.25–2.00 en pasos de 0.25; por defecto 1.00 (D-02, RN-07) |
 | `activo` | `activo` | boolean | No | true | Quitar = inactivar; debe quedar ≥ 1 activo (CU-01.3 E2) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Configuracion (`configuracion`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK, UK: 1 configuración por hogar |
 | `presupuestoSemanal` | `presupuesto_semanal` | decimal(10,2) | No | 250.00 | > 0, 2 decimales; Q250 por defecto (S-01, RF-06) |
 | `diaInicioSemana` | `dia_inicio_semana` | enum DiaSemana | No | DOMINGO | Domingo por defecto (RF-08, RN-09) |
@@ -741,48 +744,48 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `version` | `version` | integer | No | 1 | Bloqueo optimista; distinto → 409 (CU-02.3 E1) |
 | `actualizadoPorId` | `actualizado_por_id` | uuid | Sí | — | FK usuario ADMIN que guardó |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### TiempoComidaConfig (`tiempo_comida_config`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `configuracionId` | `configuracion_id` | uuid | No | — | FK; UK con tiempo |
 | `tiempo` | `tiempo` | enum TiempoComida | No | — | DESAYUNO, ALMUERZO, CENA |
 | `activo` | `activo` | boolean | No | false | Combinaciones válidas: solo almuerzo, 2 o 3 tiempos (RF-05) |
 | `porcentaje` | `porcentaje` | decimal(5,2) | No | 0 | Activos suman 100.00; inactivos 0 (RF-06, RN-06, D-01) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### HogarSupermercado (`hogar_supermercado`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `supermercadoId` | `supermercado_id` | uuid | No | — | FK; UK con hogarId |
 | `preferido` | `preferido` | boolean | No | true | ≥ 1 preferido por hogar (CU-02.5 E1) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MarcaPreferida (`marca_preferida`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `productoId` | `producto_id` | uuid | No | — | FK; UK con hogarId (RF-09) |
 | `marca` | `marca` | varchar(60) | No | — | Texto mostrado |
 | `marcaNormalizada` | `marca_normalizada` | varchar(60) | No | — | Se compara con ProductoSupermercado.marcaNormalizada |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### IngredienteExcluido (`ingrediente_excluido`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `productoId` | `producto_id` | uuid | No | — | FK; UK con hogarId; prevalece sobre favorito (RF-10) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
@@ -791,7 +794,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `codigo` | `codigo` | varchar(10) | No | — | UK (g, kg, lb, oz, ml, l, taza, cda, cdta, unidad, manojo, diente) |
 | `nombre` | `nombre` | varchar(30) | No | — | Nombre visible |
 | `magnitud` | `magnitud` | enum MagnitudUnidad | No | — | MASA, VOLUMEN o CONTEO (CU-03.2) |
@@ -802,7 +805,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `codigo` | `codigo` | varchar(20) | No | — | UK; semilla fija (CU-03.3) |
 | `nombre` | `nombre` | varchar(40) | No | — | Nombre visible (carnes, lácteos, verduras…) |
 | `orden` | `orden` | smallint | No | 0 | Orden de pasillo en la lista (RF-31) |
@@ -812,7 +815,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `nombre` | `nombre` | varchar(80) | No | — | Obligatorio, ≤ 80 (RF-13) |
 | `nombreNormalizado` | `nombre_normalizado` | varchar(80) | No | — | UK con presentación; índice GIN trigram (CU-03.3 E2) |
 | `tipo` | `tipo` | enum TipoProducto | No | — | INGREDIENTE, DESPENSA o AMBOS (RF-13) |
@@ -822,13 +825,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `presentacionUnidadId` | `presentacion_unidad_id` | uuid | No | — | FK unidad; define la magnitud del producto |
 | `activo` | `activo` | boolean | No | true | Inactivo: no aparece en buscador; platillos muestran advertencia |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ProductoEquivalencia (`producto_equivalencia`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `productoId` | `producto_id` | uuid | No | — | FK producto |
 | `unidadId` | `unidad_id` | uuid | No | — | FK; UK con productoId |
 | `factor` | `factor` | decimal(14,6) | No | — | > 0; cantidad en unidad de presentación por 1 unidadId (M07) |
@@ -838,7 +841,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `nombre` | `nombre` | varchar(80) | No | — | Obligatorio, ≤ 80 (RF-11) |
 | `nombreNormalizado` | `nombre_normalizado` | varchar(80) | No | — | UK con hogarId; sin tildes ni mayúsculas; GIN trigram (CU-03.1, CU-04.3) |
@@ -850,7 +853,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `calificacionPromedio` | `calificacion_promedio` | decimal(3,2) | Sí | — | Promedio 1–5 desnormalizado (RF-14, RF-20) |
 | `calificacionConteo` | `calificacion_conteo` | integer | No | 0 | Número de calificaciones |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### PlatilloTiempo (`platillo_tiempo`)
 
@@ -863,7 +866,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `nombre` | `nombre` | varchar(30) | No | — | Texto libre ≤ 30 (RF-11) |
 | `nombreNormalizado` | `nombre_normalizado` | varchar(30) | No | — | UK con hogarId; máx. 10 por platillo (servicio) |
@@ -880,7 +883,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `platilloId` | `platillo_id` | uuid | No | — | FK platillo |
 | `alias` | `alias` | varchar(80) | No | — | Nombre original del archivo (RF-17) |
@@ -892,19 +895,19 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `platilloId` | `platillo_id` | uuid | No | — | FK; UK con productoId (repetido → sumar, CU-03.2 E3) |
 | `productoId` | `producto_id` | uuid | No | — | FK producto (global) |
 | `cantidad` | `cantidad` | decimal(10,3) | No | — | > 0 para porcionesBase (RF-12) |
 | `unidadId` | `unidad_id` | uuid | No | — | Misma magnitud que el producto o con equivalencia (CU-03.2 E2) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MenuSemanal (`menu_semanal`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `fechaInicio` | `fecha_inicio` | date | No | — | UK con hogarId; día de inicio configurado (RN-09) |
 | `fechaFin` | `fecha_fin` | date | No | — | fechaInicio + 6 (o menos si esTransicion) |
@@ -934,13 +937,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `notas` | `notas` | varchar(500) | Sí | — | Notas del cuaderno |
 | `version` | `version` | integer | No | 1 | Concurrencia (último guardado gana, CU-06.1 E3) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MenuTiempo (`menu_tiempo`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `menuId` | `menu_id` | uuid | No | — | FK; UK con tiempo |
 | `tiempo` | `tiempo` | enum TiempoComida | No | — | Tiempo activo al generar/aprobar (D-04) |
 | `porcentaje` | `porcentaje` | decimal(5,2) | No | — | % copiado de la configuración (D-04) |
@@ -949,13 +952,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `exceso` | `exceso` | decimal(10,2) | No | 0 | max(0, costo − presupuesto); > 0 = 'Excede por Q__' (RN-05, RN-11) |
 | `intentosAjuste` | `intentos_ajuste` | smallint | No | 0 | 0–3 (RN-05) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MenuDetalle (`menu_detalle`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `menuId` | `menu_id` | uuid | No | — | FK; UK con fecha y tiempo |
 | `fecha` | `fecha` | date | No | — | Dentro de [fechaInicio, fechaFin] |
 | `tiempo` | `tiempo` | enum TiempoComida | No | — | Tiempo activo del menú |
@@ -974,13 +977,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `modificadoPorId` | `modificado_por_id` | uuid | Sí | — | FK usuario (CU-06.1) |
 | `modificadoEn` | `modificado_en` | timestamptz | Sí | — | Fecha del cambio manual |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### MenuAlternativaMostrada (`menu_alternativa_mostrada`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `menuDetalleId` | `menu_detalle_id` | uuid | No | — | FK; UK con platilloId (RF-23) |
 | `platilloId` | `platillo_id` | uuid | No | — | FK platillo ya ofrecido |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
@@ -989,25 +992,25 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `menuDetalleId` | `menu_detalle_id` | uuid | No | — | FK, UK: 1 por espacio; la última reemplaza (RF-14) |
 | `platilloId` | `platillo_id` | uuid | No | — | FK; copia para promedio rápido |
 | `valor` | `valor` | smallint | No | — | 1–5; fecha del detalle ≤ hoy (CU-11.1) |
 | `usuarioId` | `usuario_id` | uuid | Sí | — | FK último usuario que calificó |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ListaCompras (`lista_compras`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `menuId` | `menu_id` | uuid | No | — | FK, UK: 1 lista por menú aprobado (RF-25) |
 | `version` | `version` | integer | No | 1 | Se incrementa por cada cambio aplicado (RNF-04) |
 | `generadaEn` | `generada_en` | timestamptz | No | now | Fecha de consolidación (RF-28) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ListaItem (`lista_item`)
 
@@ -1032,13 +1035,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `modificadoEnDispositivo` | `modificado_en_dispositivo` | timestamptz | No | — | Última escritura gana (CU-07.3 5a) |
 | `version` | `version` | integer | No | 1 | Se incrementa en cada cambio |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ListaItemOrigen (`lista_item_origen`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `listaItemId` | `lista_item_id` | uuid | No | — | FK ítem (cascade); UK con menuDetalleId |
 | `menuDetalleId` | `menu_detalle_id` | uuid | No | — | FK comida programada que requiere el producto (cascade) (RF-43) |
 | `cantidadRequerida` | `cantidad_requerida` | decimal(12,3) | Sí | — | Cantidad escalada que aporta esa comida, en la unidad requerida del ítem (RN-07) |
@@ -1063,7 +1066,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `productoId` | `producto_id` | uuid | No | — | FK; UK con hogarId |
 | `cantidad` | `cantidad` | decimal(10,3) | No | — | > 0 presentaciones (CU-07.2 E1) |
@@ -1074,13 +1077,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `precioReferencia` | `precio_referencia` | decimal(10,2) | Sí | — | Dato de la carga del cuaderno (RF-18); no es PRECIO |
 | `notas` | `notas` | varchar(200) | Sí | — | Opcional |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Supermercado (`supermercado`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `codigo` | `codigo` | varchar(20) | No | — | UK: WALMART, PAIZ, LA_TORRE, SUPER_FRESH |
 | `nombre` | `nombre` | varchar(40) | No | — | Nombre visible; desempate alfabético (CU-07.4 3a) |
 | `dominio` | `dominio` | varchar(100) | Sí | — | Valida URLs de vínculos (CU-08.2 E2) |
@@ -1093,13 +1096,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `solicitudesPorSegundo` | `solicitudes_por_segundo` | decimal(4,2) | No | 1.00 | ≤ 1 (RNF-12) |
 | `activo` | `activo` | boolean | No | true | Baja lógica |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ProductoSupermercado (`producto_supermercado`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `productoId` | `producto_id` | uuid | No | — | FK; 1 activo por (producto, supermercado) — índice parcial |
 | `supermercadoId` | `supermercado_id` | uuid | No | — | FK supermercado |
 | `nombreTienda` | `nombre_tienda` | varchar(150) | No | — | Nombre en el sitio o ticket; usado para OCR (CU-08.1) |
@@ -1115,13 +1118,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `creadoPorHogarId` | `creado_por_hogar_id` | uuid | Sí | — | FK hogar creador (auditoría) |
 | `creadoPorUsuarioId` | `creado_por_usuario_id` | uuid | Sí | — | FK usuario creador |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Precio (`precio`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `productoSupermercadoId` | `producto_supermercado_id` | uuid | No | — | FK vínculo |
 | `origen` | `origen` | enum OrigenPrecio | No | — | AUTOMATICO, MANUAL, TICKET (RF-33, RF-34) |
 | `hogarId` | `hogar_id` | uuid | Sí | — | Null si AUTOMATICO; obligatorio si MANUAL/TICKET — CHECK (D-05) |
@@ -1137,7 +1140,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `productoId` | `producto_id` | uuid | No | — | FK; UK con hogarId |
 | `hogarId` | `hogar_id` | uuid | No | — | Resumen por hogar: automáticos + manuales del hogar (CU-09.2) |
 | `precioMediana` | `precio_mediana` | decimal(10,2) | No | — | Mediana de 1 precio vigente por supermercado (RF-36, RN-01) |
@@ -1153,7 +1156,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `supermercadoId` | `supermercado_id` | uuid | No | — | FK supermercado |
 | `fechaCompra` | `fecha_compra` | date | No | — | ≤ hoy (CU-08.1 E2) |
@@ -1165,13 +1168,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `subidoPorId` | `subido_por_id` | uuid | Sí | — | FK usuario |
 | `confirmadoEn` | `confirmado_en` | timestamptz | Sí | — | Ningún precio sin confirmación (CU-08.1) |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### TicketLinea (`ticket_linea`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `ticketId` | `ticket_id` | uuid | No | — | FK; UK con orden |
 | `orden` | `orden` | smallint | No | — | Posición en el ticket |
 | `descripcion` | `descripcion` | varchar(150) | No | — | Texto leído |
@@ -1180,13 +1183,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `similitud` | `similitud` | decimal(5,4) | Sí | — | 0–1 contra nombreTienda |
 | `estado` | `estado` | enum EstadoLineaTicket | No | SIN_ASIGNAR | SIN_ASIGNAR, PROPUESTA, ASIGNADA, DESCARTADA |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### Corrida (`corrida`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `disparo` | `disparo` | enum DisparoCorrida | No | PROGRAMADA | PROGRAMADA (sáb/dom 21:00 GT) o MANUAL |
 | `programadaPara` | `programada_para` | timestamptz | No | — | Instante programado |
 | `iniciadaEn` | `iniciada_en` | timestamptz | Sí | — | Inicio real |
@@ -1196,13 +1199,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `totalActualizados` | `total_actualizados` | integer | No | 0 | Ídem |
 | `totalFallidos` | `total_fallidos` | integer | No | 0 | Ídem |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### CorridaSitio (`corrida_sitio`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `corridaId` | `corrida_id` | uuid | No | — | FK; UK con supermercadoId |
 | `supermercadoId` | `supermercado_id` | uuid | No | — | FK supermercado |
 | `estado` | `estado` | enum EstadoCorridaSitio | No | EN_CURSO | Incluye BLOQUEADO (robots/permiso) y NO_HABILITADO |
@@ -1217,7 +1220,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `corridaSitioId` | `corrida_sitio_id` | uuid | No | — | FK |
 | `productoSupermercadoId` | `producto_supermercado_id` | uuid | Sí | — | FK vínculo (null = error de sitio) |
 | `tipo` | `tipo` | enum TipoErrorExtraccion | No | — | TIEMPO_AGOTADO, HTTP, ESTRUCTURA, PRECIO_INVALIDO, ROBOTS, OTRO |
@@ -1229,7 +1232,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `tipo` | `tipo` | enum TipoAviso | No | — | CORRIDA_PARCIAL, CORRIDA_FALLIDA, SITIO_BLOQUEADO, PRESUPUESTO_NO_CONFIGURADO |
 | `titulo` | `titulo` | varchar(120) | No | — | Texto corto |
@@ -1244,7 +1247,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `usuarioId` | `usuario_id` | uuid | No | — | FK usuario |
 | `canal` | `canal` | enum CanalPush | No | — | WEB_PUSH o FCM (IE-04) |
 | `endpoint` | `endpoint` | varchar(1000) | No | — | UK; URL Web Push o token FCM; 404/410/UNREGISTERED → borrar (CU-12.1 E1) |
@@ -1253,13 +1256,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `dispositivo` | `dispositivo` | varchar(120) | Sí | — | Etiqueta del dispositivo |
 | `ultimoEnvioEn` | `ultimo_envio_en` | timestamptz | Sí | — | Último envío exitoso |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### NotificacionEnviada (`notificacion_enviada`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `tipo` | `tipo` | enum TipoNotificacion | No | — | RECORDATORIO_PLANIFICACION, ALERTA_PRESUPUESTO |
 | `semanaInicio` | `semana_inicio` | date | No | — | Semana objetivo |
@@ -1275,7 +1278,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `hogarId` | `hogar_id` | uuid | No | — | FK hogar; aislamiento por hogar (RNF-06) |
 | `usuarioId` | `usuario_id` | uuid | Sí | — | FK ADMIN (CU-04) |
 | `origen` | `origen` | enum OrigenImportacion | No | ARCHIVO | ARCHIVO o CUADERNO (RF-16, RF-18) |
@@ -1288,13 +1291,13 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `reporte` | `reporte` | jsonb | Sí | — | Semanas creadas/reemplazadas/omitidas, platillos, conciliación (RF-18) |
 | `confirmadaEn` | `confirmada_en` | timestamptz | Sí | — | Fecha |
 | `createdAt` | `created_at` | timestamptz | No | now | Auditoría; UTC |
-| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; Prisma lo actualiza |
+| `updatedAt` | `updated_at` | timestamptz | No | auto | Auditoría; `now()` al insertar y Drizzle lo actualiza en cada `update` |
 
 #### ImportacionFila (`importacion_fila`)
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `importacionId` | `importacion_id` | uuid | No | — | FK; UK con hoja y numeroFila |
 | `hoja` | `hoja` | enum HojaImportacion | No | — | MENUS o LISTAS |
 | `numeroFila` | `numero_fila` | integer | No | — | Número en el archivo |
@@ -1307,7 +1310,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `importacionId` | `importacion_id` | uuid | No | — | FK; UK con nombreNormalizado |
 | `nombreOriginal` | `nombre_original` | varchar(80) | No | — | Texto del archivo |
 | `nombreNormalizado` | `nombre_normalizado` | varchar(80) | No | — | Clave de agrupación |
@@ -1322,7 +1325,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `importacionId` | `importacion_id` | uuid | No | — | FK; UK con semanaInicio |
 | `semanaInicio` | `semana_inicio` | date | No | — | Semana del archivo |
 | `yaExiste` | `ya_existe` | boolean | No | false | Hay menú en esa semana |
@@ -1333,7 +1336,7 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
-| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD/Prisma |
+| `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
 | `usuarioId` | `usuario_id` | uuid | No | — | FK; UK con clave |
 | `clave` | `clave` | varchar(64) | No | — | Cabecera Idempotency-Key (uuid) |
 | `metodo` | `metodo` | varchar(7) | No | — | POST/PUT/PATCH |
@@ -1385,11 +1388,11 @@ Columnas: **Campo** (Prisma) · **Columna** (PostgreSQL) · **Tipo** · **Nulo**
 | `clave_idempotencia` | `(usuario_id, clave)` · `vence_en` | UNIQUE · B-tree | Reintentos; limpieza diaria. |
 | `importacion_*` | `(importacion_id, …)` | UNIQUE | Una decisión por nombre y por semana; una fila por número. |
 
-## 6. Reglas de integridad fuera de Prisma
+## 6. Reglas de integridad fuera del esquema Drizzle
 
-### 6.1 SQL manual en la migración inicial
+### 6.1 SQL manual en la migración `0002_reglas_integridad`
 
-Prisma no genera `CHECK` ni índices parciales. La migración `0001_init` se crea con `prisma migrate dev --create-only` y se le agrega al final este bloque (las migraciones posteriores no lo repiten):
+Los `CHECK` y los índices únicos parciales no se declaran en el esquema Drizzle: viven en la migración manual [`packages/db/drizzle/0002_reglas_integridad.sql`](../../packages/db/drizzle/0002_reglas_integridad.sql) (creada con `drizzle-kit generate --custom`), que se aplica justo después de `0001_init`. La extensión `pg_trgm` se crea antes, en `0000_extensiones.sql`, porque `0001_init` ya crea los índices GIN `gin_trgm_ops`. Las migraciones posteriores no repiten este bloque; si una regla cambia, se agrega otra migración manual:
 
 ```sql
 -- Unicidad parcial
@@ -1502,17 +1505,17 @@ Reglas que dependen de varias filas, del reloj o del rol. Cada una tiene prueba 
 
 ## 7. Estrategia de migraciones
 
-1. **Herramienta:** Prisma Migrate. El esquema vive en `apps/api/prisma/schema.prisma` (copia de este archivo al iniciar la construcción en S1); este documento es la fuente de diseño.
-2. **Migración inicial `0001_init`** con todo el modelo de los sprints S1–S6, creada con `prisma migrate dev --create-only` y completada con el SQL del §6.1. Se crea el esquema completo desde S1 para evitar migraciones de ruptura en sprints posteriores; las tablas de módulos futuros quedan vacías.
-3. **Cambios posteriores:** una migración por historia que cambie el esquema, nombre `AAAAMMDDHHMMSS_<hu>_<descripcion>` (p. ej. `20261105120000_hu35_vinculo_sku`). Nunca se edita una migración ya aplicada en `main`.
+1. **Herramienta:** Drizzle ORM + drizzle-kit ([ADR-010](adr/ADR-010-drizzle-orm.md)). El esquema vive en `packages/db/src/schema/*.ts` y es la fuente de verdad; este documento describe el diseño y sus reglas.
+2. **Migraciones iniciales** con todo el modelo de los sprints S1–S6 (las tablas de módulos futuros quedan vacías, sin migraciones de ruptura después): `0000_extensiones` (manual, `CREATE EXTENSION pg_trgm`), `0001_init` (generada por `pnpm db:generate`: 35 enums, 49 tablas, índices y FK) y `0002_reglas_integridad` (manual, §6.1).
+3. **Cambios posteriores:** se edita el esquema y se ejecuta `pnpm --filter @menu/db db:generate --name=<hu>_<descripcion>` (p. ej. `hu35_vinculo_sku`); drizzle-kit crea `NNNN_<nombre>.sql` y su snapshot en `drizzle/meta`. SQL que el esquema no declara (CHECK, índices parciales, datos): `pnpm --filter @menu/db db:generate --custom --name=<descripcion>`. Nunca se edita una migración ya aplicada en `main`. **No se usa `drizzle-kit push`**: borraría las reglas del §6.1.
 4. **Cambios incompatibles** en dos pasos (expandir → migrar datos → contraer), cada uno en su propio despliegue.
-5. **Ambientes:** desarrollo `prisma migrate dev`; CI levanta PostgreSQL 16 en contenedor, ejecuta `prisma migrate deploy` y `prisma migrate diff --exit-code` para detectar deriva; servidor de casa ejecuta `prisma migrate deploy` al arrancar el contenedor de la API (Docker Compose, RNF-10).
-6. **Respaldo:** `pg_dump` antes de cada `migrate deploy` en producción, además del respaldo diario con retención de 14 días (RNF-11).
-7. **Extensiones:** `pg_trgm` se declara en el datasource (`postgresqlExtensions`); la base sombra de desarrollo debe permitir `CREATE EXTENSION`.
+5. **Ambientes:** desarrollo `pnpm db:migrate` + `pnpm db:seed` contra el PostgreSQL de `docker-compose.dev.yml`; CI levanta `postgres:16-alpine` como servicio, verifica que `pnpm db:generate` no produzca migraciones nuevas (deriva), aplica migraciones y semilla, y corre las pruebas de integración con `TEST_DATABASE_URL` (una base aislada por suite); producción ejecuta `npm run db:migrate` dentro de la imagen de la API antes de levantarla (RNF-10). El runner es solo hacia adelante, registra lo aplicado en `drizzle.__drizzle_migrations` y toma un candado consultivo para que dos procesos no migren a la vez.
+6. **Respaldo:** `pg_dump` antes de cada migración en producción, además del respaldo diario con retención de 14 días (RNF-11).
+7. **Extensiones:** `pg_trgm` requiere permiso de `CREATE EXTENSION` (dueño de la base o superusuario) en el usuario que migra.
 
 ## 8. Datos semilla
 
-Script `prisma/seed.ts` idempotente (`upsert` por `codigo`), ejecutado con `prisma db seed` en cada ambiente. La carga de las 16 semanas del cuaderno **no** es semilla: usa el flujo de importación (RF-18, D-06).
+Módulo [`packages/db/src/semilla.ts`](../../packages/db/src/semilla.ts) idempotente (`INSERT … ON CONFLICT (codigo) DO UPDATE`), ejecutado con `pnpm db:seed` (o `npm run db:seed` en la imagen de la API) en cada ambiente. En supermercados existentes no se pisan `habilitado` ni `extraccionPermitida` (los decide el administrador del sistema). La carga de las 16 semanas del cuaderno **no** es semilla: usa el flujo de importación (RF-18, D-06).
 
 ### 8.1 Supermercados
 
@@ -1548,7 +1551,7 @@ Los dominios se registran al revisar los términos de uso (PA-02); hasta entonce
 
 ### 8.4 Distribución por defecto del presupuesto (RN-06, D-01)
 
-Constante del servicio de configuración (no tabla), aplicada al crear el hogar y en la vista previa:
+Constante del servicio de configuración (no tabla, por eso no la carga `db:seed`), aplicada al crear el hogar y en la vista previa:
 
 | Tiempos activos | Desayuno | Almuerzo | Cena |
 |---|---|---|---|
@@ -1562,7 +1565,7 @@ Al crear un hogar (CU-01.2) se insertan `Configuracion` (Q250.00, domingo/doming
 
 ### 8.5 Otros
 
-- **Productos básicos** (~40, archivo `prisma/seed/productos.csv`): arroz, frijol negro, aceite, azúcar, sal, huevos, pechuga de pollo, carne de res para guisar, tomate, cebolla, chile pimiento, papa, güisquil, miltomate, crema, queso fresco, tortillas, pan francés, pasta, consomé, entre otros; se completa con la lista de Q814 en S2.
+- **Productos básicos** (45, `PRODUCTOS_SEMILLA` en `packages/db/src/semilla.ts`, HU-13): pechuga, pollo entero, carne de res para guisar, frijol negro, arroz, tortillas de maíz, tomate, cebolla, chile pimiento, güisquil, plátano, crema, queso fresco, huevos, aceite, azúcar, sal, consomé, entre otros, con su categoría y presentación habitual. Solo se insertan los que faltan (no pisa productos editados o inactivados); "Miltomate" no viene en la semilla (CA-12.2). Se completa con la lista de Q814 en S2.
 - **Usuario administrador del sistema:** el seed marca `esAdminSistema = true` al correo indicado en la variable `SEED_ADMIN_SISTEMA_CORREO` si ya existe.
 - **Datos de demostración** (solo desarrollo y pruebas, `SEED_DEMO=true`): hogar "Familia Demo", 4 comensales, 30 platillos con ingredientes y precios semilla para que el motor funcione antes de S5 (CU-05.3, supuesto de precios semilla).
 

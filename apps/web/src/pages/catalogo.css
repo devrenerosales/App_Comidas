@@ -1,0 +1,226 @@
+/* Catálogo: platillos, ingredientes y productos (HU-11..13) — estilo del prototipo. */
+.mf-catalogo {
+  --mf-verde: var(--ion-color-primary, #2f6b4f);
+  --mf-verde-oscuro: #1f4d38;
+  --mf-fondo: #f7f4ee;
+  --mf-borde: #e4ded3;
+  --mf-texto: #1e2a23;
+  --mf-texto-suave: #5b665f;
+  --mf-error: #b42318;
+  --mf-error-fondo: #fdecea;
+  --mf-advertencia: #8a5a00;
+  --mf-advertencia-fondo: #fff4dc;
+  box-sizing: border-box;
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--mf-texto);
+}
+
+.mf-catalogo h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.mf-catalogo section + section {
+  margin-top: 16px;
+}
+
+.mf-filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mf-campo select,
+.mf-catalogo select {
+  box-sizing: border-box;
+  min-height: 48px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--mf-borde);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--mf-texto);
+  background: #ffffff;
+}
+
+.mf-catalogo select:focus-visible,
+.mf-opcion input:focus-visible {
+  outline: 3px solid rgba(47, 107, 79, 0.35);
+}
+
+.mf-fieldset {
+  margin: 0 0 16px;
+  padding: 0;
+  border: none;
+}
+
+.mf-fieldset legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mf-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mf-opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--mf-borde);
+  border-radius: 999px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.mf-opcion input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--mf-verde);
+}
+
+.mf-segmentos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mf-segmentos .mf-boton {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 0.95rem;
+}
+
+.mf-segmentos .mf-boton[aria-pressed='true'] {
+  background: var(--mf-verde);
+  color: #ffffff;
+}
+
+.mf-item-catalogo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mf-borde);
+  color: inherit;
+  text-decoration: none;
+}
+
+.mf-item-catalogo:last-child {
+  border-bottom: none;
+}
+
+.mf-item-catalogo__datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mf-item-catalogo__datos span {
+  font-size: 0.9rem;
+  color: var(--mf-texto-suave);
+}
+
+.mf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mf-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e8f1ec;
+  color: var(--mf-verde-oscuro);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mf-chip--incompleto {
+  background: var(--mf-advertencia-fondo);
+  color: var(--mf-advertencia);
+}
+
+.mf-chip--inactivo {
+  background: #efece6;
+  color: var(--mf-texto-suave);
+}
+
+.mf-advertencia {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--mf-advertencia-fondo);
+  color: var(--mf-advertencia);
+  font-weight: 600;
+}
+
+.mf-advertencia p {
+  margin: 0;
+}
+
+.mf-ingrediente {
+  display: grid;
+  grid-template-columns: 1fr 110px 120px auto;
+  gap: 8px;
+  align-items: end;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mf-borde);
+}
+
+.mf-ingrediente .mf-campo {
+  margin-bottom: 0;
+}
+
+.mf-ingrediente__nombre {
+  align-self: center;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .mf-ingrediente {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mf-ingrediente__nombre {
+    grid-column: 1 / -1;
+  }
+}
+
+.mf-resultados {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.mf-resultados li + li {
+  margin-top: 6px;
+}
+
+.mf-resultados .mf-boton {
+  width: 100%;
+  justify-content: flex-start;
+  font-weight: 600;
+}
+
+.mf-vista-previa li {
+  display: flex;
+  justify-content: space-between;
+  min-height: 44px;
+  align-items: center;
+  border-bottom: 1px solid var(--mf-borde);
+}

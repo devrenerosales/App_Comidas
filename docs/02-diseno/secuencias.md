@@ -29,13 +29,13 @@ Nombres reales del diseño: servicios NestJS (`AuthService`, `SugerenciasService
 sequenceDiagram
   actor U as Usuario
   participant APP as App Ionic
-  participant WEB as nginx web
+  participant WEB as Caddy HTTPS
   participant AUTH as API AuthController y AuthService
   participant DB as PostgreSQL
 
   U->>APP: Correo y contraseña
   APP->>WEB: POST /api/v1/auth/login
-  WEB->>AUTH: Proxy /api
+  WEB->>AUTH: reverse_proxy /api/* a api:3000
   AUTH->>DB: SELECT usuario por correo con intentos_fallidos y bloqueado_hasta
   DB-->>AUTH: Usuario
   alt Cuenta bloqueada o credenciales inválidas

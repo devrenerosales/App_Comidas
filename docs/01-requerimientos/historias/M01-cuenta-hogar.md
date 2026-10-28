@@ -57,7 +57,7 @@ flowchart LR
 | Reglas y RNF | RNF-05, RNF-06, RNF-13 |
 
 Supuesto: contraseña de mínimo 8 caracteres con al menos una letra y un número.
-Supuesto: JWT de acceso con vigencia de 24 h; el bloqueo tras 5 intentos fallidos en 15 min es la medida anti fuerza bruta.
+Supuesto: JWT de acceso con vigencia de 24 h; el bloqueo tras 5 intentos fallidos en 15 min es la medida anti fuerza bruta. *(La vigencia de 24 h la reemplaza ADR-004, D-14: acceso de 15 min + refresh rotativo de 30 días.)*
 
 #### Diagrama de actividad
 
@@ -147,12 +147,25 @@ Característica: Registro e inicio de sesión
 
 | ID | Tipo | Subtarea | Estimación (h) |
 |---|---|---|---|
-| ST-01.1 | DB | Tabla USUARIO (correo único, hash, intentos, bloqueado_hasta) y migración Prisma | 2 |
+| ST-01.1 | DB | Tabla USUARIO (correo único, hash, intentos, bloqueado_hasta) y migración Drizzle | 2 |
 | ST-01.2 | BE | Endpoints POST /auth/registro y /auth/login con hash argon2 y bloqueo por intentos | 6 |
 | ST-01.3 | BE | Emisión y validación de JWT (guard NestJS) con hogar_id en el token | 3 |
 | ST-01.4 | FE | Pantallas de registro e inicio de sesión con validaciones y manejo de sesión | 5 |
 | ST-01.5 | QA | Casos de prueba PF-M1-01.1..4 y prueba e2e automatizada | 4 |
 | ST-01.6 | DOC | Manual de usuario: "Crear cuenta e iniciar sesión" | 1 |
+
+> **Implementado en `feature/HU-01-registro-login`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-01.1 | Hecha (sin migración nueva: `usuario` y `refresh_token` ya estaban en `0001_init`) | `packages/db/src/schema/hogar-config.ts` |
+> | ST-01.2 | Hecha | `apps/api/src/auth/` (`auth.controller.ts`, `auth.service.ts`, `bloqueo.ts`, `contrasenas.service.ts`) |
+> | ST-01.3 | Hecha: JWT de 15 min + refresh rotativo según ADR-004 (reemplaza el supuesto de 24 h) | `apps/api/src/auth/tokens.service.ts`, `jwt-auth.guard.ts` |
+> | ST-01.4 | Hecha | `apps/web/src/pages/IniciarSesion.tsx`, `CrearCuenta.tsx`, `apps/web/src/auth/`, `apps/web/src/api/` |
+> | ST-01.5 | Hecha: CA-01.1..4 automatizados (integración API + Testing Library) | `apps/api/test/auth.e2e-spec.ts`, `apps/web/src/pages/*.test.tsx` |
+> | ST-01.6 | Hecha (faltan capturas) | `docs/05-manual-usuario/01-primeros-pasos.md` |
+>
+> Decisiones de implementación: CA-01.2 sí informa "Este correo ya tiene cuenta" al **registrarse** (lo pide el criterio); el **inicio de sesión** nunca revela si el correo existe. "Crear hogar" es una pantalla provisional hasta HU-02.
 
 ---
 
@@ -288,6 +301,20 @@ Característica: Crear hogar e invitar miembros
 | ST-02.6 | QA | Casos de prueba PF-M1-02.1..4 y pruebas de autorización automatizadas | 4 |
 | ST-02.7 | DOC | Manual de usuario: "Crear tu hogar e invitar miembros" | 1 |
 
+> **Implementado en `feature/HU-02-hogar-invitaciones`** (S1, pendiente de PR a `develop`). Todas las subtareas hechas:
+>
+> | ST | Estado | Dónde |
+> |---|---|---|
+> | ST-02.1 | Hecha (sin migración nueva: `hogar`, `miembro_hogar`, `invitacion`, `configuracion` y `tiempo_comida_config` ya estaban en `0001_init`) | `packages/db/src/schema/hogar-config.ts` |
+> | ST-02.2 | Hecha: `POST /hogares` crea hogar, ADMIN, configuración por defecto y sus tres tiempos en una transacción | `apps/api/src/hogar/` (`hogar.service.ts`, `hogar.repositorio.ts`, `configuracion-por-defecto.ts`) |
+> | ST-02.3 | Hecha: invitación por correo (nodemailer/Gmail, D-13) o por enlace, revocar, ver y aceptar | `apps/api/src/hogar/invitaciones.*`, `apps/api/src/correo/` |
+> | ST-02.4 | Hecha: `HogarGuard` (pertenencia leída de la base) y `RolesGuard` + `@Roles('ADMIN')` | `apps/api/src/hogar/hogar.guard.ts`, `roles.guard.ts` |
+> | ST-02.5 | Hecha | `apps/web/src/pages/CrearHogar.tsx`, `HogarUsuarios.tsx`, `AceptarInvitacion.tsx` |
+> | ST-02.6 | Hecha: CA-02.1..4 y suite de autorización RNF-06 automatizados (integración API + Testing Library) | `apps/api/test/hogar.e2e-spec.ts`, `apps/web/src/pages/*.test.tsx` |
+> | ST-02.7 | Hecha (faltan capturas) | `docs/05-manual-usuario/02-tu-hogar.md` |
+>
+> Decisiones de implementación: las rutas siguen el contrato (`/hogar/…`, hogar del token, api-contrato §1.1) en lugar de `/hogares/{id}/…`. Crear hogar y aceptar devuelven un `accessToken` nuevo con `hogarId` y `rol`; aun así `HogarGuard` lee la pertenencia y el rol de la base en cada solicitud. La invitación por **correo** solo la acepta la cuenta de ese correo (403 `INVITACION_DE_OTRO_CORREO`); la de **enlace**, cualquier cuenta sin hogar. Invitar de nuevo al mismo correo revoca la anterior. El token se guarda como HMAC-SHA256. La pantalla de aceptar pide confirmar con "Unirme a …" después de iniciar sesión. "Quitar miembro" no está en CU-01.2 y queda fuera de HU-02.
+
 ---
 
 ### CU-01.3 — Registrar comensales · RF-03 · HU-03
@@ -309,6 +336,8 @@ Característica: Crear hogar e invitar miembros
 Decisión D-02: cada comensal tiene un factor de porción sugerido en 1.0 y editable de 0.25 a 2.0 en pasos de 0.25; las cantidades escalan con la suma de factores. La etiqueta adulto / niño es solo informativa y no cambia el cálculo.
 Supuesto: solo el administrador gestiona comensales (el perfil Miembro del SRS §2.3 no incluye configuración del hogar).
 Supuesto: quitar un comensal lo inactiva (no se borra) y no altera menús ya aprobados (D-04).
+
+> **Implementado en `feature/HU-03-comensales`** (S1): API `/hogar/comensales` (listar, crear, editar, inactivar y reactivar; totales con `sumaFactores`), pantalla **Comensales** enlazada desde "Hogar y usuarios" y reglas compartidas en `packages/shared/src/comensales.ts` (`totalPorciones`). La etiqueta es obligatoria en la base (`tipo` NOT NULL): si no se elige se guarda ADULTO. El nombre repetido no distingue mayúsculas, espacios ni tildes; un nombre de un comensal quitado se ofrece reactivar.
 
 #### Diagrama de actividad
 

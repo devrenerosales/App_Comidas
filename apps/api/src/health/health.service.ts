@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { sql, type Db } from '@menu/db';
 import type Redis from 'ioredis';
-import { PrismaService } from '../prisma/prisma.service';
+import { DB } from '../database/database.constants';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 
 export type EstadoDependencia = 'up' | 'down';
@@ -35,7 +36,7 @@ function conTimeout<T>(promesa: Promise<T>, ms: number): Promise<T> {
 @Injectable()
 export class HealthService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(DB) private readonly db: Db,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
@@ -51,8 +52,9 @@ export class HealthService {
     };
   }
 
+  /** `select 1` contra PostgreSQL; el timeout de `medir` evita colgar el health check. */
   chequearBd(): Promise<ChequeoDependencia> {
-    return this.medir(() => this.prisma.$queryRaw`SELECT 1`);
+    return this.medir(() => this.db.execute(sql`select 1`));
   }
 
   chequearRedis(): Promise<ChequeoDependencia> {
