@@ -32,15 +32,13 @@ function abrir(extra = {}, rol = 'ADMIN') {
   const api = {
     obtenerSemana: vi.fn().mockResolvedValue(CONFIG),
     vistaPreviaSemana: vi.fn().mockResolvedValue(PREVIA),
-    guardarSemana: vi
-      .fn()
-      .mockResolvedValue({
-        ...CONFIG,
-        ...PREVIA,
-        version: 2,
-        diaInicioSemana: 'LUNES',
-        diaPlanificacion: 'SABADO',
-      }),
+    guardarSemana: vi.fn().mockResolvedValue({
+      ...CONFIG,
+      ...PREVIA,
+      version: 2,
+      diaInicioSemana: 'LUNES',
+      diaPlanificacion: 'SABADO',
+    }),
     ...extra,
   };
   render(
@@ -106,15 +104,13 @@ describe('HU-08 Configurar la semana', () => {
       .mockResolvedValue({ ...CONFIG, version: 2, diaInicioSemana: 'MARTES' });
     const { api, user } = abrir({
       obtenerSemana,
-      guardarSemana: vi
-        .fn()
-        .mockRejectedValue(
-          new ProblemaApi({
-            status: 409,
-            codigo: 'VERSION_DESACTUALIZADA',
-            detail: 'La configuración cambió. Revisa los valores actuales.',
-          }),
-        ),
+      guardarSemana: vi.fn().mockRejectedValue(
+        new ProblemaApi({
+          status: 409,
+          codigo: 'VERSION_DESACTUALIZADA',
+          detail: 'La configuración cambió. Revisa los valores actuales.',
+        }),
+      ),
     });
     await user.click(await screen.findByRole('button', { name: 'Ver fechas' }));
     await user.click(await screen.findByRole('button', { name: 'Guardar semana' }));
@@ -138,15 +134,13 @@ describe('HU-08 Configurar la semana', () => {
 
   it('muestra un conflicto con un menú sin perder los días elegidos', async () => {
     const { user } = abrir({
-      guardarSemana: vi
-        .fn()
-        .mockRejectedValue(
-          new ProblemaApi({
-            status: 409,
-            codigo: 'SEMANA_EN_CONFLICTO',
-            detail: 'Hay un menú en las fechas de transición.',
-          }),
-        ),
+      guardarSemana: vi.fn().mockRejectedValue(
+        new ProblemaApi({
+          status: 409,
+          codigo: 'SEMANA_EN_CONFLICTO',
+          detail: 'Hay un menú en las fechas de transición.',
+        }),
+      ),
     });
     await user.selectOptions(await screen.findByLabelText('Día de inicio de semana'), 'LUNES');
     await user.click(screen.getByRole('button', { name: 'Ver fechas' }));

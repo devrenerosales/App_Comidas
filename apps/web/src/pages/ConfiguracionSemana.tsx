@@ -219,9 +219,9 @@ export default function ConfiguracionSemana() {
               </button>
             )}
             <p>
-          Los menús aprobados conservan sus fechas y contenido. Los borradores futuros quedan
-          desactualizados si cambia el inicio de semana. El día de planificación se usará
-              para los recordatorios cuando estén disponibles.
+              Los menús aprobados conservan sus fechas y contenido. Los borradores futuros quedan
+              desactualizados si cambia el inicio de semana. El día de planificación se usará para
+              los recordatorios cuando estén disponibles.
             </p>
           </>
         )}
