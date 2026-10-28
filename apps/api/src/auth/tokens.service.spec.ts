@@ -4,7 +4,14 @@ import { Problema } from '../comun/problema';
 import { TokensService } from './tokens.service';
 
 const SECRETO = 'secreto-de-acceso-de-32-caracteres!!';
-const config = new ConfigService({ JWT_REFRESH_SECRET: 'secreto-refresh-de-32-caracteres!!!' });
+function configRefresh(secreto: string): ConfigService {
+  const config = new ConfigService();
+  // ConfigService prioriza process.env sobre sus valores internos.
+  jest.spyOn(config, 'getOrThrow').mockReturnValue(secreto);
+  return config;
+}
+
+const config = configRefresh('secreto-refresh-de-32-caracteres!!!');
 
 function crear(secreto = SECRETO) {
   return new TokensService(
@@ -32,12 +39,19 @@ describe('TokensService (ADR-004)', () => {
       ahora,
     );
     expect(expiraEn.getTime() - Math.floor(ahora.getTime() / 1000) * 1000).toBe(15 * 60 * 1000);
-    expect(tokens.verificarAcceso(token)).toEqual({ sub: 'u1', hogarId: 'h1', rol: 'ADMIN' });
+    expect(tokens.verificarAcceso(token)).toEqual({
+      sub: 'u1',
+      hogarId: 'h1',
+      rol: 'ADMIN',
+      emitidoEn: ahora.getTime(),
+    });
   });
 
   it('acepta usuario sin hogar (hogarId y rol nulos)', () => {
     const { token } = tokens.firmarAcceso({ sub: 'u1', hogarId: null, rol: null });
-    expect(tokens.verificarAcceso(token)).toEqual({ sub: 'u1', hogarId: null, rol: null });
+    expect(tokens.verificarAcceso(token)).toEqual(
+      expect.objectContaining({ sub: 'u1', hogarId: null, rol: null }),
+    );
   });
 
   it('un token vencido → TOKEN_EXPIRADO', () => {
@@ -89,7 +103,7 @@ describe('TokensService (ADR-004)', () => {
   it('el hash depende del secreto del refresh', () => {
     const otro = new TokensService(
       new JwtService({ secret: SECRETO }),
-      new ConfigService({ JWT_REFRESH_SECRET: 'otro-secreto-refresh-de-32-caracteres' }),
+      configRefresh('otro-secreto-refresh-de-32-caracteres'),
     );
     expect(otro.hashRefresh('x')).not.toBe(tokens.hashRefresh('x'));
   });

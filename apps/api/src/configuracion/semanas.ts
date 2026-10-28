@@ -14,6 +14,43 @@ export const DIAS_SEMANA = [
   'VIERNES',
   'SABADO',
 ] as const;
+export type DiaSemana = (typeof DIAS_SEMANA)[number];
+export interface RangoSemana {
+  desde: string;
+  hasta: string;
+}
+export interface CalendarioSemana {
+  proximaSemana: RangoSemana;
+  semanaTransicion: RangoSemana | null;
+  /** Fecha local de la siguiente planificación; la hora está en la configuración. */
+  proximaPlanificacion: string;
+}
+
+/** Calendario posterior al último aprobado, que se conserva sin modificar. */
+export function calendarioSemana(
+  hoy: string,
+  inicio: DiaSemana,
+  planificacion: DiaSemana,
+  aprobados: readonly { fechaInicio: string; fechaFin: string }[],
+): CalendarioSemana {
+  const ultimoFin = aprobados
+    .filter((m) => m.fechaFin >= hoy)
+    .map((m) => m.fechaFin)
+    .sort()
+    .at(-1);
+  const siguiente = ultimoFin ? sumarDias(ultimoFin, 1) : null;
+  const desde = siguiente
+    ? DIAS_SEMANA[new Date(`${siguiente}T00:00:00Z`).getUTCDay()] === inicio
+      ? siguiente
+      : inicioProximaSemana(ultimoFin!, inicio)
+    : inicioProximaSemana(hoy, inicio);
+  return {
+    proximaSemana: { desde, hasta: sumarDias(desde, 6) },
+    semanaTransicion:
+      siguiente && siguiente < desde ? { desde: siguiente, hasta: sumarDias(desde, -1) } : null,
+    proximaPlanificacion: inicioProximaSemana(hoy, planificacion),
+  };
+}
 
 const formatoFecha = new Intl.DateTimeFormat('en-CA', {
   timeZone: ZONA_NEGOCIO,

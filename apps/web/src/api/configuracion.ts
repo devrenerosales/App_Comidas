@@ -21,6 +21,30 @@ export interface ConfiguracionHogar {
   actualizadoEn: string;
 }
 
+export type DiaSemana =
+  | 'DOMINGO'
+  | 'LUNES'
+  | 'MARTES'
+  | 'MIERCOLES'
+  | 'JUEVES'
+  | 'VIERNES'
+  | 'SABADO';
+export interface RangoSemana {
+  desde: string;
+  hasta: string;
+}
+export interface CalendarioSemana {
+  proximaSemana: RangoSemana;
+  semanaTransicion: RangoSemana | null;
+  proximaPlanificacion: string;
+}
+export interface ConfiguracionSemana extends ConfiguracionHogar, CalendarioSemana {}
+export interface DatosGuardarSemana {
+  version: number;
+  diaInicioSemana: DiaSemana;
+  diaPlanificacion: DiaSemana;
+}
+
 export interface MenuAfectado {
   id: string;
   fechaInicio: string;
@@ -70,6 +94,14 @@ const BASE = '/hogar/configuracion';
 
 export function crearApiConfiguracion(cliente: Pick<ClienteHttp, 'peticion'>) {
   return {
+    obtenerSemana: () => cliente.peticion<ConfiguracionSemana>(BASE),
+    vistaPreviaSemana: (datos: DatosGuardarSemana) =>
+      cliente.peticion<CalendarioSemana & { version: number }>(`${BASE}/semana/vista-previa`, {
+        metodo: 'POST',
+        cuerpo: datos,
+      }),
+    guardarSemana: (datos: DatosGuardarSemana) =>
+      cliente.peticion<ConfiguracionSemana>(`${BASE}/semana`, { metodo: 'PUT', cuerpo: datos }),
     obtener: () => cliente.peticion<ConfiguracionHogar>(BASE),
     vistaPrevia: (datos: DatosVistaPrevia) =>
       cliente.peticion<RespuestaVistaPrevia>(`${BASE}/vista-previa`, {

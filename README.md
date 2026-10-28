@@ -11,10 +11,13 @@ Aplicación web (PWA) y Android que sugiere el menú semanal de la familia segú
 | 1. Planificación | Sprint 0 cerrado · [plan de sprints](docs/00-planificacion/plan-sprints.md) · [decisiones del PO](docs/00-planificacion/decisiones-po.md) |
 | 2. Requerimientos | SRS v1.4 aprobado · 44 casos de uso e historias |
 | 3. Diseño | Arquitectura, 10 ADR, modelo de datos, contrato API, [prototipo](https://claude.ai/artifact/E5BNpQxh3ianZUmYpBmSLz) |
-| 4. Construcción | Base técnica lista · Sprint 1 inicia 2026-10-26 · HU-01 (registro e inicio de sesión) integrada en `develop` · HU-02 (crear hogar e invitar miembros) lista en `feature/HU-02-hogar-invitaciones`, pendiente de PR |
+| 4. Construcción | Historias del Sprint 1 integradas en `develop`: cuentas, hogares, comensales, configuración y catálogo · pendiente revisión del PO · [estado del Sprint 1](docs/00-planificacion/sprint-01.md) · despliegue en Sprint 6 (D-16) |
 | 5. Pruebas | Plan de pruebas · 186 casos · 44 features Gherkin |
 
 ## Documentación
+
+HU-04 (recuperación), HU-08 (configuración de semana) y HU-15 (captura histórica manual) implementadas localmente:
+[avance del Sprint 2](docs/00-planificacion/sprint-02.md).
 
 | Fase | Carpeta |
 |---|---|

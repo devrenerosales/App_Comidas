@@ -98,6 +98,11 @@ export default function IniciarSesion() {
         <button className="mf-boton mf-boton--primario" type="submit" disabled={enviando}>
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
+        <p>
+          <Link className="mf-enlace" to="/recuperar">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
       </form>
     </PaginaAcceso>
   );

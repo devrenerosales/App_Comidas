@@ -14,6 +14,29 @@ export function crearApiAuth(cliente: ClienteHttp) {
     return sesion;
   };
   return {
+    validarRecuperacion: (token: string) =>
+      cliente.peticion<void>('/auth/validar-recuperacion', {
+        metodo: 'POST',
+        cuerpo: { token },
+        autenticar: false,
+      }),
+    recuperar: (correo: string) =>
+      cliente.peticion<{ mensaje: string }>('/auth/recuperar', {
+        metodo: 'POST',
+        cuerpo: { correo },
+        autenticar: false,
+      }),
+    restablecer: (token: string, contrasena: string, confirmacion: string) =>
+      cliente
+        .peticion<{ mensaje: string }>('/auth/restablecer', {
+          metodo: 'POST',
+          cuerpo: { token, contrasena, confirmacion },
+          autenticar: false,
+        })
+        .then((resultado) => {
+          cliente.limpiarSesion();
+          return resultado;
+        }),
     registrar: (datos: DatosRegistro) =>
       cliente
         .peticion<Sesion>('/auth/registro', { metodo: 'POST', cuerpo: datos, autenticar: false })

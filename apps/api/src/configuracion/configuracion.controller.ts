@@ -9,7 +9,12 @@ import type {
   RespuestaVistaPrevia,
   VistaConfiguracionHogar,
 } from './configuracion.tipos';
-import { GuardarPresupuestoDto, GuardarTiemposDto, VistaPreviaDto } from './dto/configuracion.dto';
+import {
+  GuardarPresupuestoDto,
+  GuardarTiemposDto,
+  VistaPreviaDto,
+  GuardarSemanaDto,
+} from './dto/configuracion.dto';
 import { SoloAdmin, SoloAdminGuard } from './solo-admin.guard';
 
 /**
@@ -21,6 +26,23 @@ import { SoloAdmin, SoloAdminGuard } from './solo-admin.guard';
 @UseGuards(HogarGuard, SoloAdminGuard)
 export class ConfiguracionController {
   constructor(private readonly configuracion: ConfiguracionService) {}
+
+  @Post('semana/vista-previa')
+  @HttpCode(200)
+  @SoloAdmin(MENSAJES_CONFIGURACION.soloAdminConfiguracion)
+  vistaPreviaSemana(@HogarActual('hogarId') hogarId: string, @Body() dto: GuardarSemanaDto) {
+    return this.configuracion.vistaPreviaSemana(hogarId, dto);
+  }
+
+  @Put('semana')
+  @SoloAdmin(MENSAJES_CONFIGURACION.soloAdminConfiguracion)
+  guardarSemana(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Body() dto: GuardarSemanaDto,
+  ) {
+    return this.configuracion.guardarSemana(hogarId, usuarioId, dto);
+  }
 
   @Get()
   obtener(@HogarActual('hogarId') hogarId: string): Promise<VistaConfiguracionHogar> {

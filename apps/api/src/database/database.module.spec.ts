@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import type { Db, Pool } from '@menu/db';
 import { DB, PG_POOL, TIMEOUT_CONSULTA_MS } from './database.constants';
@@ -15,7 +15,10 @@ async function crearModulo(url = 'postgresql://u:p@127.0.0.1:1/nada') {
       }),
       DatabaseModule,
     ],
-  }).compile();
+  })
+    .overrideProvider(ConfigService)
+    .useValue({ getOrThrow: () => url })
+    .compile();
   return moduleRef;
 }
 
@@ -56,7 +59,10 @@ describe('DatabaseModule', () => {
   it('una consulta falla rápido si la base no está disponible', async () => {
     const moduleRef = await crearModulo();
     const pool = moduleRef.get<Pool>(PG_POOL);
-    await expect(pool.query('select 1')).rejects.toThrow();
-    await moduleRef.close();
+    try {
+      await expect(pool.query('select 1')).rejects.toThrow();
+    } finally {
+      await moduleRef.close();
+    }
   });
 });

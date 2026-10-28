@@ -3,8 +3,12 @@ import { Redirect, Route } from 'react-router-dom';
 import Comensales from './pages/Comensales';
 import Configuracion from './pages/Configuracion';
 import ConfiguracionTiempos from './pages/ConfiguracionTiempos';
+import ConfiguracionSemana from './pages/ConfiguracionSemana';
 import HogarUsuarios from './pages/HogarUsuarios';
 import Inicio from './pages/Inicio';
+import Historial from './pages/Historial';
+import CapturarSemana from './pages/CapturarSemana';
+import ImportarHistorial from './pages/ImportarHistorial';
 import Lista from './pages/Lista';
 import PlatilloDetalle from './pages/PlatilloDetalle';
 import Platillos from './pages/Platillos';
@@ -18,6 +22,10 @@ export function Pestanas() {
     <IonTabs>
       <IonRouterOutlet>
         <Route exact path="/inicio" component={Inicio} />
+        <Route exact path="/historial" component={Historial} />
+        <Route exact path="/historial/capturar" component={CapturarSemana} />
+        <Route exact path="/historial/importar" component={ImportarHistorial} />
+        <Route exact path="/historial/importar/:id([0-9a-f-]{36})" component={ImportarHistorial} />
         <Route exact path="/semana" component={Semana} />
         <Route exact path="/lista" component={Lista} />
         <Route exact path="/platillos" component={Platillos} />
@@ -28,6 +36,7 @@ export function Pestanas() {
         <Route exact path="/configuracion/hogar" component={HogarUsuarios} />
         <Route exact path="/configuracion/comensales" component={Comensales} />
         <Route exact path="/configuracion/tiempos" component={ConfiguracionTiempos} />
+        <Route exact path="/configuracion/semana" component={ConfiguracionSemana} />
         <Route exact path="/">
           <Redirect to="/inicio" />
         </Route>

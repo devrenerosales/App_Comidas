@@ -101,8 +101,8 @@ flowchart LR
 |---|---|---|---|
 | `caddy` | Caddy 2.8 alpine | Única entrada desde internet (80/443): HTTPS automático con Let's Encrypt para `DOMINIO` (DuckDNS); `/api/*` → `api:3000`, resto → `web:80`. Mismo origen: sin CORS para la PWA | 1 |
 | `web` | nginx 1.27 alpine | Sirve el build de la PWA (`apps/web/dist`) con caché de estáticos y fallback de SPA | 1 réplica |
-| `api` | NestJS 10, Node 22 | REST `/api/v1`, autenticación, reglas de negocio M1–M10, procesadores BullMQ livianos (notificaciones, recordatorio, evaluación de presupuesto) | 1 réplica |
-| `worker` | Node 22 + Playwright Chromium | Corridas de precios, recálculo mínimo/mediana, OCR de tickets | 1 réplica, concurrencia 1 por sitio |
+| `api` | NestJS 10, Node 20 (según `.nvmrc` y Dockerfile) | REST `/api/v1`, autenticación, reglas de negocio M1–M10, procesadores BullMQ livianos (notificaciones, recordatorio, evaluación de presupuesto) | 1 réplica |
+| `worker` | Node 20 (según `.nvmrc` y Dockerfile) + Playwright Chromium | Corridas de precios, recálculo mínimo/mediana, OCR de tickets | 1 réplica, concurrencia 1 por sitio |
 | `postgres` | PostgreSQL 16 | Fuente de verdad. Sin puerto expuesto al host | 1 |
 | `redis` | Redis 7, `appendonly yes`, `maxmemory-policy noeviction` | Colas, jobs programados, contadores de corrida | 1 |
 | App PWA / Android | React 18 + Ionic 8 + Capacitor 6, Vite, vite-plugin-pwa (Workbox), Dexie (IndexedDB) | UI móvil primero, offline de lista y menú aprobado, registro de push | — |
