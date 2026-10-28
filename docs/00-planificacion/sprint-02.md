@@ -1,6 +1,32 @@
 # Sprint 2 — Carga inicial del cuaderno
 
-Historias previstas: HU-04, HU-08, HU-15, HU-16, HU-17 y HU-18.
+| Campo | Valor |
+|---|---|
+| Fechas planificadas | 2026-11-09 → 2026-11-20 (se adelantó: las seis historias quedaron implementadas el 2026-10-28) |
+| Objetivo | Cargar el historial del cuaderno: recuperar contraseña, inicio de semana, captura manual, importación CSV/XLSX, resolución de platillos nuevos y carga inicial con listas |
+| Estado | Historias implementadas e integradas en `develop`; pendiente la revisión del PO y la carga real del cuaderno |
+
+## Historias
+
+| HU | Historia | Puntos | Estado |
+|---|---|---|---|
+| HU-04 | Recuperar contraseña | 3 | Implementada |
+| HU-08 | Inicio de semana y planificación | 2 | Implementada |
+| HU-15 | Captura histórica manual | 5 | Implementada |
+| HU-16 | Importación histórica CSV/XLSX | 8 | Implementada |
+| HU-17 | Resolver platillos nuevos al importar | 8 | Implementada |
+| HU-18 | Carga inicial del cuaderno | 5 | Implementada |
+| | **Total** | **31** | **31 de 31 puntos** |
+
+## Pendientes de cierre
+
+- Revisión del PO con la validación manual de cada reporte de `docs/03-pruebas/reportes/`.
+- Carga real del cuaderno con los CSV de `datos-privados` (ver [reporte de HU-18](../03-pruebas/reportes/RE-HU-18-2026-10-28.md)).
+- Decidir el umbral de similitud de HU-17 (80 % o más bajo).
+- Prueba de entrega de correo con SMTP real (recuperación de contraseña e invitaciones).
+- Heredados de S1: pruebas E2E con Playwright, capturas del manual y refresh seguro en Android.
+- Fusionar `develop` a `main` y etiquetar. No existe ninguna etiqueta todavía: el Sprint 1 tampoco se fusionó a `main`.
+
 
 ## HU-04 — Recuperar contraseña
 
