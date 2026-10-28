@@ -32,6 +32,18 @@ gantt
   S6 Cierre, APK y despliegue :s6, 2027-01-18, 12d
 ```
 
+## Avance real
+
+| Sprint | Puntos | Estado al 2026-10-28 |
+|---|---|---|
+| S1 | 51 | Implementado e integrado en `develop` ([sprint-01](sprint-01.md)) |
+| S2 | 31 | Implementado e integrado en `develop` ([sprint-02](sprint-02.md)); pendiente la revisión del PO |
+
+Velocidad observada: 82 puntos implementados entre el 2026-10-22 y el 2026-10-28, frente a 82
+planificados para cuatro semanas. Conviene no extrapolarla a S3: S1 y S2 fueron sobre todo
+CRUD, importación y reglas conocidas, y el motor de sugerencias (S3) es de otra naturaleza.
+Antes de iniciar S3 hay que cerrar con el PO las fórmulas del motor (M05, CU-05.2).
+
 ## 2. Sprint 1 — planificación
 
 **Objetivo:** que el administrador cree su hogar con comensales y factores de porción, configure tiempos de comida y presupuesto con vista previa, y registre platillos con ingredientes del catálogo, probado en la laptop del PO (el despliegue en Oracle Cloud pasa al S6, D-16).
