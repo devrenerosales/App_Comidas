@@ -34,6 +34,32 @@ export interface FilaImportacion {
   datos: { fecha: string; platillo: string; tiempo: string };
   errores: { columna: string; motivo: string }[];
 }
+export interface PlatilloPorResolver {
+  nombreOriginal: string;
+  nombreNormalizado: string;
+  proteinaPrincipal: string | null;
+  decision: 'PENDIENTE' | 'ASOCIAR' | 'CREAR';
+  automatica: boolean;
+  propuesta: {
+    accion: 'ASOCIAR' | 'CREAR';
+    platilloId: string | null;
+    platillo: string | null;
+    /** De 0 a 1; null si el catálogo no tiene nada parecido. */
+    similitud: number | null;
+  };
+  platilloId: string | null;
+  platillo: string | null;
+  nombreFinal: string | null;
+}
+export interface DecisionPlatillo {
+  nombreNormalizado: string;
+  decision: 'ASOCIAR' | 'CREAR';
+  platilloId?: string;
+  nombreFinal?: string;
+}
+export type PaginaPlatillosImportados = Pagina<PlatilloPorResolver> & {
+  resumen: { total: number; pendientes: number };
+};
 export function crearApiImportaciones(http: Pick<ClienteHttp, 'peticion'>) {
   return {
     plantilla: (formato: 'csv' | 'xlsx') =>
@@ -49,6 +75,19 @@ export function crearApiImportaciones(http: Pick<ClienteHttp, 'peticion'>) {
       http.peticion<Pagina<FilaImportacion>>(
         `/importaciones/${id}/filas?pagina=${pagina}&soloErrores=${soloErrores}`,
       ),
+    platillos: (id: string, estado: 'pendientes' | 'revisar' | 'todos', pagina = 1) =>
+      http.peticion<PaginaPlatillosImportados>(
+        `/importaciones/${id}/platillos?estado=${estado}&pagina=${pagina}`,
+      ),
+    decidirPlatillos: (
+      id: string,
+      revision: string,
+      cuerpo: { aceptarPropuestas?: boolean; decisiones?: DecisionPlatillo[] },
+    ) =>
+      http.peticion<VistaImportacion>(`/importaciones/${id}/platillos`, {
+        metodo: 'PUT',
+        cuerpo: { revision, ...cuerpo },
+      }),
     decidir: (
       id: string,
       revision: string,

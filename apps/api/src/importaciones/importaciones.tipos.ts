@@ -2,6 +2,8 @@ import type { ProteinaPrincipal, TiempoComida } from '@menu/shared';
 
 export const LIMITE_ARCHIVO = 5 * 1024 * 1024;
 export const LIMITE_FILAS = 5000;
+/** Similitud mínima (pg_trgm, 0 a 1) para proponer "Asociar a" en lugar de "Crear nuevo" (CU-04.3). */
+export const UMBRAL_SIMILITUD = 0.8;
 export const COLUMNAS_MENUS = [
   'fecha',
   'dia',

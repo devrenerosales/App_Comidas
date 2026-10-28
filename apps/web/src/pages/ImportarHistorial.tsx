@@ -9,6 +9,7 @@ import {
   type VistaImportacion,
 } from '../api/importaciones';
 import { PaginaBase } from './PaginaBase';
+import ResolverPlatillos from './ResolverPlatillos';
 import './acceso.css';
 import './hogar.css';
 
@@ -182,22 +183,20 @@ export default function ImportarHistorial() {
                   <p role="status">
                     Importación confirmada: {vista.reporte.semanasCreadas} semanas creadas,{' '}
                     {vista.reporte.reemplazadas} reemplazadas y {vista.reporte.omitidas} omitidas.
+                    {vista.reporte.platillosCreados > 0 &&
+                      ` Se crearon ${vista.reporte.platillosCreados} platillos nuevos sin ingredientes.`}
+                    {vista.reporte.aliasCreados > 0 &&
+                      ` Se recordaron ${vista.reporte.aliasCreados} nombres alternos.`}
                   </p>
                 )}
                 {vista.revision && (
                   <>
-                    {!!vista.pendientes.length && (
-                      <div className="mf-alerta">
-                        <p>
-                          Estos platillos aún no están en el catálogo: {vista.pendientes.join(', ')}
-                          .
-                        </p>
-                        <p>
-                          Agrega los nombres al <Link to="/platillos">catálogo</Link> y vuelve a
-                          cargar el archivo.
-                        </p>
-                      </div>
-                    )}
+                    <ResolverPlatillos
+                      vista={vista}
+                      ocupado={ocupado}
+                      ejecutar={ejecutar}
+                      alCambiar={setVista}
+                    />
                     {!!vista.filasConError && (
                       <p role="alert">
                         Corrige los errores en el archivo y vuelve a cargarlo. No se guardará

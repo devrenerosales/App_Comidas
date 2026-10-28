@@ -28,8 +28,10 @@ import { ImportacionesRepositorio } from './importaciones.repositorio';
 import {
   ArchivoDto,
   DecisionesDto,
+  DecisionesPlatillosDto,
   FilasDto,
   PlantillaDto,
+  PlatillosConsultaDto,
   RevisionDto,
 } from './importaciones.dto';
 import { generarPlantilla, leerArchivo, validarFilas } from './importaciones.parser';
@@ -89,6 +91,22 @@ export class ImportacionesController {
     @Query() consulta: FilasDto,
   ) {
     return this.repositorio.filas(hogarId, id, consulta);
+  }
+  @Get(':id/platillos')
+  platillos(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Query() consulta: PlatillosConsultaDto,
+  ) {
+    return this.repositorio.platillos(hogarId, id, consulta);
+  }
+  @Put(':id/platillos')
+  decidirPlatillos(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() datos: DecisionesPlatillosDto,
+  ) {
+    return this.repositorio.decidirPlatillos(hogarId, id, datos);
   }
   @Put(':id/semanas')
   decidir(

@@ -30,7 +30,7 @@ y permite informar de enlaces vencidos al abrirlos, antes de pedir una contrase�
 ## Pendientes
 
 - Revisión del PO y prueba de entrega con SMTP real en el entorno configurado.
-- HU-17 y HU-18 todavía no implementadas; HU-16 se detalla abajo.
+- HU-18 todavía no implementada; HU-16 y HU-17 se detallan abajo.
 
 ## HU-08 — Inicio de semana y planificación
 
@@ -87,9 +87,29 @@ Implementación local para revisión del PO, sin migraciones:
 - Confirmación atómica e idempotente, protección contra cambios concurrentes y cancelación.
 - Interfaz accesible desde Historial y notas importadas visibles en el detalle de comidas.
 
-La conciliación asistida de nombres y la carga de listas/cuaderno siguen previstas en
-HU-17/HU-18. Los platillos desconocidos bloquean la confirmación hasta corregir el
-catálogo y volver a cargar. El gasto conserva la restricción positiva de HU-15 y SQL.
+La carga de listas/cuaderno sigue prevista en HU-18. Los platillos desconocidos bloquean la
+confirmación hasta resolverlos con HU-17. El gasto conserva la restricción positiva de HU-15 y SQL.
 
 Diseño y contrato: [Importación histórica](../02-diseno/importacion-historica.md).
 Validación y límites: [reporte HU-16](../03-pruebas/reportes/RE-HU-16-2026-10-27.md).
+
+## HU-17 — Resolver platillos nuevos al importar
+
+Implementación local para revisión del PO, sin migraciones:
+
+- Propuesta por similitud de trigramas (`pg_trgm`) sobre el nombre normalizado: "Asociar a"
+  desde 80 % y "Crear nuevo" por debajo. Las coincidencias exactas con platillo o alias se
+  asocian solas.
+- Pantalla **Platillos por resolver** con aceptar propuesta, aceptar todas, crear con otro
+  nombre o buscar y asociar otro platillo del catálogo.
+- La confirmación se bloquea con "Faltan N platillos por resolver".
+- Al confirmar, en la misma transacción: platillos nuevos incompletos con los tiempos y la
+  proteína del archivo, y nombres escritos guardados como alias.
+- Rutas nuevas `GET` y `PUT /importaciones/{id}/platillos`, con la revisión de la vista.
+
+Hallazgo para el PO: con `pg_trgm` real, "Tortas de carne" frente a "Tortitas de carne" da
+78,95 %, no el 85 % del ejemplo de CA-17.2, y se propone crear. Decisión pendiente: bajar el
+umbral o mantener 80 %. Detalle en el [reporte de HU-17](../03-pruebas/reportes/RE-HU-17-2026-10-28.md).
+
+Verificación: 316 unitarias y 197 de integración de API, 196 pruebas web, lint y tipos en verde.
+Diseño y contrato: [Importación histórica](../02-diseno/importacion-historica.md).

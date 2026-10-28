@@ -73,10 +73,23 @@ como gasto semanal, sin repartirlo entre comidas. Las notas admiten 200 caracter
 por comida y quedan visibles en el detalle del historial.
 
 Los nombres se buscan en el catálogo del hogar y sus nombres alternativos, ignorando
-mayúsculas y tildes. Si hay nombres desconocidos, agrégalos al catálogo y vuelve a
-cargar el archivo. La conciliación asistida de nombres y la carga inicial del cuaderno
-con listas corresponden a HU-17 y HU-18 y siguen pendientes. Las hojas con datos
-distintas de Menus e Instrucciones se rechazan para evitar ignorar información.
+mayúsculas y tildes. Los que coinciden se asocian solos. Los demás aparecen en
+**Platillos por resolver**, con una propuesta:
+
+- **Asociar a «platillo» (85 %)** cuando hay uno muy parecido (80 % o más).
+- **Crear nuevo** cuando no hay nada parecido.
+
+Para cada uno pulsa **Aceptar propuesta**, o abre **Otras opciones** para crearlo con otro
+nombre (por ejemplo, corrigiendo la ortografía) o buscar y asociar un platillo existente.
+**Aceptar todas las propuestas** resuelve todos de una vez. No puedes confirmar mientras
+falten platillos: la pantalla indica cuántos.
+
+Al confirmar, los platillos nuevos se crean sin ingredientes y marcados como incompletos,
+con el tiempo de comida de sus filas y la proteína del archivo. El nombre que escribiste
+se recuerda como nombre alterno: la próxima vez que lo importes se asocia sin preguntar.
+Si resuelves nombres de semanas que decidas omitir, no se crea nada para ellos.
+La carga inicial del cuaderno con listas corresponde a HU-18 y sigue pendiente. Las hojas
+con datos distintas de Menus e Instrucciones se rechazan para evitar ignorar información.
 
 La vista previa tiene una dirección propia que puedes volver a abrir. Después de
 confirmar muestra el reporte; repetir una solicitud de confirmación no duplica menús.
