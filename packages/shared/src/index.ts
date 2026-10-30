@@ -6,3 +6,4 @@ export * from './comensales';
 export * from './configuracion';
 export * from './catalogo';
 export * from './historial';
+export * from './puntaje';
