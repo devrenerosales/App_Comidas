@@ -20,5 +20,10 @@ Decisiones que cierran los supuestos de la fase de requerimientos. Cada una se r
 | D-14 | 2026-10-22 | Se aprueba ADR-004: token de acceso de 15 min y refresh rotativo de 30 días. | HU-01 |
 | D-15 | 2026-10-22 | Se cambia Prisma por **Drizzle ORM** (TypeScript puro, sin motores binarios) para poder probar contra PostgreSQL real en todos los entornos. | R-01 · ADR-010 |
 | D-16 | 2026-10-23 | El **despliegue en Oracle Cloud se hace en el Sprint 6** (último). Hasta entonces la app se prueba en la laptop con `docker-compose.dev.yml` y `pnpm dev`; el correo queda en modo consola hasta configurar Gmail. | Plan de sprints · ADR-009 · despliegue.md |
+| D-17 | 2026-10-30 | Se aprueban las fórmulas de los factores del motor (Preferencia, Novedad, Ahorro y Afinidad) y los pesos por defecto 0.40 / 0.25 / 0.20 / 0.15, editables por el administrador. | M05 · CU-05.2 · HU-20 |
+| D-18 | 2026-10-30 | Un platillo con **costo incompleto** (ingredientes sin precio o sin ingredientes) recibe **Ahorro neutro 0.50**, para que no suba ni baje artificialmente en el puntaje. Se sigue marcando "Costo incompleto". | M05 · CU-05.2, CU-05.3 · HU-20, HU-21 |
+| D-19 | 2026-10-30 | La ventana de 16 semanas de Afinidad y el cálculo de Novedad se miden **hacia atrás desde la última semana con historial** cuando la semana planificada queda lejos de los datos (el cuaderno termina en mayo de 2026). | M05 · CU-05.2 · HU-20 |
+| D-20 | 2026-10-30 | Antes de iniciar el Sprint 3 se completan los ingredientes de los platillos de almuerzo más usados, para probar el motor con datos reales. | M03 · HU-12 · HU-19, HU-20, HU-21 |
+| D-21 | 2026-10-30 | El umbral de similitud de la resolución de platillos queda en **80 %** (`UMBRAL_SIMILITUD`). | HU-17 |
 
-Se mantienen como propuestos, sin objeción del PO: las fórmulas de los factores del motor (M05, CU-05.2) y que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2).
+Se mantiene como propuesto, sin objeción del PO, que la alerta del 10 % se calcule sobre el total semanal (M10, CU-12.2). Las fórmulas del motor (M05, CU-05.2) quedaron aprobadas en D-17 a D-19.
