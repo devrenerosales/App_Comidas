@@ -114,6 +114,29 @@ export class GuardarTiemposDto {
 }
 
 /** PUT /hogar/configuracion/presupuesto (HU-06). */
+/** PUT /pesos-motor (HU-20): los cuatro pesos como texto decimal, p. ej. "0.40". */
+export class GuardarPesosMotorDto {
+  @IsInt({ message: MENSAJE_VERSION })
+  @Min(1, { message: MENSAJE_VERSION })
+  version!: number;
+
+  @Transform(aTexto)
+  @IsString({ message: 'Indica el peso de Preferencia como texto decimal, p. ej. "0.40"' })
+  preferencia!: string;
+
+  @Transform(aTexto)
+  @IsString({ message: 'Indica el peso de Novedad como texto decimal, p. ej. "0.25"' })
+  novedad!: string;
+
+  @Transform(aTexto)
+  @IsString({ message: 'Indica el peso de Ahorro como texto decimal, p. ej. "0.20"' })
+  ahorro!: string;
+
+  @Transform(aTexto)
+  @IsString({ message: 'Indica el peso de Afinidad como texto decimal, p. ej. "0.15"' })
+  afinidad!: string;
+}
+
 export class GuardarPresupuestoDto {
   @IsInt({ message: MENSAJE_VERSION })
   @Min(1, { message: MENSAJE_VERSION })

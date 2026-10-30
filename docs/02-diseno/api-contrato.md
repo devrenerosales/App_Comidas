@@ -196,7 +196,7 @@ La implementación local de HU-16 y su contrato completo se detallan en
 | POST | `/menus/generar` ⟳ | MIEMBRO | RF-19–RF-21 · HU-19–HU-21 | `{semana, regenerar?}` → 201 (nuevo) o 200 (regenerado; conserva fijados) con el menú completo — ver §3.1 | 409 `MENU_APROBADO`, `BORRADOR_EXISTENTE` (enviar `regenerar: true`) · 422 `FALTAN_PLATILLOS` (`faltantes: [{tiempo, cantidad}]`), `CONFIGURACION_INCOMPLETA`, `SEMANA_INVALIDA` |
 | GET | `/menus/{menuId}/detalles/{detalleId}/motivo` | MIEMBRO | RF-22 · HU-22 | → 200 `{origen, puntaje, factores: {preferencia, novedad, ahorro, afinidad}, pesos, costo, reglasAplicadas, resumen}`; si `origen = USUARIO`: `{resumen: "Elegido por el usuario"}` | 404 |
 | POST | `/menus/{menuId}/detalles/{detalleId}/alternativa` | MIEMBRO | RF-23 · HU-23 | → 200 `{detalle, costos: {tiempo, total}, excede}` | 404 · 409 `MENU_APROBADO`, `ESPACIO_FIJADO` · 422 `SIN_ALTERNATIVAS` |
-| PUT | `/hogar/configuracion/pesos-motor` | ADMIN | RF-20 · HU-20 | `{version, preferencia, novedad, ahorro, afinidad}` → 200 | 403 · 409 · 422 `PESOS_NO_SUMAN_1` |
+| PUT | `/hogar/configuracion/pesos-motor` | ADMIN | RF-20 · HU-20 | `{version, preferencia, novedad, ahorro, afinidad}` (texto decimal de 0 a 1 con hasta 2 decimales) → 200 configuración (forma del GET); sin cambios no sube la versión | 403 · 409 `VERSION_DESACTUALIZADA` · 422 `PESOS_INVALIDOS` ("Los pesos deben sumar 1.00 (suma actual 1.10)" o peso fuera de 0.00–1.00) |
 
 ### 2.6 M06 — Plan semanal
 

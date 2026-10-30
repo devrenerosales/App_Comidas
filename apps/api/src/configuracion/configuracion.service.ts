@@ -12,6 +12,7 @@ import {
   normalizarTiempos,
   porcentajesActivos,
   porcentajesDesdeMontos,
+  validarPesosMotor,
   validarPresupuesto,
   validarSumaMontos,
   validarSumaPorcentajes,
@@ -36,6 +37,7 @@ import type {
   VistaConfiguracionHogar,
 } from './configuracion.tipos';
 import type {
+  GuardarPesosMotorDto,
   GuardarPresupuestoDto,
   GuardarSemanaDto,
   GuardarTiemposDto,
@@ -271,6 +273,48 @@ export class ConfiguracionService {
     });
   }
 
+  /** CU-05.2 flujo alterno 1a: solo el administrador; suma 1.00 y cada peso entre 0.00 y 1.00. */
+  async guardarPesosMotor(
+    hogarId: string,
+    usuarioId: string,
+    dto: GuardarPesosMotorDto,
+  ): Promise<VistaConfiguracionHogar> {
+    const leida = await this.leerVersion(hogarId, dto.version);
+    const pesos = {
+      preferencia: pesoDeTexto(dto.preferencia, 'preferencia'),
+      novedad: pesoDeTexto(dto.novedad, 'novedad'),
+      ahorro: pesoDeTexto(dto.ahorro, 'ahorro'),
+      afinidad: pesoDeTexto(dto.afinidad, 'afinidad'),
+    };
+    const validacion = validarPesosMotor(pesos);
+    if (!validacion.valido) {
+      throw invalida('PESOS_INVALIDOS', validacion.mensaje as string, 'pesos');
+    }
+    const texto = {
+      preferencia: pesos.preferencia.toFixed(2),
+      novedad: pesos.novedad.toFixed(2),
+      ahorro: pesos.ahorro.toFixed(2),
+      afinidad: pesos.afinidad.toFixed(2),
+    };
+    const c = leida.configuracion;
+    if (
+      texto.preferencia === c.pesoPreferencia &&
+      texto.novedad === c.pesoNovedad &&
+      texto.ahorro === c.pesoAhorro &&
+      texto.afinidad === c.pesoAfinidad
+    ) {
+      return vistaConfiguracionHogar(leida);
+    }
+    try {
+      return vistaConfiguracionHogar(
+        await this.repositorio.guardarPesos(hogarId, c.version, texto, usuarioId),
+      );
+    } catch (error) {
+      if (error instanceof VersionDesactualizadaError) throw this.versionDesactualizada();
+      throw error;
+    }
+  }
+
   /** Guarda solo si algo cambió; los borradores futuros se marcan "Desactualizado". */
   private async guardar(
     leida: ConfiguracionLeida,
@@ -382,6 +426,14 @@ export class ConfiguracionService {
       throw invalida('PORCENTAJES_NO_SUMAN_100', validacion.mensaje as string, 'distribucion');
     }
   }
+}
+
+/** Peso de "0" a "1" con hasta 2 decimales; cualquier otro texto es 422 `PESOS_INVALIDOS`. */
+function pesoDeTexto(valor: string, campo: string): number {
+  if (!/^(0(\.\d{1,2})?|1(\.0{1,2})?)$/.test(valor.trim())) {
+    throw invalida('PESOS_INVALIDOS', 'Cada peso debe estar entre 0.00 y 1.00', campo);
+  }
+  return Number(valor);
 }
 
 /** La distribución debe traer exactamente los tiempos indicados (422 `DISTRIBUCION_INVALIDA`). */

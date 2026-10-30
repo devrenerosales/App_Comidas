@@ -10,6 +10,7 @@ import type {
   VistaConfiguracionHogar,
 } from './configuracion.tipos';
 import {
+  GuardarPesosMotorDto,
   GuardarPresupuestoDto,
   GuardarTiemposDto,
   VistaPreviaDto,
@@ -67,6 +68,16 @@ export class ConfiguracionController {
     @Body() dto: GuardarTiemposDto,
   ): Promise<RespuestaGuardado> {
     return this.configuracion.guardarTiempos(hogarId, usuarioId, dto);
+  }
+
+  @Put('pesos-motor')
+  @SoloAdmin(MENSAJES_CONFIGURACION.soloAdminConfiguracion)
+  guardarPesosMotor(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Body() dto: GuardarPesosMotorDto,
+  ): Promise<VistaConfiguracionHogar> {
+    return this.configuracion.guardarPesosMotor(hogarId, usuarioId, dto);
   }
 
   @Put('presupuesto')
