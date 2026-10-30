@@ -90,6 +90,17 @@ export interface DatosGuardarPresupuesto {
   distribucion?: { tiempo: TiempoComida; porcentaje?: string; monto?: string }[];
 }
 
+export interface PesosMotorTexto {
+  preferencia: string;
+  novedad: string;
+  ahorro: string;
+  afinidad: string;
+}
+
+export interface DatosGuardarPesos extends PesosMotorTexto {
+  version: number;
+}
+
 const BASE = '/hogar/configuracion';
 
 export function crearApiConfiguracion(cliente: Pick<ClienteHttp, 'peticion'>) {
@@ -110,6 +121,11 @@ export function crearApiConfiguracion(cliente: Pick<ClienteHttp, 'peticion'>) {
       }),
     guardarTiempos: (datos: DatosGuardarTiempos) =>
       cliente.peticion<ConfiguracionGuardada>(`${BASE}/tiempos`, { metodo: 'PUT', cuerpo: datos }),
+    guardarPesosMotor: (datos: DatosGuardarPesos) =>
+      cliente.peticion<ConfiguracionHogar>(`${BASE}/pesos-motor`, {
+        metodo: 'PUT',
+        cuerpo: datos,
+      }),
     guardarPresupuesto: (datos: DatosGuardarPresupuesto) =>
       cliente.peticion<ConfiguracionGuardada>(`${BASE}/presupuesto`, {
         metodo: 'PUT',

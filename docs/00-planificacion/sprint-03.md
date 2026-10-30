@@ -4,7 +4,7 @@
 |---|---|
 | Fechas planificadas | 2026-11-23 → 2026-12-04 |
 | Objetivo | Proponer el menú semanal con puntaje, presupuesto y motivo; permitir ajustarlo, aprobarlo y ver su costo |
-| Estado | Planificado. Fórmulas del motor aprobadas por el PO el 2026-10-30 (D-17 a D-19) |
+| Estado | En curso. Fórmulas del motor aprobadas por el PO el 2026-10-30 (D-17 a D-19). HU-20 implementada el 2026-10-30 |
 
 ## Historias
 

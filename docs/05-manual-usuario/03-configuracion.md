@@ -116,6 +116,23 @@ de notificaciones (HU-41); guardar esta configuración todavía no envía una no
 
 Se completará cuando se implemente HU-09.
 
+## 3.7b Pesos del motor
+
+El motor puntúa cada platillo con cuatro factores: **Preferencia** (calificaciones y favoritos),
+**Novedad** (cuánto hace que no se prepara), **Ahorro** (qué tan barato es frente al presupuesto por
+comida) y **Afinidad** (cuánto se ha preparado en las últimas 16 semanas). Los pesos indican cuánto
+cuenta cada uno. Por defecto son 0.40, 0.25, 0.20 y 0.15.
+
+1. Abre **Configuración → Pesos del motor**.
+2. Cambia los pesos. La **Suma** se actualiza mientras escribes y debe ser 1.00.
+3. Si no suma 1.00 verás, por ejemplo, "Los pesos deben sumar 1.00 (suma actual 1.10)" y **Guardar**
+   queda deshabilitado.
+4. Toca **Guardar**. Los pesos se aplican al próximo menú que se sugiera; los menús ya generados
+   conservan los pesos con que se crearon.
+5. **Restaurar valores por defecto** vuelve a 0.40 / 0.25 / 0.20 / 0.15 sin guardar hasta que toques **Guardar**.
+
+Los miembros pueden ver los pesos, pero solo el administrador puede cambiarlos.
+
 ## 3.8 Restricciones y platillos favoritos — próximamente (HU-10, Sprint 3)
 
 Se completará cuando se implemente HU-10.
