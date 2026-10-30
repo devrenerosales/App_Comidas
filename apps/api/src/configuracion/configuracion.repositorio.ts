@@ -50,6 +50,14 @@ export interface CambiosConfiguracion {
   tiempos?: TiempoAGuardar[];
 }
 
+/** Pesos del motor como texto decimal de 2 posiciones. */
+export interface PesosAGuardar {
+  preferencia: string;
+  novedad: string;
+  ahorro: string;
+  afinidad: string;
+}
+
 export interface ResultadoGuardado extends ConfiguracionLeida {
   borradoresDesactualizados: { id: string; fechaInicio: string; fechaFin: string }[];
 }
@@ -60,6 +68,38 @@ const ordenTiempo = (t: { tiempo: string }) => ORDEN_TIEMPOS.indexOf(t.tiempo as
 @Injectable()
 export class ConfiguracionRepositorio {
   constructor(@Inject(DB) private readonly db: Db) {}
+
+  /** Guarda los pesos del motor con control de versión; no toca menús (HU-20, CA-20.4). */
+  async guardarPesos(
+    hogarId: string,
+    versionEsperada: number,
+    pesos: PesosAGuardar,
+    usuarioId: string,
+  ): Promise<ConfiguracionLeida> {
+    return this.db.transaction(async (tx) => {
+      const [config] = await tx
+        .update(configuracion)
+        .set({
+          pesoPreferencia: pesos.preferencia,
+          pesoNovedad: pesos.novedad,
+          pesoAhorro: pesos.ahorro,
+          pesoAfinidad: pesos.afinidad,
+          version: sql`${configuracion.version} + 1`,
+          actualizadoPorId: usuarioId,
+        })
+        .where(and(eq(configuracion.hogarId, hogarId), eq(configuracion.version, versionEsperada)))
+        .returning();
+      if (!config) throw new VersionDesactualizadaError();
+      const tiempos = await tx
+        .select()
+        .from(tiempoComidaConfig)
+        .where(eq(tiempoComidaConfig.configuracionId, config.id));
+      return {
+        configuracion: config,
+        tiempos: tiempos.sort((a, b) => ordenTiempo(a) - ordenTiempo(b)),
+      };
+    });
+  }
 
   guardarSemana(
     hogarId: string,

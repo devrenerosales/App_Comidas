@@ -712,6 +712,71 @@ describeConBd('HU-05 / HU-06 / HU-07 Configuración de tiempos y presupuesto (in
     });
   });
 
+  describe('HU-20 Pesos del motor', () => {
+    const guardarPesos = (token: string, cuerpo: object) =>
+      http().put(`${API}/hogar/configuracion/pesos-motor`).set(con(token)).send(cuerpo);
+    const pesos = { preferencia: '0.30', novedad: '0.30', ahorro: '0.25', afinidad: '0.15' };
+
+    it('el administrador guarda pesos que suman 1.00 y la versión sube', async () => {
+      const { token } = await crearHogar(RENE, 'Familia Rosales');
+      const res = await guardarPesos(token, { version: 1, ...pesos }).expect(200);
+      expect(res.body).toMatchObject({ version: 2, pesos });
+      const leida = await leer(token).expect(200);
+      expect(leida.body.pesos).toEqual(pesos);
+    });
+
+    it('CA-20.3 pesos que no suman 1.00 → 422 con la suma actual y no se guarda', async () => {
+      const { token } = await crearHogar(RENE, 'Familia Rosales');
+      const res = await guardarPesos(token, {
+        version: 1,
+        preferencia: '0.50',
+        novedad: '0.25',
+        ahorro: '0.20',
+        afinidad: '0.15',
+      }).expect(422);
+      expect(res.body.codigo).toBe('PESOS_INVALIDOS');
+      expect(res.body.detail).toBe('Los pesos deben sumar 1.00 (suma actual 1.10)');
+      const leida = await leer(token).expect(200);
+      expect(leida.body).toMatchObject({
+        version: 1,
+        pesos: { preferencia: '0.40', novedad: '0.25', ahorro: '0.20', afinidad: '0.15' },
+      });
+    });
+
+    it('CA-20.4 un miembro recibe 403 y los pesos no cambian', async () => {
+      const { ana, token } = await hogarConAna();
+      await guardarPesos(ana, {
+        version: 1,
+        preferencia: '0.30',
+        novedad: '0.30',
+        ahorro: '0.20',
+        afinidad: '0.20',
+      }).expect(403);
+      const leida = await leer(token).expect(200);
+      expect(leida.body.pesos).toEqual({
+        preferencia: '0.40',
+        novedad: '0.25',
+        ahorro: '0.20',
+        afinidad: '0.15',
+      });
+    });
+
+    it('otro administrador guardó antes → 409 VERSION_DESACTUALIZADA', async () => {
+      const { token } = await crearHogar(RENE, 'Familia Rosales');
+      await guardarPesos(token, { version: 1, ...pesos }).expect(200);
+      const res = await guardarPesos(token, { version: 1, ...pesos }).expect(409);
+      expect(res.body.codigo).toBe('VERSION_DESACTUALIZADA');
+    });
+
+    it('sin cambios no sube la versión y un peso fuera de rango se rechaza', async () => {
+      const { token } = await crearHogar(RENE, 'Familia Rosales');
+      const igual = { preferencia: '0.40', novedad: '0.25', ahorro: '0.20', afinidad: '0.15' };
+      await guardarPesos(token, { version: 1, ...igual }).expect(200);
+      expect((await leer(token).expect(200)).body.version).toBe(1);
+      await guardarPesos(token, { version: 1, ...igual, preferencia: '1.50' }).expect(422);
+    });
+  });
+
   describe('RNF-06 / RN-10 Autorización', () => {
     it('RNF-06 cada hogar ve y cambia solo su configuración', async () => {
       const rene = await crearHogar(RENE, 'Familia Rosales');
