@@ -1,17 +1,53 @@
-import { Body, Controller, HttpCode, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
+import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
+import { Problema } from '../comun/problema';
 import { HogarActual } from '../hogar/decoradores/hogar-actual.decorator';
 import { HogarGuard } from '../hogar/hogar.guard';
 import { RolesGuard } from '../hogar/roles.guard';
-import { GenerarMenuDto } from './dto/menus.dto';
+import {
+  EditarDetalleDto,
+  FijarDetalleDto,
+  GenerarMenuDto,
+  MoverDetalleDto,
+} from './dto/menus.dto';
+import { MenusEdicionService } from './menus-edicion.service';
 import { MenusService } from './menus.service';
 import type { VistaMenu } from './menus.vista';
 
-/** /menus — menú semanal del hogar. Cualquier miembro genera el Borrador (CU-05.1, HU-19). */
+/** Un id mal formado se trata como inexistente (404), igual que uno de otro hogar (RNF-06). */
+const idMenu = new ParseUUIDPipe({
+  version: '4',
+  exceptionFactory: () => new Problema(404, 'NO_ENCONTRADO', 'El menú no existe.'),
+});
+const idComida = new ParseUUIDPipe({
+  version: '4',
+  exceptionFactory: () => new Problema(404, 'NO_ENCONTRADO', 'La comida no existe.'),
+});
+
+/**
+ * /menus — menú semanal del hogar. Cualquier miembro genera y ajusta el Borrador
+ * (CU-05.1 y CU-06.1, HU-19 y HU-24).
+ */
 @Controller('menus')
 @UseGuards(HogarGuard, RolesGuard)
 export class MenusController {
-  constructor(private readonly menus: MenusService) {}
+  constructor(
+    private readonly menus: MenusService,
+    private readonly edicion: MenusEdicionService,
+  ) {}
 
   /** 201 con el menú nuevo; 200 si se regeneró un Borrador conservando los fijados. */
   @Post('generar')
@@ -24,5 +60,58 @@ export class MenusController {
     const { creado, menu } = await this.menus.generar(hogarId, dto);
     if (!creado) res.status(200);
     return menu;
+  }
+
+  /** El menú cuya semana contiene la fecha (declarado antes que `:id`). */
+  @Get('semana/:fecha')
+  porSemana(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('fecha') fecha: string,
+  ): Promise<VistaMenu> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      throw new Problema(404, 'SIN_MENU', 'Esta semana todavía no tiene menú.');
+    }
+    return this.edicion.obtenerPorSemana(hogarId, fecha);
+  }
+
+  @Get(':id')
+  obtener(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', idMenu) id: string,
+  ): Promise<VistaMenu> {
+    return this.edicion.obtener(hogarId, id);
+  }
+
+  @Patch(':id/detalles/:detalleId')
+  editar(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Param('detalleId', idComida) detalleId: string,
+    @Body() dto: EditarDetalleDto,
+  ): Promise<VistaMenu> {
+    return this.edicion.editar(hogarId, usuarioId, id, detalleId, dto);
+  }
+
+  @Post(':id/mover')
+  @HttpCode(200)
+  mover(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Body() dto: MoverDetalleDto,
+  ): Promise<VistaMenu> {
+    return this.edicion.mover(hogarId, usuarioId, id, dto);
+  }
+
+  @Put(':id/detalles/:detalleId/fijado')
+  fijar(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Param('detalleId', idComida) detalleId: string,
+    @Body() dto: FijarDetalleDto,
+  ): Promise<VistaMenu> {
+    return this.edicion.fijar(hogarId, usuarioId, id, detalleId, dto);
   }
 }

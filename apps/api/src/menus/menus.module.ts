@@ -6,6 +6,7 @@ import { HogarModule } from '../hogar/hogar.module';
 import { PreferenciasModule } from '../preferencias/preferencias.module';
 import { RELOJ_MENUS } from './menus.constants';
 import { MenusController } from './menus.controller';
+import { MenusEdicionService } from './menus-edicion.service';
 import { MenusRepositorio } from './menus.repositorio';
 import { MenusService } from './menus.service';
 
@@ -13,6 +14,11 @@ import { MenusService } from './menus.service';
 @Module({
   imports: [AuthModule, HogarModule, ConfiguracionModule, CatalogoModule, PreferenciasModule],
   controllers: [MenusController],
-  providers: [MenusRepositorio, MenusService, { provide: RELOJ_MENUS, useValue: () => new Date() }],
+  providers: [
+    MenusRepositorio,
+    MenusService,
+    MenusEdicionService,
+    { provide: RELOJ_MENUS, useValue: () => new Date() },
+  ],
 })
 export class MenusModule {}

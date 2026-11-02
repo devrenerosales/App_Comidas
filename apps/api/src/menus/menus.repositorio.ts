@@ -89,6 +89,35 @@ export interface DatosMenu {
   generadoEn: Date;
 }
 
+/** Platillo del hogar con los tiempos de comida en que aplica (RF-11). */
+export interface PlatilloConTiempos {
+  id: string;
+  nombre: string;
+  proteina: ProteinaPrincipal;
+  activo: boolean;
+  tiempos: TiempoComida[];
+}
+
+/** Campos de un espacio que cambian al editar, mover o fijar (CU-06.1). */
+export type CambioDetalle = Partial<
+  Pick<
+    MenuDetalle,
+    | 'platilloId'
+    | 'fijado'
+    | 'origen'
+    | 'puntaje'
+    | 'factorPreferencia'
+    | 'factorNovedad'
+    | 'factorAhorro'
+    | 'factorAfinidad'
+    | 'costoEstimado'
+    | 'costoIncompleto'
+    | 'reglasAplicadas'
+    | 'modificadoPorId'
+    | 'modificadoEn'
+  >
+>;
+
 /** Acceso a menús semanales y a los datos que lee el motor (RNF-06: siempre por hogar). */
 @Injectable()
 export class MenusRepositorio {
@@ -243,6 +272,83 @@ export class MenusRepositorio {
       if (detalles.length > 0) {
         await tx.insert(menuDetalle).values(detalles.map((d) => ({ menuId, ...d })));
       }
+    });
+  }
+
+  /** Menú del hogar cuya semana contiene `fecha` (null = no hay menú para esa fecha). */
+  async cargarPorFecha(hogarId: string, fecha: string): Promise<MenuCompleto | undefined> {
+    const [menu] = await this.db
+      .select({ id: menuSemanal.id })
+      .from(menuSemanal)
+      .where(
+        and(
+          eq(menuSemanal.hogarId, hogarId),
+          sql`${menuSemanal.fechaInicio} <= ${fecha}::date`,
+          sql`${menuSemanal.fechaFin} >= ${fecha}::date`,
+        ),
+      )
+      .limit(1);
+    return menu ? this.cargar(hogarId, menu.id) : undefined;
+  }
+
+  /** Platillo del hogar (otro hogar = no existe, RNF-06) con sus tiempos aplicables. */
+  async platillo(hogarId: string, id: string): Promise<PlatilloConTiempos | undefined> {
+    const [fila] = await this.db
+      .select({
+        id: platillo.id,
+        nombre: platillo.nombre,
+        proteina: platillo.proteinaPrincipal,
+        activo: platillo.activo,
+      })
+      .from(platillo)
+      .where(and(eq(platillo.id, id), eq(platillo.hogarId, hogarId)))
+      .limit(1);
+    if (!fila) return undefined;
+    const tiempos = await this.tiemposDe([id]);
+    return {
+      ...fila,
+      proteina: fila.proteina as ProteinaPrincipal,
+      tiempos: tiempos.get(id) ?? [],
+    };
+  }
+
+  /** Tiempos aplicables por platillo. */
+  async tiemposDe(ids: string[]): Promise<Map<string, TiempoComida[]>> {
+    const mapa = new Map<string, TiempoComida[]>();
+    if (ids.length === 0) return mapa;
+    const filas = await this.db
+      .select({ platilloId: platilloTiempo.platilloId, tiempo: platilloTiempo.tiempo })
+      .from(platilloTiempo)
+      .where(inArray(platilloTiempo.platilloId, ids));
+    for (const f of filas) {
+      mapa.set(f.platilloId, [...(mapa.get(f.platilloId) ?? []), f.tiempo as TiempoComida]);
+    }
+    return mapa;
+  }
+
+  /**
+   * Aplica los cambios a los espacios en una transacción y vuelve a calcular si el costo del menú
+   * está incompleto (CU-06.1 paso 4; sin precios siempre lo está).
+   */
+  async aplicarCambios(
+    menuId: string,
+    cambios: { id: string; cambio: CambioDetalle }[],
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      for (const { id, cambio } of cambios) {
+        await tx
+          .update(menuDetalle)
+          .set(cambio)
+          .where(and(eq(menuDetalle.id, id), eq(menuDetalle.menuId, menuId)));
+      }
+      const [pendientes] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(menuDetalle)
+        .where(and(eq(menuDetalle.menuId, menuId), eq(menuDetalle.costoIncompleto, true)));
+      await tx
+        .update(menuSemanal)
+        .set({ costoIncompleto: (pendientes?.n ?? 0) > 0 })
+        .where(eq(menuSemanal.id, menuId));
     });
   }
 }
