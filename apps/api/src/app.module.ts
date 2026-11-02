@@ -15,6 +15,7 @@ import { HogarModule } from './hogar/hogar.module';
 import { RedisModule } from './redis/redis.module';
 import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
+import { PreferenciasModule } from './preferencias/preferencias.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ImportacionesModule } from './importaciones/importaciones.module';
     CatalogoModule,
     HistorialModule,
     ImportacionesModule,
+    PreferenciasModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

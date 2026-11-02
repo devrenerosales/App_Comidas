@@ -4,7 +4,7 @@
 |---|---|
 | Historias | HU-05 Tiempos de comida parametrizables · HU-06 Presupuesto y distribución · HU-07 Recálculo con vista previa (S1) · HU-08 Semana (S1, pendiente) · HU-09 Supermercados y marcas (S5) · HU-10 Restricciones y gustos (S3) |
 | Versión de la app | Sprint 1 (rama `feature/HU-05-07-configuracion`) |
-| Estado del capítulo | Parcial: secciones 3.1 a 3.5 listas; 3.6 a 3.8 se completan en sprints posteriores; faltan las capturas |
+| Estado del capítulo | Parcial: secciones 3.1 a 3.8 listas salvo 3.7 (HU-09, Sprint 5); faltan las capturas |
 
 En **Configuración → Tiempos y presupuesto** decides qué comidas planifica la app (solo almuerzo, dos tiempos o los tres), cuánto gastas a la semana y cómo se reparte ese dinero entre las comidas. Todo cambio aplica a los **menús futuros**: los menús que ya aprobaste no cambian.
 
@@ -133,6 +133,21 @@ cuenta cada uno. Por defecto son 0.40, 0.25, 0.20 y 0.15.
 
 Los miembros pueden ver los pesos, pero solo el administrador puede cambiarlos.
 
-## 3.8 Restricciones y platillos favoritos — próximamente (HU-10, Sprint 3)
+## 3.8 Restricciones y platillos favoritos
 
-Se completará cuando se implemente HU-10.
+Aquí registras los **ingredientes que no comen** y los **platillos favoritos** del hogar. Son del hogar
+(no de cada persona) y los puede cambiar cualquier miembro.
+
+1. Abre **Configuración → Restricciones y gustos**.
+2. En **Buscar ingrediente** escribe al menos 2 letras y toca **Excluir …** en el resultado. Verás, por
+   ejemplo, "1 platillo dejará de sugerirse: Chile relleno": son los platillos que llevan ese ingrediente.
+3. En **Buscar platillo** escribe al menos 2 letras y toca **Marcar favorito …**. El motor les da la
+   máxima preferencia al armar el menú.
+4. Para quitar algo, toca **Quitar …** junto al ingrediente o platillo.
+5. Toca **Guardar**. Los cambios se aplican al próximo menú que se sugiera.
+
+Si marcas como favorito un platillo con un ingrediente excluido verás "Chile relleno contiene un
+ingrediente excluido: Chile pimiento". Puedes guardarlo, pero no se sugerirá mientras la exclusión
+exista; la exclusión pesa más que el favorito. Al quitar la exclusión, el platillo vuelve a poder
+sugerirse. Solo se pueden agregar ingredientes y platillos activos. Si asignas a mano un platillo
+excluido al editar un menú, la app te lo permite.

@@ -41,6 +41,15 @@ export default function Configuracion() {
           </section>
         )}
         {hogar && (
+          <section aria-labelledby="titulo-gustos">
+            <h2 id="titulo-gustos">Restricciones y gustos</h2>
+            <p>Ingredientes que no comen y platillos favoritos del hogar.</p>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/gustos">
+              Restricciones y gustos
+            </Link>
+          </section>
+        )}
+        {hogar && (
           <section aria-labelledby="titulo-pesos">
             <h2 id="titulo-pesos">Pesos del motor</h2>
             <p>Qué tanto pesan preferencia, novedad, ahorro y afinidad al sugerir el menú.</p>
