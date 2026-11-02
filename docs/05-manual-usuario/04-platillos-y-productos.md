@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-11 Gestionar platillos (S1) · HU-12 Ingredientes por porciones base (S1) · HU-13 Catálogo de productos (S1) · HU-14 Calificar platillo (S3, pendiente) |
+| Historias | HU-11 Gestionar platillos (S1) · HU-12 Ingredientes por porciones base (S1) · HU-13 Catálogo de productos (S1) · HU-14 Calificar platillo (S3) |
 | Versión de la app | Sprint 1 (rama `feature/HU-11-13-catalogo-platillos`) |
-| Estado del capítulo | Parcial: falta "Calificar platillos" (HU-14, Sprint 3) y las capturas |
+| Estado del capítulo | Parcial: falta la captura de pantalla de cada sección; las estrellas se califican hoy desde Historial (el plan semanal llega con HU-21) |
 
 Los **platillos** son las comidas que tu familia acostumbra preparar: de ellos sale el menú que la app te sugiere cada semana. Cada platillo tiene sus **ingredientes**, que se eligen del **catálogo de productos** (el mismo para todos los hogares) y sirven para armar la lista de compras y estimar el costo.
 
@@ -134,6 +134,15 @@ Puedes hacerlo aquí con **Nuevo producto** o, mientras agregas ingredientes, co
 
 El administrador del sistema ve **Inactivar** junto a cada producto. Un producto inactivo deja de aparecer en el buscador de ingredientes; los platillos que lo usan lo conservan y muestran **Ingrediente inactivo: …** para que los revises. Con **Ver inactivos** se puede **Reactivar**.
 
-## 4.7 Calificar platillos (próximamente)
+## 4.7 Calificar platillos
 
-La calificación de 1 a 5 estrellas de un platillo después de comerlo llega en el **Sprint 3 (HU-14)**. Se hará desde el plan semanal y el promedio aparecerá en esta pestaña.
+Después de comer un platillo puedes calificarlo de 1 a 5 estrellas. Con esas calificaciones el motor sugiere más seguido lo que le gusta a tu familia. Por ahora se califica desde **Historial**; cuando exista el plan semanal también se hará desde allí.
+
+1. Abre **Historial** y toca **Ver platillos de la semana** en la semana que quieras.
+2. Junto a cada comida con platillo verás cinco estrellas. Toca la estrella que corresponda (por ejemplo, 4 estrellas).
+3. La app muestra "Calificación guardada: 4 de 5 para Pollo en crema. Promedio: 4.00."
+4. Para cambiarla, toca otra estrella: la nueva calificación reemplaza a la anterior y el promedio se recalcula.
+
+El **promedio** de cada platillo aparece como "★ 4.50" en la pestaña **Platillos** y en el detalle del platillo; si todavía no tiene calificaciones no se muestra.
+
+No se pueden calificar comidas futuras: las estrellas solo aparecen para comidas de hoy o anteriores. Cualquier miembro del hogar puede calificar y la última calificación registrada de esa comida es la que cuenta.
