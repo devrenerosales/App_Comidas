@@ -6,6 +6,7 @@ import { HogarModule } from '../hogar/hogar.module';
 import { PreferenciasModule } from '../preferencias/preferencias.module';
 import { RELOJ_MENUS } from './menus.constants';
 import { MenusController } from './menus.controller';
+import { MenusAlternativaService } from './menus-alternativa.service';
 import { MenusAprobacionService } from './menus-aprobacion.service';
 import { MenusEdicionService } from './menus-edicion.service';
 import { MenusRepositorio } from './menus.repositorio';
@@ -20,6 +21,7 @@ import { MenusService } from './menus.service';
     MenusService,
     MenusEdicionService,
     MenusAprobacionService,
+    MenusAlternativaService,
     { provide: RELOJ_MENUS, useValue: () => new Date() },
   ],
 })

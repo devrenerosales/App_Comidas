@@ -117,6 +117,11 @@ export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
         metodo: 'PUT',
         cuerpo: { fijado },
       }),
+    /** Cambia solo ese espacio por el mejor candidato que no se haya ofrecido (HU-23). */
+    alternativa: (menuId: string, detalleId: string) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/alternativa`, {
+        metodo: 'POST',
+      }),
     /** Por qué se sugirió el platillo de un espacio: factores, pesos usados, costo y reglas. */
     motivo: (menuId: string, detalleId: string) =>
       cliente.peticion<MotivoSugerencia>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/motivo`),
