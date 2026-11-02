@@ -52,7 +52,7 @@ La app aún no conoce los precios de los ingredientes (llegan en una versión po
 
 ## 6.2 Cambiar, mover y fijar platillos
 
-Mientras el menú es un **borrador** puedes adaptarlo a los planes reales de la semana. Cada espacio de la tabla tiene sus botones. Cualquier miembro del hogar puede hacerlo. Un menú aprobado es de solo lectura (ver 6.3).
+Mientras el menú es un **borrador** puedes adaptarlo a los planes reales de la semana. Cada espacio de la tabla tiene sus botones. Cualquier miembro del hogar puede hacerlo. Un menú aprobado es de solo lectura (ver 6.4).
 
 ### Cambiar un platillo
 
@@ -88,7 +88,21 @@ Si el cambio incumple alguna, la app lo muestra y te pregunta si quieres guardar
 
 Si el platillo no se puede servir en ese tiempo de comida, el cambio se rechaza y el menú no cambia. Ejemplo: "Caldo de res no aplica a Desayuno".
 
-## 6.3 Menús aprobados y del historial
+## 6.3 Aprobar el menú
+
+Cuando el borrador te convence, toca **Aprobar menú** (abajo de la tabla). Cualquier miembro del hogar puede hacerlo y no hay una segunda pregunta de confirmación.
+
+1. Revisa que no queden espacios con "Sin sugerencia". Si falta alguno, la app no aprueba y te dice cuáles: por ejemplo "Asigna un platillo a: viernes cena". Elige un platillo con **Cambiar** y vuelve a intentarlo.
+2. Toca **Aprobar menú**. La app guarda quién lo aprobó y cuándo, congela el presupuesto y los tiempos con que se aprobó, y crea la lista de compras de esa semana.
+3. El menú queda en solo lectura. Verás "Menú aprobado. La lista de compras de la semana quedó creada." y "Aprobado por <nombre> el <día/mes hora>".
+
+**Si el costo pasa del presupuesto** de algún tiempo de comida, lo ves en rojo ("Excede por Q17.00") antes de aprobar. Puedes aprobar igual; el exceso queda registrado y se sigue mostrando en rojo en el menú aprobado.
+
+**Si otra persona ya lo aprobó** o el menú cambió mientras lo mirabas, la app te avisa ("Ana aprobó este menú a las 09:10") y muestra la versión más reciente. Un menú aprobado no se puede volver a abrir.
+
+Por ahora la lista de compras se crea vacía: sus ingredientes se consolidan en una etapa posterior. Mientras no haya precios, el costo aparece como incompleto y no se puede comprobar el exceso.
+
+## 6.4 Menús aprobados y del historial
 
 Un menú **aprobado** o una semana del **historial** se muestran en solo lectura: la tabla no tiene botones de cambiar, fijar ni mover, y la app avisa "Este menú está aprobado: solo se puede consultar."
 

@@ -4,12 +4,14 @@ import {
   asc,
   eq,
   inArray,
+  listaCompras,
   menuDetalle,
   menuSemanal,
   menuTiempo,
   platillo,
   platilloTiempo,
   sql,
+  usuario,
   type Db,
   type MenuDetalle,
   type MenuSemanal,
@@ -52,6 +54,23 @@ export interface MenuCompleto {
   menu: MenuSemanal;
   tiempos: MenuTiempo[];
   detalles: DetalleConPlatillo[];
+  /** Quién aprobó el menú (null mientras es Borrador). */
+  aprobadoPor?: { id: string; nombre: string } | null;
+  /** Lista de compras creada al aprobar (null mientras es Borrador). */
+  listaId?: string | null;
+}
+
+/** Lo que fija la aprobación del menú (CU-06.2 paso 4, D-03, D-04). */
+export interface DatosAprobacion {
+  usuarioId: string;
+  aprobadoEn: Date;
+  /** Suma de los excesos por tiempo, en texto con 2 decimales ("0.00" si está dentro). */
+  excesoAlAprobar: string;
+}
+
+export interface ListaCreada {
+  id: string;
+  version: number;
 }
 
 export interface FilaDetalleNueva {
@@ -151,9 +170,23 @@ export class MenusRepositorio {
       .leftJoin(platillo, eq(platillo.id, menuDetalle.platilloId))
       .where(eq(menuDetalle.menuId, menuId))
       .orderBy(asc(menuDetalle.fecha));
+    const [aprobador] = menu.aprobadoPorId
+      ? await this.db
+          .select({ id: usuario.id, nombre: usuario.nombre })
+          .from(usuario)
+          .where(eq(usuario.id, menu.aprobadoPorId))
+          .limit(1)
+      : [];
+    const [lista] = await this.db
+      .select({ id: listaCompras.id })
+      .from(listaCompras)
+      .where(eq(listaCompras.menuId, menuId))
+      .limit(1);
     return {
       menu,
       tiempos,
+      aprobadoPor: aprobador ?? null,
+      listaId: lista?.id ?? null,
       detalles: detalles.map((d) => ({
         ...d.detalle,
         platilloNombre: d.platilloNombre,
@@ -349,6 +382,45 @@ export class MenusRepositorio {
         .update(menuSemanal)
         .set({ costoIncompleto: (pendientes?.n ?? 0) > 0 })
         .where(eq(menuSemanal.id, menuId));
+    });
+  }
+
+  /**
+   * Aprueba el Borrador y crea la lista de compras de la semana en una sola transacción
+   * (CU-06.2 paso 4; E2: si algo falla, el menú sigue en Borrador). Devuelve `undefined` si el
+   * menú ya no es un Borrador de esa versión (otro miembro lo cambió antes).
+   */
+  async aprobar(
+    hogarId: string,
+    menuId: string,
+    version: number,
+    datos: DatosAprobacion,
+  ): Promise<ListaCreada | undefined> {
+    return this.db.transaction(async (tx) => {
+      const [aprobado] = await tx
+        .update(menuSemanal)
+        .set({
+          estado: 'APROBADO',
+          aprobadoPorId: datos.usuarioId,
+          aprobadoEn: datos.aprobadoEn,
+          excesoAlAprobar: datos.excesoAlAprobar,
+          version: version + 1,
+        })
+        .where(
+          and(
+            eq(menuSemanal.id, menuId),
+            eq(menuSemanal.hogarId, hogarId),
+            eq(menuSemanal.estado, 'BORRADOR'),
+            eq(menuSemanal.version, version),
+          ),
+        )
+        .returning({ id: menuSemanal.id });
+      if (!aprobado) return undefined;
+      const [lista] = await tx
+        .insert(listaCompras)
+        .values({ hogarId, menuId, generadaEn: datos.aprobadoEn })
+        .returning({ id: listaCompras.id, version: listaCompras.version });
+      return lista as ListaCreada;
     });
   }
 }

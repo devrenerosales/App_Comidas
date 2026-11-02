@@ -35,3 +35,20 @@ export const etiquetaSemana = (desde: string): string =>
 /** "Domingo 01/11 almuerzo": nombre accesible de un espacio día × tiempo. */
 export const etiquetaEspacio = (d: { fecha: string; tiempo: TiempoComida }): string =>
   `${etiquetaDia(d.fecha)} ${NOMBRES_TIEMPO[d.tiempo].toLowerCase()}`;
+
+const FECHA_HORA_GUATEMALA = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Guatemala',
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** "02/11 09:10": instante ISO en hora de Guatemala (día/mes y 24 horas, sin depender del idioma). */
+export function fechaHoraGuatemala(iso: string): string {
+  const p = Object.fromEntries(
+    FECHA_HORA_GUATEMALA.formatToParts(new Date(iso)).map((x) => [x.type, x.value]),
+  );
+  return `${p.day}/${p.month} ${p.hour}:${p.minute}`;
+}

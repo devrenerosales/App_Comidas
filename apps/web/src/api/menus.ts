@@ -1,4 +1,4 @@
-/** Endpoints del menú semanal (M05 · HU-19, api-contrato §2.5 y §3.1). */
+/** Endpoints del menú semanal (M05 · HU-19, M06 · HU-24 y HU-25, api-contrato §2.5, §3.1 y §3.2). */
 import type { ProteinaPrincipal, TiempoComida } from '@menu/shared';
 import type { ClienteHttp } from './cliente';
 
@@ -50,6 +50,10 @@ export interface MenuGenerado {
   costoEstimado: string | null;
   costoIncompleto: boolean;
   excede: { monto: string; texto: string } | null;
+  aprobadoPor: { id: string; nombre: string } | null;
+  aprobadoEn: string | null;
+  /** Lista de compras de la semana; solo existe cuando el menú está aprobado. */
+  listaId: string | null;
   tiempos: TiempoMenu[];
   detalles: DetalleMenu[];
   avisos: AvisoMenu[];
@@ -69,6 +73,13 @@ export interface DatosMoverEspacio {
   origenDetalleId: string;
   destinoDetalleId: string;
   confirmar?: boolean;
+}
+
+/** Respuesta de `POST /menus/{id}/aprobar` (api-contrato §3.2). */
+export interface RespuestaAprobacion {
+  menu: MenuGenerado;
+  excede: { monto: string; texto: string } | null;
+  lista: { id: string; version: number; totalItems: number; url: string };
 }
 
 const id = (valor: string) => encodeURIComponent(valor);
@@ -92,6 +103,12 @@ export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
       cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/fijado`, {
         metodo: 'PUT',
         cuerpo: { fijado },
+      }),
+    /** Aprueba el Borrador (también con exceso, D-03) y crea la lista de compras de la semana. */
+    aprobar: (menuId: string, version: number) =>
+      cliente.peticion<RespuestaAprobacion>(`/menus/${id(menuId)}/aprobar`, {
+        metodo: 'POST',
+        cuerpo: { version },
       }),
     generar: (datos: DatosGenerarMenu) =>
       cliente.peticion<MenuGenerado>('/menus/generar', { metodo: 'POST', cuerpo: datos }),

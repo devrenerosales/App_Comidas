@@ -8,7 +8,13 @@ import { Cargando } from '../auth/Cargando';
 import { GrillaMenu } from './GrillaMenu';
 import { PaginaBase } from './PaginaBase';
 import { SelectorPlatillo } from './SelectorPlatillo';
-import { etiquetaDia, etiquetaEspacio, etiquetaSemana, sumarDiasFecha } from './fechas';
+import {
+  etiquetaDia,
+  etiquetaEspacio,
+  etiquetaSemana,
+  fechaHoraGuatemala,
+  sumarDiasFecha,
+} from './fechas';
 import { NOMBRES_TIEMPO } from './nombres-catalogo';
 import './acceso.css';
 import './hogar.css';
@@ -29,7 +35,10 @@ interface Pendiente {
   accion: (confirmar: boolean) => Promise<MenuGenerado>;
 }
 
-/** Plan de la semana: sugiere el menú y permite cambiar, mover y fijar platillos (HU-19, HU-24). */
+/**
+ * Plan de la semana: sugiere el menú, permite cambiar, mover y fijar platillos y aprobarlo
+ * (HU-19, HU-24, HU-25).
+ */
 export default function Semana() {
   const configuracion = useApiConfiguracion();
   const menus = useApiMenus();
@@ -44,6 +53,7 @@ export default function Semana() {
   const [editando, setEditando] = useState<DetalleMenu | null>(null);
   const [moviendo, setMoviendo] = useState<string | null>(null);
   const [pendiente, setPendiente] = useState<Pendiente | null>(null);
+  const [aprobada, setAprobada] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -74,6 +84,7 @@ export default function Semana() {
     setEditando(null);
     setMoviendo(null);
     setPendiente(null);
+    setAprobada(false);
     menus
       .obtenerPorSemana(semana)
       .then((m) => {
@@ -128,6 +139,32 @@ export default function Semana() {
       } else {
         setPendiente(null);
         setError(mensajeDeError(e));
+      }
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  /** CU-06.2: aprobar no pide confirmación aunque haya exceso (D-03). */
+  async function aprobar() {
+    if (!menu) return;
+    setOcupado(true);
+    setError(null);
+    try {
+      const respuesta = await menus.aprobar(menu.id, menu.version);
+      setMenu(respuesta.menu);
+      setAprobada(true);
+      setEditando(null);
+      setMoviendo(null);
+      setPendiente(null);
+    } catch (e) {
+      setError(mensajeDeError(e));
+      // E3: si otro miembro ya lo aprobó o cambió, se muestra lo más reciente.
+      if (
+        e instanceof ProblemaApi &&
+        (e.codigo === 'MENU_YA_APROBADO' || e.codigo === 'VERSION_DESACTUALIZADA')
+      ) {
+        setMenu(await menus.obtenerPorSemana(semana).catch(() => menu));
       }
     } finally {
       setOcupado(false);
@@ -230,7 +267,17 @@ export default function Semana() {
               {TITULO_ESTADO[menu.estado]} del {etiquetaSemana(menu.fechaInicio)}
             </h2>
             {menu.estado === 'APROBADO' && (
-              <p role="status">Este menú está aprobado: solo se puede consultar.</p>
+              <p role="status">
+                {aprobada
+                  ? 'Menú aprobado. La lista de compras de la semana quedó creada.'
+                  : 'Este menú está aprobado: solo se puede consultar.'}
+                {menu.aprobadoPor && menu.aprobadoEn && (
+                  <>
+                    {' '}
+                    Aprobado por {menu.aprobadoPor.nombre} el {fechaHoraGuatemala(menu.aprobadoEn)}.
+                  </>
+                )}
+              </p>
             )}
             {menu.estado === 'HISTORICO' && (
               <p role="status">Esta semana está en el historial: solo se puede consultar.</p>
@@ -316,6 +363,12 @@ export default function Semana() {
               {menu.tiempos.map((t) => (
                 <li key={t.tiempo}>
                   {NOMBRES_TIEMPO[t.tiempo]}: presupuesto Q{t.presupuesto}
+                  {t.estado === 'EXCEDE' && (
+                    <>
+                      {' · '}
+                      <span className="mf-exceso">Excede por Q{t.exceso}</span>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
@@ -323,6 +376,17 @@ export default function Semana() {
               <p className="mf-texto-suave">
                 Costo estimado incompleto: todavía no hay precios para los ingredientes.
               </p>
+            )}
+            {menu.excede && <p className="mf-exceso">{menu.excede.texto}</p>}
+            {editable && (
+              <button
+                type="button"
+                className="mf-boton mf-boton--primario"
+                disabled={ocupado}
+                onClick={() => void aprobar()}
+              >
+                {ocupado ? 'Trabajando…' : 'Aprobar menú'}
+              </button>
             )}
           </section>
         )}

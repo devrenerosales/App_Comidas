@@ -41,6 +41,9 @@ const menu = (estado: MenuGenerado['estado'] = 'BORRADOR'): MenuGenerado => ({
   costoEstimado: null,
   costoIncompleto: true,
   excede: null,
+  aprobadoPor: null,
+  aprobadoEn: null,
+  listaId: null,
   tiempos: [
     {
       tiempo: 'ALMUERZO',
