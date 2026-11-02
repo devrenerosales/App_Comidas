@@ -18,11 +18,13 @@ import { HogarActual } from '../hogar/decoradores/hogar-actual.decorator';
 import { HogarGuard } from '../hogar/hogar.guard';
 import { RolesGuard } from '../hogar/roles.guard';
 import {
+  AprobarMenuDto,
   EditarDetalleDto,
   FijarDetalleDto,
   GenerarMenuDto,
   MoverDetalleDto,
 } from './dto/menus.dto';
+import { MenusAprobacionService, type RespuestaAprobacion } from './menus-aprobacion.service';
 import { MenusEdicionService } from './menus-edicion.service';
 import { MenusService } from './menus.service';
 import type { VistaMenu } from './menus.vista';
@@ -39,7 +41,7 @@ const idComida = new ParseUUIDPipe({
 
 /**
  * /menus — menú semanal del hogar. Cualquier miembro genera y ajusta el Borrador
- * (CU-05.1 y CU-06.1, HU-19 y HU-24).
+ * (CU-05.1 y CU-06.1, HU-19 y HU-24); aprobarlo es CU-06.2 (HU-25).
  */
 @Controller('menus')
 @UseGuards(HogarGuard, RolesGuard)
@@ -47,6 +49,7 @@ export class MenusController {
   constructor(
     private readonly menus: MenusService,
     private readonly edicion: MenusEdicionService,
+    private readonly aprobacion: MenusAprobacionService,
   ) {}
 
   /** 201 con el menú nuevo; 200 si se regeneró un Borrador conservando los fijados. */
@@ -113,5 +116,17 @@ export class MenusController {
     @Body() dto: FijarDetalleDto,
   ): Promise<VistaMenu> {
     return this.edicion.fijar(hogarId, usuarioId, id, detalleId, dto);
+  }
+
+  /** CU-06.2: aprueba el Borrador (con exceso también, D-03) y crea la lista de compras. */
+  @Post(':id/aprobar')
+  @HttpCode(200)
+  aprobar(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Body() dto: AprobarMenuDto,
+  ): Promise<RespuestaAprobacion> {
+    return this.aprobacion.aprobar(hogarId, usuarioId, id, dto);
   }
 }

@@ -129,4 +129,22 @@ describe('vistaMenu (api-contrato §3.1)', () => {
     expect(v.excede).toEqual({ monto: '12.40', texto: 'Excede por Q12.40' });
     expect(v.tiempos.map((t) => t.estado)).toEqual(['DENTRO_DEL_PRESUPUESTO', 'EXCEDE']);
   });
+
+  it('un menú aprobado trae quién y cuándo lo aprobó y su lista de compras (HU-25)', () => {
+    const v = vistaMenu({
+      menu: menu({ estado: 'APROBADO', aprobadoEn: new Date('2026-11-02T15:10:00.000Z') }),
+      tiempos: [],
+      detalles: [],
+      aprobadoPor: { id: 'u1', nombre: 'Ana' },
+      listaId: 'l1',
+    });
+    expect(v.aprobadoPor).toEqual({ id: 'u1', nombre: 'Ana' });
+    expect(v.aprobadoEn).toBe('2026-11-02T15:10:00.000Z');
+    expect(v.listaId).toBe('l1');
+  });
+
+  it('un Borrador no trae aprobador, fecha de aprobación ni lista', () => {
+    const v = vistaMenu({ menu: menu({ aprobadoEn: null }), tiempos: [], detalles: [] });
+    expect(v).toMatchObject({ aprobadoPor: null, aprobadoEn: null, listaId: null });
+  });
 });

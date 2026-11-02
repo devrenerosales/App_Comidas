@@ -1,9 +1,10 @@
 import type { Problema } from '../comun/problema';
 import { MenusController } from './menus.controller';
+import type { MenusAprobacionService } from './menus-aprobacion.service';
 import type { MenusEdicionService } from './menus-edicion.service';
 import type { MenusService } from './menus.service';
 
-describe('MenusController (HU-19, HU-24)', () => {
+describe('MenusController (HU-19, HU-24, HU-25)', () => {
   const generar = jest.fn();
   const edicion = {
     obtenerPorSemana: jest.fn().mockResolvedValue('semana'),
@@ -12,9 +13,11 @@ describe('MenusController (HU-19, HU-24)', () => {
     mover: jest.fn().mockResolvedValue('movido'),
     fijar: jest.fn().mockResolvedValue('fijado'),
   };
+  const aprobar = jest.fn().mockResolvedValue('aprobado');
   const controlador = new MenusController(
     { generar } as unknown as MenusService,
     edicion as unknown as MenusEdicionService,
+    { aprobar } as unknown as MenusAprobacionService,
   );
   const dto = { semana: '2026-11-01' };
   const respuesta = () => ({ status: jest.fn() });
@@ -63,5 +66,10 @@ describe('MenusController (HU-19, HU-24)', () => {
     expect(edicion.editar).toHaveBeenCalledWith('h1', 'u1', 'm1', 'd1', { platilloId: 'p1' });
     expect(edicion.mover).toHaveBeenCalledWith('h1', 'u1', 'm1', mover);
     expect(edicion.fijar).toHaveBeenCalledWith('h1', 'u1', 'm1', 'd1', { fijado: true });
+  });
+
+  it('delega aprobar con hogar, usuario, menú y versión', async () => {
+    await expect(controlador.aprobar('h1', 'u1', 'm1', { version: 4 })).resolves.toBe('aprobado');
+    expect(aprobar).toHaveBeenCalledWith('h1', 'u1', 'm1', { version: 4 });
   });
 });

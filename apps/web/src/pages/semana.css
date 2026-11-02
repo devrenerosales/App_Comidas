@@ -39,3 +39,9 @@
 .mf-menu-tabla td[draggable='true'] {
   cursor: grab;
 }
+
+/* RN-11 / D-03: el exceso de presupuesto se indica en rojo y no bloquea la aprobación. */
+.mf-exceso {
+  color: var(--mf-error, #b3261e);
+  font-weight: 600;
+}

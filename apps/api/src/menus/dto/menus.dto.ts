@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsUUID, Matches } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsUUID, Matches, Min } from 'class-validator';
 
 /** POST /menus/generar. El calendario real de la semana lo valida el servicio (422). */
 export class GenerarMenuDto {
@@ -37,4 +37,11 @@ export class MoverDetalleDto {
 export class FijarDetalleDto {
   @IsBoolean({ message: 'fijado debe ser verdadero o falso' })
   fijado!: boolean;
+}
+
+/** POST /menus/{id}/aprobar: la versión del menú que el usuario vio (CU-06.2, api-contrato §3.2). */
+export class AprobarMenuDto {
+  @IsInt({ message: 'La versión del menú no es válida' })
+  @Min(1, { message: 'La versión del menú no es válida' })
+  version!: number;
 }

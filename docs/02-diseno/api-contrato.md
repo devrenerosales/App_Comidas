@@ -204,13 +204,13 @@ La implementación local de HU-16 y su contrato completo se detallan en
 | Método | Ruta | Rol | RF / HU | Solicitud → Respuesta | Errores |
 |---|---|---|---|---|---|
 | GET | `/menus` | MIEMBRO | RF-24–RF-27 | `?desde&hasta&estado&pagina` → 200 paginado `{id, fechaInicio, fechaFin, estado, desactualizado, costoEstimado, presupuestoSemanal, excede}` | — |
-| GET | `/menus/semana/{fecha}` | MIEMBRO | RF-24, RF-41 | Menú cuya semana contiene `fecha` (cualquier estado) → 200 con la misma forma que §3.1 | 404 `SIN_MENU` |
+| GET | `/menus/semana/{fecha}` | MIEMBRO | RF-24, RF-41 | Menú cuya semana contiene `fecha` (cualquier estado) → 200 con la misma forma que §3.1 (incluye `aprobadoPor`, `aprobadoEn` y `listaId`, nulos mientras es Borrador) | 404 `SIN_MENU` |
 | GET | `/menus/{id}` | MIEMBRO | RF-24, RF-26 | → 200 menú con `tiempos[]`, `detalles[]`, `avisos[]` (forma de §3.1); el `ETag` para uso sin conexión queda pendiente | 404 |
 | PATCH | `/menus/{id}/detalles/{detalleId}` | MIEMBRO | RF-24 · HU-24 | `{platilloId, confirmar?: false}` → 200 menú completo (forma de §3.1); el espacio queda fijado, con `origen: USUARIO` y sin puntaje ni factores; si se confirmó una advertencia registra `RN02_CONFIRMADA` o `RN03_CONFIRMADA` en `reglasAplicadas` | 404 · 409 `MENU_APROBADO`, `SEMANA_HISTORICA`, `CONFIRMACION_REQUERIDA` (`advertencias: [{codigo: RN02_PROTEINA_CONSECUTIVA \| RN03_PLATILLO_REPETIDO, fecha, tiempo, mensaje}]`) · 422 `TIEMPO_NO_APLICABLE` («<platillo> no aplica a <tiempo>»), `INACTIVO` |
 | POST | `/menus/{id}/mover` | MIEMBRO | RF-24 · HU-24 | `{origenDetalleId, destinoDetalleId, confirmar?}` → 200 menú completo; intercambia los dos espacios (también entre tiempos si ambos platillos aplican) y los que reciben platillo quedan fijados; si el destino estaba vacío el origen queda vacío | 404 · 409 `MENU_APROBADO`, `SEMANA_HISTORICA`, `CONFIRMACION_REQUERIDA` · 422 `TIEMPO_NO_APLICABLE`, `SIN_PLATILLO` (el origen no tiene platillo), `MOVIMIENTO_INVALIDO` (mismo espacio) |
 | PUT | `/menus/{id}/detalles/{detalleId}/fijado` | MIEMBRO | RF-24 · HU-24 | `{fijado: true\|false}` → 200 menú completo | 404 · 409 `MENU_APROBADO`, `SEMANA_HISTORICA` · 422 `SIN_PLATILLO` |
 | GET | `/menus/{id}/costos` | MIEMBRO | RF-26 · HU-26 | → 200 `{total, presupuesto, diferencia, excede, costoIncompleto, porTiempo: [{tiempo, costo, presupuesto, exceso}], porDia: [{fecha, tiempos: [{tiempo, costo, incompleto}]}]}` | 404 |
-| POST | `/menus/{id}/aprobar` ⟳ | MIEMBRO | RF-25 · HU-25 · D-03 | `{version}` → 200 menú APROBADO + `lista` + `excede` — ver §3.2 | 404 · 409 `MENU_YA_APROBADO`, `VERSION_DESACTUALIZADA` · 422 `ESPACIOS_VACIOS` (`espacios: [{fecha, tiempo}]`) |
+| POST | `/menus/{id}/aprobar` ⟳ | MIEMBRO | RF-25 · HU-25 · D-03 | `{version}` (obligatoria) → 200 `{menu, excede, lista}`: el menú ya APROBADO con la forma de §3.1 más `aprobadoPor`, `aprobadoEn` y `listaId`, el exceso y la lista de compras creada — ver §3.2. Aprobar con exceso está permitido y no pide confirmación | 400 cuerpo inválido (sin `version`) · 404 · 409 `MENU_YA_APROBADO` (`menuId`), `SEMANA_HISTORICA`, `VERSION_DESACTUALIZADA` · 422 `ESPACIOS_VACIOS` (`espacios: [{fecha, tiempo}]`) |
 | PUT | `/menus/{id}/gasto-real` ⟳ | MIEMBRO | RF-27 · HU-27 | `{monto, nota?}` → 200 `{gastoReal, diferenciaVsEstimado, diferenciaVsPresupuesto, registradoPor, registradoEn}` | 404 · 409 `MENU_NO_APROBADO` · 422 `MONTO_INVALIDO` |
 
 ### 2.7 M07 — Lista de compras y despensa
@@ -428,6 +428,8 @@ En la misma transacción el menú pasa a APROBADO, se congelan presupuesto, tiem
   "menuId": "0b8e6a52-6f0e-4a3f-9d8e-5c1f2a7b9e10"
 }
 ```
+
+**Lo implementado en S3 (HU-25).** `version` es obligatoria: si no coincide con la guardada responde 409 `VERSION_DESACTUALIZADA`; si otro miembro aprobó antes responde 409 `MENU_YA_APROBADO` con quién y a qué hora (hora de Guatemala). La aprobación y la creación de la `lista_compras` ocurren en una sola transacción, de modo que dos aprobaciones simultáneas dejan una sola lista. `menu` usa la forma de §3.1 (con `tiempos[]` y `detalles[]`) y añade `aprobadoPor {id, nombre}`, `aprobadoEn` y `listaId`; `excesoAlAprobar` es la suma de los excesos por tiempo y `excede` solo aparece si es mayor que cero. Sin precios (S5) el costo es incompleto y el exceso queda en 0.00. La lista nace vacía (`totalItems`, `itemsMenu` e `itemsDespensa` en 0): la consolidación de ingredientes y la despensa llegan con CU-07 en S4. Todavía no se publican `menu.aprobado` ni `costo.recalculado`, y `Idempotency-Key` no está implementado; el 409 `MENU_YA_APROBADO` cubre el reintento.
 
 Un reintento con el mismo `Idempotency-Key` (p. ej. tras perder la conexión) devuelve la misma respuesta 200 sin volver a ejecutar la aprobación.
 

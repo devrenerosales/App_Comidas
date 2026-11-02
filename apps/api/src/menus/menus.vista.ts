@@ -50,6 +50,10 @@ export interface VistaMenu {
   costoEstimado: string | null;
   costoIncompleto: boolean;
   excede: { monto: string; texto: string } | null;
+  aprobadoPor: { id: string; nombre: string } | null;
+  aprobadoEn: string | null;
+  /** Lista de compras de la semana; solo existe cuando el menú está aprobado. */
+  listaId: string | null;
   tiempos: TiempoDeMenu[];
   detalles: DetalleDeMenu[];
   avisos: AvisoMenu[];
@@ -63,7 +67,13 @@ function estadoDelTiempo(costo: string | null, exceso: string): EstadoTiempoMenu
 }
 
 /** Convierte lo guardado en la respuesta del contrato; ordena por fecha y tiempo de comida. */
-export function vistaMenu({ menu, tiempos, detalles }: MenuCompleto): VistaMenu {
+export function vistaMenu({
+  menu,
+  tiempos,
+  detalles,
+  aprobadoPor,
+  listaId,
+}: MenuCompleto): VistaMenu {
   const ordenados = [...detalles].sort(
     (a, b) =>
       a.fecha.localeCompare(b.fecha) ||
@@ -92,6 +102,9 @@ export function vistaMenu({ menu, tiempos, detalles }: MenuCompleto): VistaMenu 
     costoEstimado: menu.costoEstimado,
     costoIncompleto: menu.costoIncompleto,
     excede: Number(exceso) > 0 ? { monto: exceso, texto: `Excede por Q${exceso}` } : null,
+    aprobadoPor: aprobadoPor ?? null,
+    aprobadoEn: menu.aprobadoEn ? menu.aprobadoEn.toISOString() : null,
+    listaId: listaId ?? null,
     tiempos: [...tiempos]
       .sort((a, b) => ORDEN_TIEMPOS.indexOf(a.tiempo) - ORDEN_TIEMPOS.indexOf(b.tiempo))
       .map((t) => ({
