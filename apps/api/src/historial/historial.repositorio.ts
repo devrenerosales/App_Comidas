@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   and,
+  calificacion,
   desc,
   eq,
   hogar,
@@ -14,6 +15,7 @@ import {
 } from '@menu/db';
 import { diasSemanaHistorica } from '@menu/shared';
 import { DB } from '../database/database.constants';
+import { recalcularPromedios } from '../calificaciones/promedios';
 import { Problema } from '../comun/problema';
 import type { CapturarSemanaDto, ConsultaHistorialDto } from './historial.dto';
 import {
@@ -116,7 +118,16 @@ export class HistorialRepositorio {
           .insert(menuSemanal)
           .values({ hogarId, fechaInicio: datos.fechaInicio, ...valores })
           .returning();
+    // Reemplazar borra las comidas y, en cascada, sus calificaciones: los promedios se recalculan.
+    let calificados: string[] = [];
     if (anterior) {
+      calificados = (
+        await tx
+          .selectDistinct({ id: calificacion.platilloId })
+          .from(calificacion)
+          .innerJoin(menuDetalle, eq(menuDetalle.id, calificacion.menuDetalleId))
+          .where(eq(menuDetalle.menuId, anterior.id))
+      ).map((f) => f.id);
       await tx.delete(menuDetalle).where(eq(menuDetalle.menuId, anterior.id));
       await tx.delete(menuTiempo).where(eq(menuTiempo.menuId, anterior.id));
     }
@@ -125,6 +136,7 @@ export class HistorialRepositorio {
     await tx
       .insert(menuDetalle)
       .values(filasComidasHistoricas(semana!.id, usuarioId, ahora, datos.detalles));
+    await recalcularPromedios(tx, calificados);
     return cabeceraHistorica(semana!);
   }
 
@@ -158,15 +170,18 @@ export class HistorialRepositorio {
     const detalles = semanas.length
       ? await this.db
           .select({
+            id: menuDetalle.id,
             menuId: menuDetalle.menuId,
             fecha: menuDetalle.fecha,
             tiempo: menuDetalle.tiempo,
             platilloId: menuDetalle.platilloId,
             nombre: platillo.nombre,
             notas: menuDetalle.notas,
+            calificacion: calificacion.valor,
           })
           .from(menuDetalle)
           .leftJoin(platillo, eq(platillo.id, menuDetalle.platilloId))
+          .leftJoin(calificacion, eq(calificacion.menuDetalleId, menuDetalle.id))
           .where(
             inArray(
               menuDetalle.menuId,

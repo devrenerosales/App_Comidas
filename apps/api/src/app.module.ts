@@ -16,6 +16,7 @@ import { RedisModule } from './redis/redis.module';
 import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
+import { CalificacionesModule } from './calificaciones/calificaciones.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { PreferenciasModule } from './preferencias/preferencias.module';
     HistorialModule,
     ImportacionesModule,
     PreferenciasModule,
+    CalificacionesModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })
