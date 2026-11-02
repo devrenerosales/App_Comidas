@@ -5,6 +5,7 @@ import {
   eq,
   inArray,
   listaCompras,
+  menuAlternativaMostrada,
   menuDetalle,
   menuSemanal,
   menuTiempo,
@@ -324,6 +325,15 @@ export class MenusRepositorio {
     return menu ? this.cargar(hogarId, menu.id) : undefined;
   }
 
+  /** Platillos que ya se ofrecieron como alternativa para el espacio (CU-05.5 paso 3). */
+  async alternativasMostradas(detalleId: string): Promise<string[]> {
+    const filas = await this.db
+      .select({ platilloId: menuAlternativaMostrada.platilloId })
+      .from(menuAlternativaMostrada)
+      .where(eq(menuAlternativaMostrada.menuDetalleId, detalleId));
+    return filas.map((f) => f.platilloId);
+  }
+
   /** Platillo del hogar (otro hogar = no existe, RNF-06) con sus tiempos aplicables. */
   async platillo(hogarId: string, id: string): Promise<PlatilloConTiempos | undefined> {
     const [fila] = await this.db
@@ -366,6 +376,7 @@ export class MenusRepositorio {
   async aplicarCambios(
     menuId: string,
     cambios: { id: string; cambio: CambioDetalle }[],
+    mostradas: { detalleId: string; platilloId: string }[] = [],
   ): Promise<void> {
     await this.db.transaction(async (tx) => {
       for (const { id, cambio } of cambios) {
@@ -373,6 +384,12 @@ export class MenusRepositorio {
           .update(menuDetalle)
           .set(cambio)
           .where(and(eq(menuDetalle.id, id), eq(menuDetalle.menuId, menuId)));
+      }
+      if (mostradas.length > 0) {
+        await tx
+          .insert(menuAlternativaMostrada)
+          .values(mostradas.map((m) => ({ menuDetalleId: m.detalleId, platilloId: m.platilloId })))
+          .onConflictDoNothing();
       }
       const [pendientes] = await tx
         .select({ n: sql<number>`count(*)::int` })

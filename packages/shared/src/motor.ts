@@ -6,6 +6,7 @@
  */
 import type { ProteinaPrincipal } from './catalogo';
 import type { TiempoComida } from './enums';
+import { diaSiguiente } from './plan';
 import { ordenarPorPuntaje, type FactoresPuntaje } from './puntaje';
 
 /** Platillos que se deben reponer para cada tiempo activo (CU-05.1 precondición, CA-19.3). */
@@ -128,4 +129,42 @@ export function asignarMenu(entrada: EntradaMotor): ResultadoMotor {
     });
   }
   return { asignaciones, avisos };
+}
+
+/** Otro espacio del mismo tiempo de comida, para revisar RN-02 y RN-03 de una alternativa. */
+export interface EspacioVecino {
+  fecha: string;
+  platilloId: string | null;
+  proteina: ProteinaPrincipal | null;
+}
+
+export interface EntradaAlternativa {
+  /** Día del espacio para el que se pide otra opción. */
+  fecha: string;
+  /** Candidatos del tiempo de comida del espacio, ya puntuados (CU-05.2). */
+  candidatos: readonly CandidatoMotor[];
+  /** Platillos que no se vuelven a ofrecer: el actual y los ya mostrados para ese espacio. */
+  excluidos: readonly string[];
+  /** Los demás espacios de la semana en ese mismo tiempo de comida. */
+  otros: readonly EspacioVecino[];
+}
+
+/**
+ * CU-05.5 paso 3 y 4: el mejor candidato que no sea el actual ni uno ya mostrado, que no esté ya
+ * en la semana (RN-03) ni repita proteína con el día anterior o el siguiente (RN-02). `null` si
+ * no queda ninguno ("No hay más alternativas para este día").
+ */
+export function siguienteAlternativa(e: EntradaAlternativa): CandidatoMotor | null {
+  const fuera = new Set(e.excluidos);
+  for (const o of e.otros) if (o.platilloId) fuera.add(o.platilloId);
+  const proteinaDe = (fecha: string) => e.otros.find((o) => o.fecha === fecha)?.proteina;
+  const anterior = proteinaDe(diaSiguiente(e.fecha, -1));
+  const siguiente = proteinaDe(diaSiguiente(e.fecha, 1));
+  return (
+    ordenarPorPuntaje(e.candidatos).find(
+      (c) =>
+        !fuera.has(c.id) &&
+        (!comparable(c.proteina) || (c.proteina !== anterior && c.proteina !== siguiente)),
+    ) ?? null
+  );
 }

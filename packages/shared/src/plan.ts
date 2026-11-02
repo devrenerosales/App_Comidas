@@ -35,7 +35,8 @@ const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 export const nombreDiaSemana = (fecha: string): string =>
   DIAS[new Date(`${fecha}T00:00:00.000Z`).getUTCDay()]!;
 
-const diaSiguiente = (fecha: string, dias: number): string => {
+/** La fecha `dias` días después (o antes, si es negativo) en calendario, sin zona horaria. */
+export const diaSiguiente = (fecha: string, dias: number): string => {
   const d = new Date(`${fecha}T00:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + dias);
   return d.toISOString().slice(0, 10);

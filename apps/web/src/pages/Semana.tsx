@@ -331,6 +331,7 @@ export default function Semana() {
               moviendo={moviendo}
               ocupado={ocupado}
               onMotivo={setMotivo}
+              onAlternativa={(d) => void cambiar(() => menus.alternativa(menu.id, d.id))}
               onCambiar={(d) => {
                 setEditando(d);
                 setMoviendo(null);

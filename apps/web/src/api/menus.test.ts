@@ -28,6 +28,11 @@ describe('API de menús (api-contrato §2.5)', () => {
       cuerpo: mover,
     });
 
+    await api.alternativa('m 1', 'd/1');
+    expect(cliente.peticion).toHaveBeenLastCalledWith('/menus/m%201/detalles/d%2F1/alternativa', {
+      metodo: 'POST',
+    });
+
     await api.motivo('m 1', 'd/1');
     expect(cliente.peticion).toHaveBeenLastCalledWith('/menus/m%201/detalles/d%2F1/motivo');
 

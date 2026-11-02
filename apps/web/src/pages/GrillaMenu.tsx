@@ -11,6 +11,7 @@ interface Props {
   moviendo: string | null;
   ocupado: boolean;
   onMotivo: (d: DetalleMenu) => void;
+  onAlternativa: (d: DetalleMenu) => void;
   onCambiar: (d: DetalleMenu) => void;
   onFijar: (d: DetalleMenu) => void;
   onIniciarMover: (d: DetalleMenu) => void;
@@ -18,8 +19,8 @@ interface Props {
 }
 
 /**
- * Tabla día × tiempo con "¿Por qué?" (HU-22) y, en el Borrador, editar, fijar y mover (tocando o
- * arrastrando) por espacio (HU-24).
+ * Tabla día × tiempo con "¿Por qué?" (HU-22) y, en el Borrador, "Otra opción" (HU-23), editar,
+ * fijar y mover (tocando o arrastrando) por espacio (HU-24).
  */
 export function GrillaMenu({
   menu,
@@ -27,6 +28,7 @@ export function GrillaMenu({
   moviendo,
   ocupado,
   onMotivo,
+  onAlternativa,
   onCambiar,
   onFijar,
   onIniciarMover,
@@ -98,6 +100,16 @@ export function GrillaMenu({
                           onClick={() => onCambiar(d)}
                         >
                           Cambiar
+                        </button>
+                        <button
+                          type="button"
+                          className="mf-enlace"
+                          disabled={ocupado || d.fijado}
+                          title={d.fijado ? 'Quita el fijado para pedir otra opción' : undefined}
+                          aria-label={`Otra opción para ${nombre}`}
+                          onClick={() => onAlternativa(d)}
+                        >
+                          Otra opción
                         </button>
                         {d.platillo && (
                           <>

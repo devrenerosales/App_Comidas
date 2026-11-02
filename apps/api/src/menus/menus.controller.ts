@@ -25,6 +25,7 @@ import {
   MoverDetalleDto,
 } from './dto/menus.dto';
 import { MenusAprobacionService, type RespuestaAprobacion } from './menus-aprobacion.service';
+import { MenusAlternativaService } from './menus-alternativa.service';
 import { MenusEdicionService, type MotivoSugerencia } from './menus-edicion.service';
 import { MenusService } from './menus.service';
 import type { VistaMenu } from './menus.vista';
@@ -50,6 +51,7 @@ export class MenusController {
     private readonly menus: MenusService,
     private readonly edicion: MenusEdicionService,
     private readonly aprobacion: MenusAprobacionService,
+    private readonly alternativas: MenusAlternativaService,
   ) {}
 
   /** 201 con el menú nuevo; 200 si se regeneró un Borrador conservando los fijados. */
@@ -93,6 +95,18 @@ export class MenusController {
     @Param('detalleId', idComida) detalleId: string,
   ): Promise<MotivoSugerencia> {
     return this.edicion.motivo(hogarId, id, detalleId);
+  }
+
+  /** CU-05.5: cambia solo ese espacio por el mejor candidato que no se haya ofrecido. */
+  @Post(':id/detalles/:detalleId/alternativa')
+  @HttpCode(200)
+  alternativa(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Param('detalleId', idComida) detalleId: string,
+  ): Promise<VistaMenu> {
+    return this.alternativas.alternativa(hogarId, usuarioId, id, detalleId);
   }
 
   @Patch(':id/detalles/:detalleId')

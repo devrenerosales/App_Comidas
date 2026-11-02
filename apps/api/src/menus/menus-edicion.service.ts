@@ -12,6 +12,7 @@ import {
 import { Problema } from '../comun/problema';
 import type { EditarDetalleDto, FijarDetalleDto, MoverDetalleDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
+import { exigirBorrador } from './menus.guardas';
 import {
   MenusRepositorio,
   type CambioDetalle,
@@ -232,16 +233,7 @@ export class MenusEdicionService {
   private async editable(hogarId: string, menuId: string): Promise<MenuCompleto> {
     const completo = await this.repo.cargar(hogarId, menuId);
     if (!completo) throw noEncontrado();
-    if (completo.menu.estado === 'APROBADO') {
-      throw new Problema(409, 'MENU_APROBADO', 'El menú ya está aprobado y no se puede cambiar.');
-    }
-    if (completo.menu.estado === 'HISTORICO') {
-      throw new Problema(
-        409,
-        'SEMANA_HISTORICA',
-        'Esta semana está en el historial y no se puede cambiar.',
-      );
-    }
+    exigirBorrador(completo.menu);
     return completo;
   }
 

@@ -122,3 +122,16 @@ Si cambiaste el platillo tú, el panel dice **"Elegido por el usuario"** y no mu
 Los pesos que ves son los de cuando se generó el menú: si el administrador cambia los pesos después, la explicación no cambia hasta que regeneres el borrador.
 
 Toca **Cerrar** para ocultar el panel.
+
+## 6.6 Pedir otra opción para un día
+
+Si un platillo no te convence, no hace falta regenerar toda la semana: en el borrador, toca **Otra opción** en ese día y tiempo de comida. Es un solo toque.
+
+- La app cambia **solo ese espacio** por el mejor candidato que no sea el actual, que no se te haya ofrecido ya para ese día, que no esté en otro día de la semana en ese tiempo y que no repita la proteína del día anterior ni del siguiente.
+- El resto de la semana no se mueve. Puedes tocar **Otra opción** varias veces: cada vez verás una opción distinta.
+- También funciona en un espacio que quedó en "Sin sugerencia".
+- Si ya no quedan opciones válidas, la app avisa "No hay más alternativas para este día" y el platillo actual se queda.
+- Si el platillo está **fijado**, el botón aparece deshabilitado: toca **Quitar fijado** primero.
+- En un menú aprobado o del historial no hay botón.
+
+Si regeneras el borrador, las opciones ya ofrecidas para los días que cambian se olvidan y vuelven a estar disponibles. Después de pedir una alternativa puedes tocar **¿Por qué?**: el panel empieza con "Alternativa pedida" y explica por qué la propuso.
