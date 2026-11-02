@@ -2,9 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   NOMBRE_TIEMPO,
   advertenciasDePlan,
+  resumenMotivo,
   type AdvertenciaPlan,
   type EspacioPlan,
   type EspacioRevisado,
+  type OrigenAsignacion,
   type TiempoComida,
 } from '@menu/shared';
 import { Problema } from '../comun/problema';
@@ -25,6 +27,22 @@ const REGLAS_CONFIRMADAS = {
   RN02_PROTEINA_CONSECUTIVA: 'RN02_CONFIRMADA',
   RN03_PLATILLO_REPETIDO: 'RN03_CONFIRMADA',
 } as const;
+
+/** Respuesta de `GET /menus/{menuId}/detalles/{detalleId}/motivo` (api-contrato §2.5, HU-22). */
+export interface MotivoSugerencia {
+  detalleId: string;
+  fecha: string;
+  tiempo: TiempoComida;
+  platillo: { id: string; nombre: string };
+  origen: OrigenAsignacion;
+  puntaje: string | null;
+  factores: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  /** Pesos con que se generó el menú; null si el espacio no tiene factores. */
+  pesos: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  costo: { estimado: string | null; incompleto: boolean };
+  reglasAplicadas: string[];
+  resumen: string;
+}
 
 /** Lo que cada espacio tendrá después del cambio (null = espacio sin platillo). */
 type Contenido = {
@@ -52,6 +70,62 @@ export class MenusEdicionService {
     const completo = await this.repo.cargarPorFecha(hogarId, fecha);
     if (!completo) throw new Problema(404, 'SIN_MENU', 'Esta semana todavía no tiene menú.');
     return vistaMenu(completo);
+  }
+
+  /** CU-05.4: por qué se sugirió el platillo de un espacio (factores, pesos usados, costo y reglas). */
+  async motivo(hogarId: string, menuId: string, detalleId: string): Promise<MotivoSugerencia> {
+    const completo = await this.repo.cargar(hogarId, menuId);
+    if (!completo) throw noEncontrado();
+    const d = this.espacio(completo, detalleId);
+    if (!d.platilloId || !d.platilloNombre) {
+      throw new Problema(422, 'SIN_PLATILLO', 'Este espacio no tiene un platillo sugerido.');
+    }
+    const { menu } = completo;
+    const conFactores =
+      d.factorPreferencia && d.factorNovedad && d.factorAhorro && d.factorAfinidad;
+    const factores = conFactores
+      ? {
+          preferencia: d.factorPreferencia!,
+          novedad: d.factorNovedad!,
+          ahorro: d.factorAhorro!,
+          afinidad: d.factorAfinidad!,
+        }
+      : null;
+    const pesos =
+      factores && menu.pesoPreferencia && menu.pesoNovedad && menu.pesoAhorro && menu.pesoAfinidad
+        ? {
+            preferencia: menu.pesoPreferencia,
+            novedad: menu.pesoNovedad,
+            ahorro: menu.pesoAhorro,
+            afinidad: menu.pesoAfinidad,
+          }
+        : null;
+    const numeros = <T extends Record<string, string>>(o: T | null) =>
+      o && {
+        preferencia: Number(o.preferencia),
+        novedad: Number(o.novedad),
+        ahorro: Number(o.ahorro),
+        afinidad: Number(o.afinidad),
+      };
+    return {
+      detalleId: d.id,
+      fecha: d.fecha,
+      tiempo: d.tiempo,
+      platillo: { id: d.platilloId, nombre: d.platilloNombre },
+      origen: d.origen,
+      puntaje: d.puntaje,
+      factores,
+      pesos,
+      costo: { estimado: d.costoEstimado, incompleto: d.costoIncompleto },
+      reglasAplicadas: d.reglasAplicadas,
+      resumen: resumenMotivo({
+        origen: d.origen,
+        factores: numeros(factores),
+        pesos: numeros(pesos),
+        costoIncompleto: d.costoIncompleto,
+        nota: d.notas,
+      }),
+    };
   }
 
   /** CU-06.1 2a: elige a mano un platillo; queda fijado y con origen del usuario. */

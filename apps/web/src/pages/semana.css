@@ -45,3 +45,21 @@
   color: var(--mf-error, #b3261e);
   font-weight: 600;
 }
+
+/* Motivo de la sugerencia (HU-22): una fila por factor con su barra. */
+.mf-factores {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.mf-factores li {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.mf-factores meter {
+  width: 100%;
+  height: 14px;
+}

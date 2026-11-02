@@ -8,4 +8,5 @@ export * from './catalogo';
 export * from './historial';
 export * from './puntaje';
 export * from './motor';
+export * from './motivo';
 export * from './plan';

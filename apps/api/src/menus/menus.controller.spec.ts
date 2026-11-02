@@ -12,6 +12,7 @@ describe('MenusController (HU-19, HU-24, HU-25)', () => {
     editar: jest.fn().mockResolvedValue('editado'),
     mover: jest.fn().mockResolvedValue('movido'),
     fijar: jest.fn().mockResolvedValue('fijado'),
+    motivo: jest.fn().mockResolvedValue('motivo'),
   };
   const aprobar = jest.fn().mockResolvedValue('aprobado');
   const controlador = new MenusController(
@@ -71,5 +72,10 @@ describe('MenusController (HU-19, HU-24, HU-25)', () => {
   it('delega aprobar con hogar, usuario, menú y versión', async () => {
     await expect(controlador.aprobar('h1', 'u1', 'm1', { version: 4 })).resolves.toBe('aprobado');
     expect(aprobar).toHaveBeenCalledWith('h1', 'u1', 'm1', { version: 4 });
+  });
+
+  it('delega el motivo con hogar, menú y espacio (HU-22)', async () => {
+    await expect(controlador.motivo('h1', 'm1', 'd1')).resolves.toBe('motivo');
+    expect(edicion.motivo).toHaveBeenCalledWith('h1', 'm1', 'd1');
   });
 });

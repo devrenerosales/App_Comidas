@@ -107,3 +107,18 @@ Por ahora la lista de compras se crea vacía: sus ingredientes se consolidan en 
 Un menú **aprobado** o una semana del **historial** se muestran en solo lectura: la tabla no tiene botones de cambiar, fijar ni mover, y la app avisa "Este menú está aprobado: solo se puede consultar."
 
 Cuando eliges una semana, la app abre su menú si ya existe; solo si no hay uno puedes pedir **Sugerir menú**. Si dos personas cambian el mismo espacio, gana el último guardado y la otra persona verá el valor actualizado al recargar.
+
+## 6.5 Entender por qué se sugirió un platillo
+
+En cada espacio con platillo, toca **¿Por qué?** para ver el motivo. Funciona en el borrador y también en un menú aprobado. Se abre un panel debajo de la tabla con:
+
+- **Una frase resumen**, por ejemplo "Sugerido sobre todo porque es de sus favoritos o está muy bien calificado".
+- **Los cuatro factores con una barra** (de 0 a 1): Preferencia (favoritos y calificaciones), Novedad (hace cuánto no se prepara), Ahorro (qué tan económico es) y Afinidad (qué tanto lo preparan en esos días), cada uno con el **peso** que tenía al generar el menú.
+- **El puntaje** final y el **costo estimado**. Mientras no haya precios verás "Costo incompleto" y el Ahorro aparece neutro (0.50).
+- **Las reglas aplicadas**, si hay alguna (por ejemplo un reemplazo por presupuesto).
+
+Si cambiaste el platillo tú, el panel dice **"Elegido por el usuario"** y no muestra factores.
+
+Los pesos que ves son los de cuando se generó el menú: si el administrador cambia los pesos después, la explicación no cambia hasta que regeneres el borrador.
+
+Toca **Cerrar** para ocultar el panel.

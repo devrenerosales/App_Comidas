@@ -75,6 +75,19 @@ export interface DatosMoverEspacio {
   confirmar?: boolean;
 }
 
+/** Respuesta de `GET /menus/{menuId}/detalles/{detalleId}/motivo` (HU-22). */
+export interface MotivoSugerencia {
+  detalleId: string;
+  platillo: { id: string; nombre: string };
+  origen: 'MOTOR' | 'REEMPLAZO_PRESUPUESTO' | 'ALTERNATIVA' | 'USUARIO' | 'HISTORICO';
+  puntaje: string | null;
+  factores: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  pesos: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  costo: { estimado: string | null; incompleto: boolean };
+  reglasAplicadas: string[];
+  resumen: string;
+}
+
 /** Respuesta de `POST /menus/{id}/aprobar` (api-contrato §3.2). */
 export interface RespuestaAprobacion {
   menu: MenuGenerado;
@@ -104,6 +117,9 @@ export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
         metodo: 'PUT',
         cuerpo: { fijado },
       }),
+    /** Por qué se sugirió el platillo de un espacio: factores, pesos usados, costo y reglas. */
+    motivo: (menuId: string, detalleId: string) =>
+      cliente.peticion<MotivoSugerencia>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/motivo`),
     /** Aprueba el Borrador (también con exceso, D-03) y crea la lista de compras de la semana. */
     aprobar: (menuId: string, version: number) =>
       cliente.peticion<RespuestaAprobacion>(`/menus/${id(menuId)}/aprobar`, {
