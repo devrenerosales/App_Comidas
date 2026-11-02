@@ -1,9 +1,21 @@
+import type { Problema } from '../comun/problema';
 import { MenusController } from './menus.controller';
+import type { MenusEdicionService } from './menus-edicion.service';
 import type { MenusService } from './menus.service';
 
-describe('MenusController (HU-19)', () => {
+describe('MenusController (HU-19, HU-24)', () => {
   const generar = jest.fn();
-  const controlador = new MenusController({ generar } as unknown as MenusService);
+  const edicion = {
+    obtenerPorSemana: jest.fn().mockResolvedValue('semana'),
+    obtener: jest.fn().mockResolvedValue('menu'),
+    editar: jest.fn().mockResolvedValue('editado'),
+    mover: jest.fn().mockResolvedValue('movido'),
+    fijar: jest.fn().mockResolvedValue('fijado'),
+  };
+  const controlador = new MenusController(
+    { generar } as unknown as MenusService,
+    edicion as unknown as MenusEdicionService,
+  );
   const dto = { semana: '2026-11-01' };
   const respuesta = () => ({ status: jest.fn() });
 
@@ -20,5 +32,36 @@ describe('MenusController (HU-19)', () => {
     const res = respuesta();
     await controlador.generar('h1', { ...dto, regenerar: true }, res as never);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('lee el menú por id y por la fecha de su semana', async () => {
+    await expect(controlador.obtener('h1', 'm1')).resolves.toBe('menu');
+    await expect(controlador.porSemana('h1', '2026-11-03')).resolves.toBe('semana');
+    expect(edicion.obtenerPorSemana).toHaveBeenCalledWith('h1', '2026-11-03');
+  });
+
+  it('una fecha mal formada es "sin menú" (404)', () => {
+    let error: unknown;
+    try {
+      controlador.porSemana('h1', 'noviembre');
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toMatchObject({ codigo: 'SIN_MENU' });
+    expect((error as Problema).getStatus()).toBe(404);
+  });
+
+  it('delega editar, mover y fijar con hogar, usuario y menú', async () => {
+    await expect(controlador.editar('h1', 'u1', 'm1', 'd1', { platilloId: 'p1' })).resolves.toBe(
+      'editado',
+    );
+    const mover = { origenDetalleId: 'a', destinoDetalleId: 'b' };
+    await expect(controlador.mover('h1', 'u1', 'm1', mover)).resolves.toBe('movido');
+    await expect(controlador.fijar('h1', 'u1', 'm1', 'd1', { fijado: true })).resolves.toBe(
+      'fijado',
+    );
+    expect(edicion.editar).toHaveBeenCalledWith('h1', 'u1', 'm1', 'd1', { platilloId: 'p1' });
+    expect(edicion.mover).toHaveBeenCalledWith('h1', 'u1', 'm1', mover);
+    expect(edicion.fijar).toHaveBeenCalledWith('h1', 'u1', 'm1', 'd1', { fijado: true });
   });
 });

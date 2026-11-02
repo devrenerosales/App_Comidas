@@ -24,3 +24,18 @@
   color: var(--mf-advertencia);
   font-weight: 600;
 }
+
+.mf-menu-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.mf-menu-acciones .mf-enlace {
+  min-height: 44px;
+}
+
+.mf-menu-tabla td[draggable='true'] {
+  cursor: grab;
+}

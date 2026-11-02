@@ -1,3 +1,6 @@
+import type { TiempoComida } from '@menu/shared';
+import { NOMBRES_TIEMPO } from './nombres-catalogo';
+
 /** Fecha de hoy (AAAA-MM-DD) en la zona de negocio America/Guatemala (R-02). */
 export const hoyGuatemala = (): string =>
   new Intl.DateTimeFormat('en-CA', {
@@ -28,3 +31,7 @@ export function etiquetaDia(fecha: string): string {
 /** "01/11 al 07/11" para la semana que empieza en `desde`. */
 export const etiquetaSemana = (desde: string): string =>
   `${diaMes(desde)} al ${diaMes(sumarDiasFecha(desde, 6))}`;
+
+/** "Domingo 01/11 almuerzo": nombre accesible de un espacio día × tiempo. */
+export const etiquetaEspacio = (d: { fecha: string; tiempo: TiempoComida }): string =>
+  `${etiquetaDia(d.fecha)} ${NOMBRES_TIEMPO[d.tiempo].toLowerCase()}`;

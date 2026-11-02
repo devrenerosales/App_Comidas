@@ -28,6 +28,7 @@ const detalle = (fecha: string, i: number, extra: Partial<DetalleMenu> = {}): De
   puntaje: '0.6000',
   costoEstimado: null,
   costoIncompleto: true,
+  reglasAplicadas: [],
   ...extra,
 });
 const MENU: MenuGenerado = {
@@ -58,7 +59,12 @@ function abrir(
   menusExtra: Partial<Record<keyof ApiMenus, unknown>> = {},
   configExtra: Partial<Record<keyof ApiConfiguracion, unknown>> = {},
 ) {
-  const menus = { generar: vi.fn().mockResolvedValue(MENU), ...menusExtra };
+  const menus = {
+    generar: vi.fn().mockResolvedValue(MENU),
+    // Sin menú todavía para la semana elegida (404 SIN_MENU).
+    obtenerPorSemana: vi.fn().mockRejectedValue(problema(404, 'SIN_MENU', 'Sin menú')),
+    ...menusExtra,
+  };
   const configuracion = {
     obtenerSemana: vi.fn().mockResolvedValue({
       proximaSemana: { desde: '2026-11-01', hasta: '2026-11-07' },
