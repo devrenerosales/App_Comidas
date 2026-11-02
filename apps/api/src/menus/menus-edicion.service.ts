@@ -19,6 +19,7 @@ import {
   type DetalleConPlatillo,
   type MenuCompleto,
 } from './menus.repositorio';
+import { costosPorPlatillo } from './menus.motor';
 import { vistaMenu, type VistaMenu } from './menus.vista';
 
 const noEncontrado = () => new Problema(404, 'NO_ENCONTRADO', 'El menú no existe.');
@@ -149,10 +150,11 @@ export class MenusEdicionService {
       [detalle.id, { platilloId: elegido.id, nombre: elegido.nombre, proteina: elegido.proteina }],
     ]);
     const advertencias = this.advertencias(completo, contenido, [detalle], dto.confirmar);
+    const costos = await this.costos(hogarId, completo, [elegido.id]);
     await this.repo.aplicarCambios(menuId, [
       {
         id: detalle.id,
-        cambio: this.delUsuario(usuarioId, contenido.get(detalle.id)!, advertencias),
+        cambio: this.delUsuario(usuarioId, contenido.get(detalle.id)!, advertencias, costos),
       },
     ]);
     return this.obtener(hogarId, menuId);
@@ -196,11 +198,14 @@ export class MenusEdicionService {
       [origen.id, destino.platilloId ? this.contenidoDe(destino) : null],
     ]);
     const advertencias = this.advertencias(completo, contenido, [origen, destino], dto.confirmar);
+    const costos = await this.costos(hogarId, completo, ids);
     const cambios = [origen, destino].map((d) => {
       const nuevo = contenido.get(d.id)!;
       return {
         id: d.id,
-        cambio: nuevo ? this.delUsuario(usuarioId, nuevo, advertencias) : this.vacio(usuarioId),
+        cambio: nuevo
+          ? this.delUsuario(usuarioId, nuevo, advertencias, costos)
+          : this.vacio(usuarioId),
       };
     });
     await this.repo.aplicarCambios(menuId, cambios);
@@ -292,12 +297,28 @@ export class MenusEdicionService {
     return advertencias;
   }
 
+  /** Costo de los platillos con la Σ de factores guardada en el menú (D-04); sin ella, incompleto. */
+  private async costos(
+    hogarId: string,
+    { menu }: MenuCompleto,
+    ids: string[],
+  ): Promise<Map<string, number | null>> {
+    if (!menu.sumaFactoresPorcion) return new Map(ids.map((id) => [id, null]));
+    return costosPorPlatillo(
+      ids,
+      await this.repo.ingredientesParaCosto(hogarId, ids),
+      Number(menu.sumaFactoresPorcion),
+    );
+  }
+
   /** Espacio elegido por el usuario: fijado, sin puntaje y con las reglas que confirmó. */
   private delUsuario(
     usuarioId: string,
     nuevo: NonNullable<Contenido>,
     advertencias: readonly AdvertenciaPlan[],
+    costos: ReadonlyMap<string, number | null>,
   ): CambioDetalle {
+    const costo = costos.get(nuevo.platilloId) ?? null;
     return {
       platilloId: nuevo.platilloId,
       fijado: true,
@@ -307,9 +328,10 @@ export class MenusEdicionService {
       factorNovedad: null,
       factorAhorro: null,
       factorAfinidad: null,
-      costoEstimado: null,
-      // Sin precios (S5) el costo de un platillo es siempre incompleto (D-18).
-      costoIncompleto: true,
+      costoEstimado: costo === null ? null : costo.toFixed(2),
+      // Sin ingredientes o sin precio el costo es incompleto (D-18).
+      costoIncompleto: costo === null,
+      notas: null,
       reglasAplicadas: [...new Set(advertencias.map((a) => REGLAS_CONFIRMADAS[a.codigo]))],
       modificadoPorId: usuarioId,
       modificadoEn: this.reloj(),
@@ -330,6 +352,7 @@ export class MenusEdicionService {
       costoEstimado: null,
       costoIncompleto: false,
       reglasAplicadas: [],
+      notas: null,
       modificadoPorId: usuarioId,
       modificadoEn: this.reloj(),
     };

@@ -1,12 +1,13 @@
 import {
   SEMANAS_AFINIDAD,
   calcularPuntaje,
+  costoDePlatillo,
   diasEntre,
   type CandidatoMotor,
   type PesosMotor,
   type TiempoComida,
 } from '@menu/shared';
-import type { PlatilloActivo, Preparacion } from './menus.repositorio';
+import type { DatosCostoPlatillo, PlatilloActivo, Preparacion } from './menus.repositorio';
 
 export interface ArgumentosCandidatos {
   tiempo: TiempoComida;
@@ -17,6 +18,28 @@ export interface ArgumentosCandidatos {
   referencia: string;
   presupuestoPorComida: number;
   pesos: PesosMotor;
+  /** Costo por platillo (null = incompleto, D-18); sin dato el costo es incompleto. */
+  costos?: ReadonlyMap<string, number | null>;
+}
+
+/**
+ * CU-05.3 paso 2: costo de cada platillo con la Σ de factores del hogar. Un platillo sin
+ * ingredientes, o con alguno sin precio o sin conversión de unidades, tiene costo incompleto
+ * (null) y recibe Ahorro neutro (D-18).
+ */
+export function costosPorPlatillo(
+  platilloIds: readonly string[],
+  datos: ReadonlyMap<string, DatosCostoPlatillo>,
+  sumaFactores: number,
+): Map<string, number | null> {
+  return new Map(
+    platilloIds.map((id) => {
+      const d = datos.get(id);
+      if (!d) return [id, null];
+      const { costo, incompleto } = costoDePlatillo(d.ingredientes, d.porcionesBase, sumaFactores);
+      return [id, incompleto ? null : costo];
+    }),
+  );
 }
 
 /** Última fecha de historial anterior a la semana, o null (D-19). */
@@ -30,8 +53,8 @@ export function ultimaFechaHistorial(preparaciones: readonly Preparacion[]): str
 /**
  * CU-05.1 paso 4: puntúa cada platillo del tiempo con CU-05.2. Novedad usa la última vez que se
  * preparó en cualquier tiempo; Afinidad cuenta las veces en ese tiempo dentro de las últimas
- * 16 semanas y se normaliza con el máximo entre los candidatos. El costo es siempre incompleto
- * mientras no existan precios (D-18 → Ahorro 0.50).
+ * 16 semanas y se normaliza con el máximo entre los candidatos. Con costo incompleto el Ahorro es
+ * neutro 0.50 (D-18).
  */
 export function construirCandidatos(a: ArgumentosCandidatos): CandidatoMotor[] {
   const ultima = new Map<string, string>();
@@ -50,12 +73,19 @@ export function construirCandidatos(a: ArgumentosCandidatos): CandidatoMotor[] {
         promedioCalificaciones:
           p.calificacionPromedio === null ? null : Number(p.calificacionPromedio),
         ultimaPreparacion: ultima.get(p.id) ?? null,
-        costo: null,
+        costo: a.costos?.get(p.id) ?? null,
         vecesEnVentana: veces.get(p.id) ?? 0,
       },
       { referencia: a.referencia, presupuestoPorComida: a.presupuestoPorComida, maximoVeces },
       a.pesos,
     );
-    return { id: p.id, nombre: p.nombre, proteina: p.proteina, puntaje, factores, costo: null };
+    return {
+      id: p.id,
+      nombre: p.nombre,
+      proteina: p.proteina,
+      puntaje,
+      factores,
+      costo: a.costos?.get(p.id) ?? null,
+    };
   });
 }

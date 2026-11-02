@@ -36,6 +36,20 @@ const activos = (n: number, tiempo: PlatilloActivo['tiempo'] = 'ALMUERZO'): Plat
     calificacionPromedio: null,
     tiempo,
   }));
+const LB = { codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+/** Un ingrediente de 1 lb en una presentación de 1 lb a `precio`: con Σ 4 el platillo cuesta `precio`. */
+const conPrecio = (precio: number) => ({
+  porcionesBase: 4,
+  ingredientes: [
+    {
+      cantidad: 1,
+      unidad: LB,
+      presentacion: { cantidad: 1, unidad: LB },
+      equivalencia: null,
+      precioMediana: precio,
+    },
+  ],
+});
 const menuGuardado = (extra: Partial<MenuSemanal> = {}): MenuSemanal =>
   ({ id: 'm1', estado: 'BORRADOR', version: 4, ...extra }) as MenuSemanal;
 const fijo = (extra: Partial<DetalleConPlatillo> = {}): DetalleConPlatillo =>
@@ -74,6 +88,7 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
     crear: jest.fn(),
     regenerar: jest.fn(),
     cargar: jest.fn(),
+    ingredientesParaCosto: jest.fn(),
   };
   const configuracion = { obtener: jest.fn() };
   const platillos = { sumaFactores: jest.fn() };
@@ -97,6 +112,7 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
     repo.fijados.mockResolvedValue([]);
     repo.crear.mockResolvedValue('m1');
     repo.regenerar.mockResolvedValue(undefined);
+    repo.ingredientesParaCosto.mockResolvedValue(new Map());
     repo.cargar.mockResolvedValue({
       menu: {
         id: 'm1',
@@ -138,6 +154,7 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
         presupuesto: '300.00',
         costoEstimado: null,
         exceso: '0.00',
+        intentosAjuste: 0,
       },
     ]);
     expect(detalles).toHaveLength(7);
@@ -290,5 +307,149 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
     // Medido desde la semana planificada (26 semanas) habría valido 1.
     expect(detalles.find((d) => d.platilloId === 'ALMUERZO-0')!.factorNovedad).toBe('0.0000');
     expect(detalles.some((d) => d.factorNovedad === '1.0000')).toBe(true);
+  });
+
+  describe('ajuste al presupuesto (CU-05.3, HU-21)', () => {
+    /** 7 favoritos de Q50 (los que elige el motor) y 18 platillos de Q10 como reemplazos. */
+    const catalogoConPrecios = () => {
+      const lista = activos(25).map((p, i) => ({ ...p, favorito: i < 7 }));
+      repo.platillosActivos.mockResolvedValue(lista);
+      platillos.sumaFactores.mockResolvedValue(4);
+      repo.ingredientesParaCosto.mockResolvedValue(
+        new Map(lista.map((p, i) => [p.id, conPrecio(i < 7 ? 50 : 10)])),
+      );
+    };
+    /** La respuesta se arma con lo guardado: el menú de la prueba trae el tiempo de almuerzo. */
+    const conTiempoDeAlmuerzo = () =>
+      repo.cargar.mockResolvedValue({
+        menu: {
+          id: 'm1',
+          fechaInicio: SEMANA,
+          fechaFin: '2026-11-07',
+          estado: 'BORRADOR',
+          version: 1,
+          excesoAlAprobar: null,
+        },
+        tiempos: [
+          {
+            tiempo: 'ALMUERZO',
+            porcentaje: '60.00',
+            presupuesto: '300.00',
+            costoEstimado: null,
+            exceso: '0.00',
+            intentosAjuste: 0,
+          },
+        ],
+        detalles: [],
+      });
+    const guardado = () => {
+      const [, , datos, tiempos, detalles] = repo.crear.mock.calls[0]!;
+      return { datos, tiempos, detalles } as {
+        datos: Record<string, unknown>;
+        tiempos: Record<string, unknown>[];
+        detalles: Record<string, unknown>[];
+      };
+    };
+
+    it('CA-21.2 reemplaza los más caros hasta cumplir y guarda costo, intentos y la nota', async () => {
+      catalogoConPrecios();
+      conTiempoDeAlmuerzo();
+      const r = await generar();
+      const { datos, tiempos, detalles } = guardado();
+
+      // 7 × Q50 = Q350 excede Q300: dos reemplazos por platillos de Q10 dejan Q270.
+      expect(tiempos[0]).toMatchObject({
+        costoEstimado: '270.00',
+        exceso: '0.00',
+        intentosAjuste: 2,
+      });
+      expect(datos).toMatchObject({ costoEstimado: '270.00', costoIncompleto: false });
+      const reemplazados = detalles.filter((d) => d.origen === 'REEMPLAZO_PRESUPUESTO');
+      expect(reemplazados).toHaveLength(2);
+      for (const d of reemplazados) {
+        expect(d).toMatchObject({
+          costoEstimado: '10.00',
+          costoIncompleto: false,
+          reglasAplicadas: ['REEMPLAZO_PRESUPUESTO'],
+          notas: 'Q40.00 más barato',
+        });
+      }
+      expect(detalles.filter((d) => d.origen === undefined)).toHaveLength(5);
+      expect(r.menu.tiempos[0]!.alternativas).toBeUndefined();
+    });
+
+    it('CA-21.1 un menú que ya cumple no hace reemplazos', async () => {
+      catalogoConPrecios();
+      configuracion.obtener.mockResolvedValue(
+        config({
+          tiempos: [
+            { tiempo: 'ALMUERZO', activo: true, porcentaje: '100.00', monto: '500.00' },
+            { tiempo: 'CENA', activo: false, porcentaje: '0.00', monto: '0.00' },
+            { tiempo: 'DESAYUNO', activo: false, porcentaje: '0.00', monto: '0.00' },
+          ],
+        }),
+      );
+      await generar();
+      const { tiempos, detalles } = guardado();
+      expect(tiempos[0]).toMatchObject({
+        costoEstimado: '350.00',
+        exceso: '0.00',
+        intentosAjuste: 0,
+      });
+      expect(detalles.some((d) => d.origen === 'REEMPLAZO_PRESUPUESTO')).toBe(false);
+    });
+
+    it('CA-21.3 si no alcanza tras 3 intentos guarda el exceso y ofrece alternativas más baratas', async () => {
+      const lista = activos(25).map((p, i) => ({ ...p, favorito: i < 7 }));
+      repo.platillosActivos.mockResolvedValue(lista);
+      platillos.sumaFactores.mockResolvedValue(4);
+      repo.ingredientesParaCosto.mockResolvedValue(
+        new Map(lista.map((p, i) => [p.id, conPrecio(i < 7 ? 100 : 90)])),
+      );
+      conTiempoDeAlmuerzo();
+      const r = await generar();
+      const { tiempos, datos } = guardado();
+
+      // 4 × Q100 + 3 × Q90 = Q670 contra Q300.
+      expect(tiempos[0]).toMatchObject({
+        costoEstimado: '670.00',
+        exceso: '370.00',
+        intentosAjuste: 3,
+      });
+      expect(datos.costoEstimado).toBe('670.00');
+      const alternativas = r.menu.tiempos[0]!.alternativas!;
+      expect(alternativas.length).toBeGreaterThan(0);
+      for (const a of alternativas) {
+        expect(a.platillos.length).toBeLessThanOrEqual(3);
+        for (const p of a.platillos) expect(p.costo).toMatch(/^\d+\.\d{2}$/);
+      }
+    });
+
+    it('un platillo con ingredientes sin precio queda con costo incompleto y no se reemplaza', async () => {
+      const lista = activos(25).map((p, i) => ({ ...p, favorito: i < 7 }));
+      repo.platillosActivos.mockResolvedValue(lista);
+      platillos.sumaFactores.mockResolvedValue(4);
+      repo.ingredientesParaCosto.mockResolvedValue(
+        new Map(
+          lista.map((p, i) => [
+            p.id,
+            i === 0
+              ? {
+                  porcionesBase: 4,
+                  ingredientes: [{ ...conPrecio(50).ingredientes[0]!, precioMediana: null }],
+                }
+              : conPrecio(i < 7 ? 50 : 10),
+          ]),
+        ),
+      );
+      await generar();
+      const { datos, tiempos, detalles } = guardado();
+      expect(datos.costoIncompleto).toBe(true);
+      const incompleto = detalles.filter((d) => d.costoIncompleto === true);
+      expect(incompleto).toHaveLength(1);
+      expect(incompleto[0]).toMatchObject({ costoEstimado: null, platilloId: 'ALMUERZO-0' });
+      // Los otros seis favoritos cuestan Q300: cumple y el costo conocido excluye el incompleto.
+      expect(tiempos[0]).toMatchObject({ costoEstimado: '300.00', exceso: '0.00' });
+    });
   });
 });

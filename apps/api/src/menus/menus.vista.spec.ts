@@ -147,4 +147,29 @@ describe('vistaMenu (api-contrato §3.1)', () => {
     const v = vistaMenu({ menu: menu({ aprobadoEn: null }), tiempos: [], detalles: [] });
     expect(v).toMatchObject({ aprobadoPor: null, aprobadoEn: null, listaId: null });
   });
+
+  it('el estado del tiempo distingue dentro, excede e incompleto (HU-21, D-18)', () => {
+    const conPlatillo = (id: string, t: DetalleConPlatillo['tiempo'], incompleto: boolean) =>
+      detalle(id, '2026-11-02', t, { costoIncompleto: incompleto });
+    const v = vistaMenu({
+      menu: menu(),
+      tiempos: [
+        tiempo('DESAYUNO', { costoEstimado: '100.00', exceso: '0.00' }),
+        tiempo('ALMUERZO', { costoEstimado: '300.00', exceso: '0.00' }),
+        tiempo('CENA', { costoEstimado: '260.00', exceso: '10.00' }),
+      ],
+      detalles: [
+        conPlatillo('d', 'DESAYUNO', false),
+        conPlatillo('a', 'ALMUERZO', true),
+        conPlatillo('c', 'CENA', true),
+      ],
+    });
+    expect(Object.fromEntries(v.tiempos.map((t) => [t.tiempo, t.estado]))).toEqual({
+      DESAYUNO: 'DENTRO_DEL_PRESUPUESTO',
+      // Con un platillo sin costo no se puede afirmar que está dentro del presupuesto.
+      ALMUERZO: 'COSTO_INCOMPLETO',
+      // Si lo conocido ya pasa del presupuesto, excede aunque falten precios.
+      CENA: 'EXCEDE',
+    });
+  });
 });

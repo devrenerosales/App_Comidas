@@ -22,6 +22,8 @@ export interface TiempoMenu {
   costoEstimado: string | null;
   exceso: string;
   estado: 'DENTRO_DEL_PRESUPUESTO' | 'EXCEDE' | 'COSTO_INCOMPLETO';
+  /** Solo en la respuesta de generar y solo si el tiempo sigue excedido. */
+  alternativas?: AlternativasDelDia[];
 }
 
 export interface AvisoMenu {
@@ -37,6 +39,12 @@ export interface AdvertenciaPlan {
   fecha: string;
   tiempo: TiempoComida;
   mensaje: string;
+}
+
+/** Platillos más baratos para un día cuando el tiempo sigue excedido (CU-05.3 E1). */
+export interface AlternativasDelDia {
+  fecha: string;
+  platillos: { id: string; nombre: string; costo: string }[];
 }
 
 /** Respuesta de `POST /menus/generar` y de las lecturas y cambios del menú. */
