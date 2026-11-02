@@ -10,18 +10,23 @@ interface Props {
   /** Espacio cuyo platillo se está moviendo; el resto ofrece "Mover aquí". */
   moviendo: string | null;
   ocupado: boolean;
+  onMotivo: (d: DetalleMenu) => void;
   onCambiar: (d: DetalleMenu) => void;
   onFijar: (d: DetalleMenu) => void;
   onIniciarMover: (d: DetalleMenu) => void;
   onMover: (origenId: string, destinoId: string) => void;
 }
 
-/** Tabla día × tiempo con editar, fijar y mover (tocando o arrastrando) por espacio (HU-24). */
+/**
+ * Tabla día × tiempo con "¿Por qué?" (HU-22) y, en el Borrador, editar, fijar y mover (tocando o
+ * arrastrando) por espacio (HU-24).
+ */
 export function GrillaMenu({
   menu,
   editable,
   moviendo,
   ocupado,
+  onMotivo,
   onCambiar,
   onFijar,
   onIniciarMover,
@@ -70,6 +75,18 @@ export function GrillaMenu({
                       </>
                     ) : (
                       <span className="mf-menu-vacio">Sin sugerencia</span>
+                    )}
+                    {d.platillo && (
+                      <span className="mf-menu-acciones">
+                        <button
+                          type="button"
+                          className="mf-enlace"
+                          aria-label={`¿Por qué ${nombre}?`}
+                          onClick={() => onMotivo(d)}
+                        >
+                          ¿Por qué?
+                        </button>
+                      </span>
                     )}
                     {editable && (
                       <span className="mf-menu-acciones">

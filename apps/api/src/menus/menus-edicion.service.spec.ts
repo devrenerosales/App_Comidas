@@ -312,4 +312,126 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
       ).toBe('MENU_APROBADO');
     });
   });
+
+  describe('motivo (CU-05.4, HU-22)', () => {
+    const PESOS = {
+      pesoPreferencia: '0.40',
+      pesoNovedad: '0.25',
+      pesoAhorro: '0.20',
+      pesoAfinidad: '0.15',
+    };
+    const FACTORES = {
+      factorPreferencia: '0.9000',
+      factorNovedad: '0.5000',
+      factorAhorro: '0.2000',
+      factorAfinidad: '0.7500',
+    };
+    const conMotivo = (extra: Partial<DetalleConPlatillo> = {}, menu = PESOS): MenuCompleto => ({
+      menu: { id: 'm1', estado: 'BORRADOR', ...menu } as MenuSemanal,
+      tiempos: [],
+      detalles: [
+        detalle('dom', '2026-11-01', ['pollo', 'Pollo en crema', 'POLLO'], {
+          puntaje: '0.6375',
+          costoEstimado: '28.00',
+          costoIncompleto: false,
+          ...FACTORES,
+          ...extra,
+        }),
+        detalle('sab', '2026-11-07', null),
+      ],
+    });
+
+    it('CA-22.1 devuelve factores, pesos usados, puntaje, costo y la razón principal', async () => {
+      repo.cargar.mockResolvedValue(conMotivo());
+      await expect(servicio.motivo('h1', 'm1', 'dom')).resolves.toEqual({
+        detalleId: 'dom',
+        fecha: '2026-11-01',
+        tiempo: 'ALMUERZO',
+        platillo: { id: 'pollo', nombre: 'Pollo en crema' },
+        origen: 'MOTOR',
+        puntaje: '0.6375',
+        factores: {
+          preferencia: '0.9000',
+          novedad: '0.5000',
+          ahorro: '0.2000',
+          afinidad: '0.7500',
+        },
+        pesos: { preferencia: '0.40', novedad: '0.25', ahorro: '0.20', afinidad: '0.15' },
+        costo: { estimado: '28.00', incompleto: false },
+        reglasAplicadas: [],
+        resumen: 'Sugerido sobre todo porque es de sus favoritos o está muy bien calificado',
+      });
+    });
+
+    it('con costo incompleto el Ahorro neutro no se presenta como la razón', async () => {
+      repo.cargar.mockResolvedValue(
+        conMotivo({
+          factorPreferencia: '0.1000',
+          factorNovedad: '0.1000',
+          factorAfinidad: '0.1000',
+          factorAhorro: '0.5000',
+          costoEstimado: null,
+          costoIncompleto: true,
+        }),
+      );
+      const m = await servicio.motivo('h1', 'm1', 'dom');
+      expect(m.costo).toEqual({ estimado: null, incompleto: true });
+      expect(m.resumen).not.toContain('cuesta menos');
+    });
+
+    it('CA-22.2 un platillo elegido por el usuario no trae factores ni pesos', async () => {
+      repo.cargar.mockResolvedValue(
+        conMotivo({
+          origen: 'USUARIO',
+          puntaje: null,
+          factorPreferencia: null,
+          factorNovedad: null,
+          factorAhorro: null,
+          factorAfinidad: null,
+          costoEstimado: null,
+          costoIncompleto: true,
+        }),
+      );
+      await expect(servicio.motivo('h1', 'm1', 'dom')).resolves.toMatchObject({
+        origen: 'USUARIO',
+        puntaje: null,
+        factores: null,
+        pesos: null,
+        resumen: 'Elegido por el usuario',
+      });
+    });
+
+    it('CA-22.4 un reemplazo por presupuesto muestra su nota y las reglas aplicadas', async () => {
+      repo.cargar.mockResolvedValue(
+        conMotivo({
+          origen: 'REEMPLAZO_PRESUPUESTO',
+          notas: 'Q22.00 más barato',
+          reglasAplicadas: ['REEMPLAZO_PRESUPUESTO'],
+        }),
+      );
+      await expect(servicio.motivo('h1', 'm1', 'dom')).resolves.toMatchObject({
+        reglasAplicadas: ['REEMPLAZO_PRESUPUESTO'],
+        resumen: 'Reemplazo por presupuesto: Q22.00 más barato',
+      });
+    });
+
+    it('un menú sin copia de pesos no los inventa', async () => {
+      repo.cargar.mockResolvedValue(
+        conMotivo({}, { pesoPreferencia: null } as unknown as typeof PESOS),
+      );
+      const m = await servicio.motivo('h1', 'm1', 'dom');
+      expect(m.pesos).toBeNull();
+      expect(m.resumen).toBe('Sugerido por el motor');
+    });
+
+    it('un menú ajeno, un espacio ajeno o un espacio vacío no tienen motivo', async () => {
+      repo.cargar.mockResolvedValue(undefined);
+      expect((await problema(servicio.motivo('h1', 'mx', 'dom'))).getStatus()).toBe(404);
+      repo.cargar.mockResolvedValue(conMotivo());
+      expect((await problema(servicio.motivo('h1', 'm1', 'otro'))).getStatus()).toBe(404);
+      const vacio = await problema(servicio.motivo('h1', 'm1', 'sab'));
+      expect(vacio.getStatus()).toBe(422);
+      expect(vacio).toMatchObject({ codigo: 'SIN_PLATILLO' });
+    });
+  });
 });

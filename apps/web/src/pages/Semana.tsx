@@ -6,6 +6,7 @@ import { useApiMenus } from '../api/contexto-menus';
 import type { AdvertenciaPlan, DetalleMenu, MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { GrillaMenu } from './GrillaMenu';
+import { PanelMotivo } from './PanelMotivo';
 import { PaginaBase } from './PaginaBase';
 import { SelectorPlatillo } from './SelectorPlatillo';
 import {
@@ -54,6 +55,7 @@ export default function Semana() {
   const [moviendo, setMoviendo] = useState<string | null>(null);
   const [pendiente, setPendiente] = useState<Pendiente | null>(null);
   const [aprobada, setAprobada] = useState(false);
+  const [motivo, setMotivo] = useState<DetalleMenu | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -85,6 +87,7 @@ export default function Semana() {
     setMoviendo(null);
     setPendiente(null);
     setAprobada(false);
+    setMotivo(null);
     menus
       .obtenerPorSemana(semana)
       .then((m) => {
@@ -327,6 +330,7 @@ export default function Semana() {
               editable={editable}
               moviendo={moviendo}
               ocupado={ocupado}
+              onMotivo={setMotivo}
               onCambiar={(d) => {
                 setEditando(d);
                 setMoviendo(null);
@@ -340,6 +344,14 @@ export default function Semana() {
               }}
               onMover={mover}
             />
+            {motivo && (
+              <PanelMotivo
+                menuId={menu.id}
+                detalleId={motivo.id}
+                espacio={etiquetaEspacio(motivo)}
+                onCerrar={() => setMotivo(null)}
+              />
+            )}
             {editable && editando && (
               <SelectorPlatillo
                 espacio={etiquetaEspacio(editando)}

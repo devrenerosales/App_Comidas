@@ -25,7 +25,7 @@ import {
   MoverDetalleDto,
 } from './dto/menus.dto';
 import { MenusAprobacionService, type RespuestaAprobacion } from './menus-aprobacion.service';
-import { MenusEdicionService } from './menus-edicion.service';
+import { MenusEdicionService, type MotivoSugerencia } from './menus-edicion.service';
 import { MenusService } from './menus.service';
 import type { VistaMenu } from './menus.vista';
 
@@ -83,6 +83,16 @@ export class MenusController {
     @Param('id', idMenu) id: string,
   ): Promise<VistaMenu> {
     return this.edicion.obtener(hogarId, id);
+  }
+
+  /** CU-05.4: por qué se sugirió el platillo de un espacio. */
+  @Get(':id/detalles/:detalleId/motivo')
+  motivo(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', idMenu) id: string,
+    @Param('detalleId', idComida) detalleId: string,
+  ): Promise<MotivoSugerencia> {
+    return this.edicion.motivo(hogarId, id, detalleId);
   }
 
   @Patch(':id/detalles/:detalleId')
