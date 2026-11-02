@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  alias,
   and,
   asc,
   eq,
@@ -10,15 +11,27 @@ import {
   menuSemanal,
   menuTiempo,
   platillo,
+  platilloIngrediente,
   platilloTiempo,
+  precioResumen,
+  productoEquivalencia,
+  producto,
   sql,
+  unidad,
   usuario,
   type Db,
   type MenuDetalle,
   type MenuSemanal,
   type MenuTiempo,
 } from '@menu/db';
-import type { ProteinaPrincipal, TiempoComida } from '@menu/shared';
+import {
+  aCentavos,
+  deCentavos,
+  type IngredienteCosto,
+  type MagnitudUnidad,
+  type ProteinaPrincipal,
+  type TiempoComida,
+} from '@menu/shared';
 import { esViolacionUnicidad } from '../comun/postgres';
 import { DB } from '../database/database.constants';
 
@@ -78,6 +91,11 @@ export interface FilaDetalleNueva {
   fecha: string;
   tiempo: TiempoComida;
   platilloId: string | null;
+  /** MOTOR por defecto; REEMPLAZO_PRESUPUESTO cuando el ajuste cambió el platillo (RN-05). */
+  origen?: MenuDetalle['origen'];
+  reglasAplicadas?: string[];
+  /** Detalle del reemplazo por presupuesto, p. ej. "Q22.00 más barato". */
+  notas?: string | null;
   puntaje: string | null;
   factorPreferencia: string | null;
   factorNovedad: string | null;
@@ -93,6 +111,7 @@ export interface FilaTiempoNueva {
   presupuesto: string;
   costoEstimado: string | null;
   exceso: string;
+  intentosAjuste?: number;
 }
 
 export interface DatosMenu {
@@ -107,6 +126,12 @@ export interface DatosMenu {
   costoEstimado: string | null;
   costoIncompleto: boolean;
   generadoEn: Date;
+}
+
+/** Ingredientes de un platillo con los precios con que se costea (CU-05.3 paso 2). */
+export interface DatosCostoPlatillo {
+  porcionesBase: number;
+  ingredientes: IngredienteCosto[];
 }
 
 /** Platillo del hogar con los tiempos de comida en que aplica (RF-11). */
@@ -133,6 +158,7 @@ export type CambioDetalle = Partial<
     | 'costoEstimado'
     | 'costoIncompleto'
     | 'reglasAplicadas'
+    | 'notas'
     | 'modificadoPorId'
     | 'modificadoEn'
   >
@@ -194,6 +220,75 @@ export class MenusRepositorio {
         platilloProteina: d.platilloProteina as ProteinaPrincipal | null,
       })),
     };
+  }
+
+  /**
+   * Ingredientes de los platillos con su unidad, presentación, equivalencia y el precio mediana
+   * del hogar (null si el producto aún no tiene precio). Un platillo sin ingredientes no aparece.
+   */
+  async ingredientesParaCosto(
+    hogarId: string,
+    platilloIds: string[],
+  ): Promise<Map<string, DatosCostoPlatillo>> {
+    const mapa = new Map<string, DatosCostoPlatillo>();
+    if (platilloIds.length === 0) return mapa;
+    const usada = alias(unidad, 'usada');
+    const presentacion = alias(unidad, 'presentacion');
+    const filas = await this.db
+      .select({
+        platilloId: platilloIngrediente.platilloId,
+        porcionesBase: platillo.porcionesBase,
+        cantidad: platilloIngrediente.cantidad,
+        usadaCodigo: usada.codigo,
+        usadaMagnitud: usada.magnitud,
+        usadaFactor: usada.factorBase,
+        presCantidad: producto.presentacionCantidad,
+        presCodigo: presentacion.codigo,
+        presMagnitud: presentacion.magnitud,
+        presFactor: presentacion.factorBase,
+        equivalencia: productoEquivalencia.factor,
+        precioMediana: precioResumen.precioMediana,
+      })
+      .from(platilloIngrediente)
+      .innerJoin(platillo, eq(platillo.id, platilloIngrediente.platilloId))
+      .innerJoin(producto, eq(producto.id, platilloIngrediente.productoId))
+      .innerJoin(usada, eq(usada.id, platilloIngrediente.unidadId))
+      .innerJoin(presentacion, eq(presentacion.id, producto.presentacionUnidadId))
+      .leftJoin(
+        productoEquivalencia,
+        and(
+          eq(productoEquivalencia.productoId, producto.id),
+          eq(productoEquivalencia.unidadId, platilloIngrediente.unidadId),
+        ),
+      )
+      .leftJoin(
+        precioResumen,
+        and(eq(precioResumen.productoId, producto.id), eq(precioResumen.hogarId, hogarId)),
+      )
+      .where(inArray(platilloIngrediente.platilloId, platilloIds));
+    for (const f of filas) {
+      const datos = mapa.get(f.platilloId) ?? { porcionesBase: f.porcionesBase, ingredientes: [] };
+      datos.ingredientes.push({
+        cantidad: f.cantidad,
+        unidad: {
+          codigo: f.usadaCodigo,
+          magnitud: f.usadaMagnitud as MagnitudUnidad,
+          factorBase: f.usadaFactor,
+        },
+        presentacion: {
+          cantidad: f.presCantidad,
+          unidad: {
+            codigo: f.presCodigo,
+            magnitud: f.presMagnitud as MagnitudUnidad,
+            factorBase: f.presFactor,
+          },
+        },
+        equivalencia: f.equivalencia,
+        precioMediana: f.precioMediana,
+      });
+      mapa.set(f.platilloId, datos);
+    }
+    return mapa;
   }
 
   /** Platillos activos del hogar con cada tiempo en que aplican. */
@@ -325,6 +420,46 @@ export class MenusRepositorio {
     return menu ? this.cargar(hogarId, menu.id) : undefined;
   }
 
+  /**
+   * CU-06.1 paso 4: vuelve a sumar el costo de cada tiempo y del menú con los espacios que quedaron
+   * (los de costo incompleto aportan Q0.00 y marcan el menú, D-18) y recalcula el exceso por tiempo.
+   */
+  private async recalcularCostos(tx: Pick<Db, 'select' | 'update'>, menuId: string): Promise<void> {
+    const detalles = await tx
+      .select({
+        tiempo: menuDetalle.tiempo,
+        platilloId: menuDetalle.platilloId,
+        costoEstimado: menuDetalle.costoEstimado,
+        costoIncompleto: menuDetalle.costoIncompleto,
+      })
+      .from(menuDetalle)
+      .where(eq(menuDetalle.menuId, menuId));
+    const tiempos = await tx.select().from(menuTiempo).where(eq(menuTiempo.menuId, menuId));
+    let totalMenu = 0;
+    let algunoConocido = false;
+    for (const t of tiempos) {
+      const conocidos = detalles.filter((d) => d.tiempo === t.tiempo && d.costoEstimado !== null);
+      const costo = conocidos.reduce((s, d) => s + (aCentavos(d.costoEstimado!) ?? 0), 0);
+      const exceso = Math.max(0, costo - (aCentavos(t.presupuesto) ?? 0));
+      totalMenu += costo;
+      algunoConocido ||= conocidos.length > 0;
+      await tx
+        .update(menuTiempo)
+        .set({
+          costoEstimado: conocidos.length > 0 ? deCentavos(costo) : null,
+          exceso: deCentavos(exceso),
+        })
+        .where(eq(menuTiempo.id, t.id));
+    }
+    await tx
+      .update(menuSemanal)
+      .set({
+        costoEstimado: algunoConocido ? deCentavos(totalMenu) : null,
+        costoIncompleto: detalles.some((d) => d.platilloId !== null && d.costoIncompleto),
+      })
+      .where(eq(menuSemanal.id, menuId));
+  }
+
   /** Platillos que ya se ofrecieron como alternativa para el espacio (CU-05.5 paso 3). */
   async alternativasMostradas(detalleId: string): Promise<string[]> {
     const filas = await this.db
@@ -391,14 +526,7 @@ export class MenusRepositorio {
           .values(mostradas.map((m) => ({ menuDetalleId: m.detalleId, platilloId: m.platilloId })))
           .onConflictDoNothing();
       }
-      const [pendientes] = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(menuDetalle)
-        .where(and(eq(menuDetalle.menuId, menuId), eq(menuDetalle.costoIncompleto, true)));
-      await tx
-        .update(menuSemanal)
-        .set({ costoIncompleto: (pendientes?.n ?? 0) > 0 })
-        .where(eq(menuSemanal.id, menuId));
+      await this.recalcularCostos(tx, menuId);
     });
   }
 

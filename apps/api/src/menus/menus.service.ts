@@ -1,13 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   NOMBRE_TIEMPO,
+  ajustarPresupuesto,
   asignarMenu,
   fechaReferenciaMotor,
   platillosFaltantes,
   textoFaltantes,
+  aCentavos,
+  deCentavos,
   type CandidatoMotor,
   type FijadoMotor,
   type PesosMotor,
+  type ResultadoAjuste,
   type TiempoComida,
 } from '@menu/shared';
 import { Problema } from '../comun/problema';
@@ -17,7 +21,7 @@ import { DIAS_SEMANA, sumarDias } from '../configuracion/semanas';
 import { PreferenciasRepositorio } from '../preferencias/preferencias.repositorio';
 import type { GenerarMenuDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
-import { construirCandidatos, ultimaFechaHistorial } from './menus.motor';
+import { construirCandidatos, costosPorPlatillo, ultimaFechaHistorial } from './menus.motor';
 import {
   MenuDuplicadoError,
   MenusRepositorio,
@@ -59,15 +63,32 @@ function fijadoDeMotor(d: DetalleConPlatillo): FijadoMotor {
   };
 }
 
+/** "Q22.00 más barato": lo que bajó el espacio desde el platillo con que empezó (RN-05). */
+function notaReemplazo(r: ResultadoAjuste, fecha: string): string | null {
+  const cambios = r.reemplazos.filter((x) => x.fecha === fecha);
+  if (cambios.length === 0) return null;
+  const centavos = (costo: number | null) => Math.round((costo ?? 0) * 100);
+  const ahorro = centavos(cambios[0]!.de.costo) - centavos(cambios[cambios.length - 1]!.a.costo);
+  return `Q${deCentavos(ahorro)} más barato`;
+}
+
 function filaDetalle(
   fecha: string,
   tiempo: TiempoComida,
   c: CandidatoMotor | null,
+  nota: string | null = null,
 ): FilaDetalleNueva {
   return {
     fecha,
     tiempo,
     platilloId: c?.id ?? null,
+    ...(nota
+      ? {
+          origen: 'REEMPLAZO_PRESUPUESTO' as const,
+          reglasAplicadas: ['REEMPLAZO_PRESUPUESTO'],
+          notas: nota,
+        }
+      : {}),
     puntaje: c ? dec4(c.puntaje) : null,
     factorPreferencia: c ? dec4(c.factores.preferencia) : null,
     factorNovedad: c ? dec4(c.factores.novedad) : null,
@@ -78,6 +99,8 @@ function filaDetalle(
     costoIncompleto: c !== null && c.costo === null,
   };
 }
+
+const COSTO_CERO = '0.00';
 
 /** M05 · CU-05.1 — generar el Borrador del menú de una semana (HU-19). */
 @Injectable()
@@ -154,6 +177,11 @@ export class MenusService {
       ahorro: Number(config.pesos.ahorro),
       afinidad: Number(config.pesos.afinidad),
     };
+    const costos = costosPorPlatillo(
+      [...new Set(aplicables.map((p) => p.id))],
+      await this.repo.ingredientesParaCosto(hogarId, [...new Set(aplicables.map((p) => p.id))]),
+      sumaFactores,
+    );
     const referencia = fechaReferenciaMotor(dto.semana, ultimaFechaHistorial(preparaciones));
     const fechas = Array.from({ length: COMIDAS_POR_SEMANA }, (_, i) => sumarDias(dto.semana, i));
     const candidatos = Object.fromEntries(
@@ -166,6 +194,7 @@ export class MenusService {
           referencia,
           presupuestoPorComida: Number(t.monto) / COMIDAS_POR_SEMANA,
           pesos,
+          costos,
         }),
       ]),
     );
@@ -180,9 +209,29 @@ export class MenusService {
       candidatos,
       fijados: vigentes.map(fijadoDeMotor),
     });
-    const nuevos = asignaciones
-      .filter((a) => !a.fijado)
-      .map((a) => filaDetalle(a.fecha, a.tiempo, a.candidato));
+    // CU-05.3: por tiempo, reemplaza los más caros no fijados hasta cumplir el presupuesto (RN-05).
+    const ajustes = new Map<TiempoComida, ResultadoAjuste>(
+      activos.map((t) => [
+        t.tiempo,
+        ajustarPresupuesto({
+          presupuesto: Number(t.monto),
+          espacios: asignaciones
+            .filter((a) => a.tiempo === t.tiempo)
+            .map((a) => ({ fecha: a.fecha, candidato: a.candidato, fijado: a.fijado })),
+          candidatos: candidatos[t.tiempo] ?? [],
+        }),
+      ]),
+    );
+    const nuevos = activos.flatMap((t) => {
+      const ajuste = ajustes.get(t.tiempo)!;
+      return ajuste.espacios
+        .filter((e) => !e.fijado)
+        .map((e) => filaDetalle(e.fecha, t.tiempo, e.candidato, notaReemplazo(ajuste, e.fecha)));
+    });
+    const conCosto = [...ajustes.values()].filter((a) =>
+      a.espacios.some((e) => e.candidato?.costo != null),
+    );
+    const costoMenu = conCosto.reduce((s, a) => s + (aCentavos(a.costo.toFixed(2)) ?? 0), 0);
     const datos: DatosMenu = {
       fechaFin: fechas[COMIDAS_POR_SEMANA - 1] as string,
       configuracionVersion: config.version,
@@ -192,17 +241,22 @@ export class MenusService {
       pesoNovedad: config.pesos.novedad,
       pesoAhorro: config.pesos.ahorro,
       pesoAfinidad: config.pesos.afinidad,
-      costoEstimado: null,
-      costoIncompleto: true,
+      costoEstimado: conCosto.length > 0 ? deCentavos(costoMenu) : null,
+      costoIncompleto: [...ajustes.values()].some((a) => a.incompleto),
       generadoEn: this.reloj(),
     };
-    const filasTiempo: FilaTiempoNueva[] = activos.map((t) => ({
-      tiempo: t.tiempo,
-      porcentaje: t.porcentaje,
-      presupuesto: t.monto,
-      costoEstimado: null,
-      exceso: '0.00',
-    }));
+    const filasTiempo: FilaTiempoNueva[] = activos.map((t) => {
+      const ajuste = ajustes.get(t.tiempo)!;
+      const conocido = ajuste.espacios.some((e) => e.candidato?.costo != null);
+      return {
+        tiempo: t.tiempo,
+        porcentaje: t.porcentaje,
+        presupuesto: t.monto,
+        costoEstimado: conocido ? ajuste.costo.toFixed(2) : null,
+        exceso: conocido ? ajuste.exceso.toFixed(2) : COSTO_CERO,
+        intentosAjuste: ajuste.intentos,
+      };
+    });
 
     let menuId: string;
     try {
@@ -230,7 +284,28 @@ export class MenusService {
       throw error;
     }
     const completo = await this.repo.cargar(hogarId, menuId);
-    return { creado: !existente, menu: vistaMenu(completo!) };
+    // CU-05.3 E1: las alternativas más baratas solo viajan en la respuesta de generar.
+    const vista = vistaMenu(completo!);
+    const menu: VistaMenu = {
+      ...vista,
+      tiempos: vista.tiempos.map((t) => {
+        const alternativas = ajustes.get(t.tiempo)?.alternativas ?? [];
+        return alternativas.length === 0
+          ? t
+          : {
+              ...t,
+              alternativas: alternativas.map((a) => ({
+                fecha: a.fecha,
+                platillos: a.platillos.map((p) => ({
+                  id: p.id,
+                  nombre: p.nombre,
+                  costo: (p.costo as number).toFixed(2),
+                })),
+              })),
+            };
+      }),
+    };
+    return { creado: !existente, menu };
   }
 
   /** La semana debe ser una fecha real que caiga en el día de inicio configurado (RN-09). */

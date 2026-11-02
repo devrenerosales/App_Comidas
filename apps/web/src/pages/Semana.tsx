@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { aCentavos, deCentavos } from '@menu/shared';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
 import { useApiMenus } from '../api/contexto-menus';
-import type { AdvertenciaPlan, DetalleMenu, MenuGenerado } from '../api/menus';
+import type {
+  AdvertenciaPlan,
+  AlternativasDelDia,
+  DetalleMenu,
+  MenuGenerado,
+  TiempoMenu,
+} from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { GrillaMenu } from './GrillaMenu';
 import { PanelMotivo } from './PanelMotivo';
@@ -29,6 +36,38 @@ const TITULO_ESTADO = {
   APROBADO: 'Menú aprobado',
   HISTORICO: 'Menú histórico',
 } as const;
+
+/** CU-05.3: lo que dice cada tiempo sobre el presupuesto (CA-21.1 y CA-21.3). */
+function EstadoPresupuesto({ t }: { t: TiempoMenu }) {
+  if (t.estado === 'EXCEDE') {
+    return (
+      <>
+        {' · '}costo Q{t.costoEstimado}
+        {' · '}
+        <span className="mf-exceso">Excede por Q{t.exceso}</span>
+      </>
+    );
+  }
+  if (t.costoEstimado === null) return null;
+  if (t.estado === 'COSTO_INCOMPLETO') {
+    return <> · costo conocido Q{t.costoEstimado} (incompleto)</>;
+  }
+  const disponible = (aCentavos(t.presupuesto) ?? 0) - (aCentavos(t.costoEstimado) ?? 0);
+  return (
+    <>
+      {' · '}costo Q{t.costoEstimado}
+      {' · '}Dentro del presupuesto (Q{deCentavos(disponible)} disponibles)
+    </>
+  );
+}
+
+/** Alternativas más baratas de un día, con el tiempo de comida al que pertenecen. */
+interface BarataDelDia extends AlternativasDelDia {
+  tiempo: TiempoMenu['tiempo'];
+}
+
+const alternativasDe = (menu: MenuGenerado): BarataDelDia[] =>
+  menu.tiempos.flatMap((t) => (t.alternativas ?? []).map((a) => ({ ...a, tiempo: t.tiempo })));
 
 /** Cambio que el servidor pidió confirmar porque incumple RN-02 o RN-03 (CU-06.1 3a). */
 interface Pendiente {
@@ -56,6 +95,7 @@ export default function Semana() {
   const [pendiente, setPendiente] = useState<Pendiente | null>(null);
   const [aprobada, setAprobada] = useState(false);
   const [motivo, setMotivo] = useState<DetalleMenu | null>(null);
+  const [baratas, setBaratas] = useState<BarataDelDia[]>([]);
 
   useEffect(() => {
     let activo = true;
@@ -88,6 +128,7 @@ export default function Semana() {
     setPendiente(null);
     setAprobada(false);
     setMotivo(null);
+    setBaratas([]);
     menus
       .obtenerPorSemana(semana)
       .then((m) => {
@@ -109,7 +150,9 @@ export default function Semana() {
     setFaltan(false);
     setConfirmar(false);
     try {
-      setMenu(await menus.generar({ semana, ...(regenerar ? { regenerar: true } : {}) }));
+      const generado = await menus.generar({ semana, ...(regenerar ? { regenerar: true } : {}) });
+      setMenu(generado);
+      setBaratas(alternativasDe(generado));
       setEditando(null);
       setMoviendo(null);
       setPendiente(null);
@@ -133,6 +176,7 @@ export default function Semana() {
     setError(null);
     try {
       setMenu(await accion(confirmado));
+      setBaratas([]);
       setEditando(null);
       setMoviendo(null);
       setPendiente(null);
@@ -376,12 +420,7 @@ export default function Semana() {
               {menu.tiempos.map((t) => (
                 <li key={t.tiempo}>
                   {NOMBRES_TIEMPO[t.tiempo]}: presupuesto Q{t.presupuesto}
-                  {t.estado === 'EXCEDE' && (
-                    <>
-                      {' · '}
-                      <span className="mf-exceso">Excede por Q{t.exceso}</span>
-                    </>
-                  )}
+                  <EstadoPresupuesto t={t} />
                 </li>
               ))}
             </ul>
@@ -389,6 +428,45 @@ export default function Semana() {
               <p className="mf-texto-suave">
                 Costo estimado incompleto: todavía no hay precios para los ingredientes.
               </p>
+            )}
+            {editable && baratas.length > 0 && (
+              <section aria-label="Alternativas más baratas">
+                <h3>Alternativas más baratas</h3>
+                <p>
+                  El presupuesto no alcanza. Estas opciones cuestan menos que el platillo actual de
+                  cada día:
+                </p>
+                <ul>
+                  {baratas.map((a) => {
+                    const espacio = menu.detalles.find(
+                      (d) => d.fecha === a.fecha && d.tiempo === a.tiempo,
+                    );
+                    return (
+                      <li key={`${a.fecha}:${a.tiempo}`}>
+                        {etiquetaEspacio(a)}:{' '}
+                        {a.platillos.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="mf-enlace"
+                            disabled={ocupado || !espacio}
+                            onClick={() =>
+                              void cambiar((c) =>
+                                menus.editar(menu.id, espacio!.id, {
+                                  platilloId: p.id,
+                                  ...(c ? { confirmar: true } : {}),
+                                }),
+                              )
+                            }
+                          >
+                            Usar {p.nombre} (Q{p.costo})
+                          </button>
+                        ))}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             )}
             {menu.excede && <p className="mf-exceso">{menu.excede.texto}</p>}
             {editable && (

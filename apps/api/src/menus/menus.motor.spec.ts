@@ -1,5 +1,5 @@
 import { PESOS_MOTOR_POR_DEFECTO } from '@menu/shared';
-import { construirCandidatos, ultimaFechaHistorial } from './menus.motor';
+import { construirCandidatos, costosPorPlatillo, ultimaFechaHistorial } from './menus.motor';
 import type { PlatilloActivo, Preparacion } from './menus.repositorio';
 
 const platillo = (id: string, extra: Partial<PlatilloActivo> = {}): PlatilloActivo => ({
@@ -113,5 +113,57 @@ describe('construirCandidatos (CU-05.1 paso 4)', () => {
 
   it('sin platillos devuelve una lista vacía', () => {
     expect(construirCandidatos({ ...base, platillos: [] })).toEqual([]);
+  });
+
+  it('con costos conocidos el candidato lo lleva y el Ahorro sale de él', () => {
+    // Presupuesto por comida 35: un platillo de Q14 ahorra 0.60 y uno de Q70 ahorra 0.
+    const [barato, caro, sinCosto] = construirCandidatos({
+      ...base,
+      platillos: [platillo('barato'), platillo('caro'), platillo('sin')],
+      costos: new Map<string, number | null>([
+        ['barato', 14],
+        ['caro', 70],
+        ['sin', null],
+      ]),
+    });
+    expect(barato).toMatchObject({ costo: 14, factores: { ahorro: 0.6 } });
+    expect(caro).toMatchObject({ costo: 70, factores: { ahorro: 0 } });
+    expect(sinCosto).toMatchObject({ costo: null, factores: { ahorro: 0.5 } });
+  });
+});
+
+describe('costosPorPlatillo (CU-05.3 paso 2)', () => {
+  const lb = { codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+  const datos = (precio: number | null) => ({
+    porcionesBase: 4,
+    ingredientes: [
+      {
+        cantidad: 2,
+        unidad: lb,
+        presentacion: { cantidad: 5, unidad: lb },
+        equivalencia: null,
+        precioMediana: precio,
+      },
+    ],
+  });
+
+  it('escala por la Σ de factores del hogar y usa el precio mediana', () => {
+    // 2 lb para 4 porciones con Σ 2.5 → 1.25 lb de una bolsa de 5 lb a Q50 → Q12.50.
+    const costos = costosPorPlatillo(['a'], new Map([['a', datos(50)]]), 2.5);
+    expect(costos.get('a')).toBe(12.5);
+  });
+
+  it('sin ingredientes o con un ingrediente sin precio el costo es incompleto (null)', () => {
+    const costos = costosPorPlatillo(
+      ['sinIngredientes', 'sinPrecio', 'completo'],
+      new Map([
+        ['sinPrecio', datos(null)],
+        ['completo', datos(50)],
+      ]),
+      4,
+    );
+    expect(costos.get('sinIngredientes')).toBeNull();
+    expect(costos.get('sinPrecio')).toBeNull();
+    expect(costos.get('completo')).toBe(20);
   });
 });

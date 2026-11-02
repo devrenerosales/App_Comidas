@@ -135,3 +135,19 @@ Si un platillo no te convence, no hace falta regenerar toda la semana: en el bor
 - En un menú aprobado o del historial no hay botón.
 
 Si regeneras el borrador, las opciones ya ofrecidas para los días que cambian se olvidan y vuelven a estar disponibles. Después de pedir una alternativa puedes tocar **¿Por qué?**: el panel empieza con "Alternativa pedida" y explica por qué la propuso.
+
+## 6.7 Qué pasa cuando el menú supera el presupuesto
+
+Cada tiempo de comida tiene su propio presupuesto (el semanal por el porcentaje que le diste). Al sugerir el menú, la app suma lo que costarían los siete días de ese tiempo con los precios que conoce y te lo muestra debajo de la tabla:
+
+- **Dentro del presupuesto:** "Almuerzo: presupuesto Q245.00 · costo Q229.50 · Dentro del presupuesto (Q15.50 disponibles)".
+- **Excede:** "Excede por Q55.00", en rojo. El borrador se guarda igual y puedes aprobarlo (ver 6.3).
+- **Costo incompleto:** si a algún platillo le falta el precio de un ingrediente o no tiene ingredientes, la app no puede afirmar que cumple. Verás "costo conocido Qxx (incompleto)" o solo el presupuesto.
+
+**Reemplazos automáticos.** Si el costo pasa del presupuesto, la app cambia el platillo más caro por otro más barato que no repita proteína seguida ni esté ya en la semana, hasta 3 intentos por tiempo de comida. Los platillos que fijaste nunca se cambian. Los reemplazados dicen "Reemplazo por presupuesto: Q22.00 más barato" al tocar **¿Por qué?**.
+
+**Si sigue excediendo** después de los 3 intentos, aparece **Alternativas más baratas** con hasta 3 opciones por día. Toca **Usar …** para cambiar ese día; la app vuelve a calcular el costo y lo que falta o sobra. Esa lista solo aparece justo después de sugerir; si cierras la pantalla, usa **Otra opción** en cada día.
+
+Cada vez que cambias, mueves o pides otra opción para un día, el costo y el exceso del tiempo se recalculan.
+
+**Mientras no haya precios** (llegan con la carga de tickets y precios) ningún platillo tiene costo y el menú se muestra con el costo incompleto, sin reemplazos.

@@ -44,6 +44,21 @@ const completo = (estado: MenuSemanal['estado'] = 'BORRADOR'): MenuCompleto => (
   ],
 });
 
+const LB = { codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+/** 1 lb en una presentación de 1 lb a `precio`: con Σ 4 el platillo cuesta `precio`. */
+const conPrecio = (precio: number) => ({
+  porcionesBase: 4,
+  ingredientes: [
+    {
+      cantidad: 1,
+      unidad: LB,
+      presentacion: { cantidad: 1, unidad: LB },
+      equivalencia: null,
+      precioMediana: precio,
+    },
+  ],
+});
+
 const platillo = (extra: Partial<PlatilloConTiempos> = {}): PlatilloConTiempos => ({
   id: 'chile',
   nombre: 'Chile relleno',
@@ -70,6 +85,7 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
     platillo: jest.fn(),
     tiemposDe: jest.fn(),
     aplicarCambios: jest.fn(),
+    ingredientesParaCosto: jest.fn(),
   };
   const servicio = new MenusEdicionService(repo as unknown as MenusRepositorio, () => AHORA);
   const cambios = () =>
@@ -81,6 +97,7 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
     repo.platillo.mockResolvedValue(platillo());
     repo.tiemposDe.mockResolvedValue(new Map());
     repo.aplicarCambios.mockResolvedValue(undefined);
+    repo.ingredientesParaCosto.mockResolvedValue(new Map());
   });
 
   describe('lectura', () => {
@@ -432,6 +449,55 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
       const vacio = await problema(servicio.motivo('h1', 'm1', 'sab'));
       expect(vacio.getStatus()).toBe(422);
       expect(vacio).toMatchObject({ codigo: 'SIN_PLATILLO' });
+    });
+  });
+
+  describe('costos al cambiar (CU-06.1 paso 4, HU-21)', () => {
+    const conSuma = (): MenuCompleto => ({
+      ...completo(),
+      menu: { id: 'm1', estado: 'BORRADOR', sumaFactoresPorcion: '4.00' } as MenuSemanal,
+    });
+
+    it('editar calcula el costo del platillo elegido con la Σ de factores del menú', async () => {
+      repo.cargar.mockResolvedValue(conSuma());
+      repo.ingredientesParaCosto.mockResolvedValue(new Map([['chile', conPrecio(26)]]));
+      await servicio.editar('h1', 'u1', 'm1', 'vie', { platilloId: 'chile' });
+      expect(repo.ingredientesParaCosto).toHaveBeenCalledWith('h1', ['chile']);
+      expect(cambios()[0]!.cambio).toMatchObject({
+        costoEstimado: '26.00',
+        costoIncompleto: false,
+        notas: null,
+      });
+    });
+
+    it('un platillo sin precio o un menú sin Σ de factores queda con costo incompleto', async () => {
+      repo.cargar.mockResolvedValue(conSuma());
+      await servicio.editar('h1', 'u1', 'm1', 'vie', { platilloId: 'chile' });
+      expect(cambios()[0]!.cambio).toMatchObject({ costoEstimado: null, costoIncompleto: true });
+
+      repo.aplicarCambios.mockClear();
+      repo.cargar.mockResolvedValue(completo());
+      await servicio.editar('h1', 'u1', 'm1', 'vie', { platilloId: 'chile' });
+      expect(cambios()[0]!.cambio).toMatchObject({ costoEstimado: null, costoIncompleto: true });
+      expect(repo.ingredientesParaCosto).toHaveBeenCalledTimes(1);
+    });
+
+    it('mover lleva el costo del platillo al destino y deja vacío el origen sin costo', async () => {
+      repo.cargar.mockResolvedValue(conSuma());
+      repo.tiemposDe.mockResolvedValue(new Map([['carne', ['ALMUERZO']]]));
+      repo.ingredientesParaCosto.mockResolvedValue(new Map([['carne', conPrecio(32)]]));
+      await servicio.mover('h1', 'u1', 'm1', {
+        origenDetalleId: 'lun',
+        destinoDetalleId: 'sab',
+        confirmar: true,
+      });
+      const porId = Object.fromEntries(cambios().map((c) => [c.id, c.cambio]));
+      expect(porId.sab).toMatchObject({ platilloId: 'carne', costoEstimado: '32.00' });
+      expect(porId.lun).toMatchObject({
+        platilloId: null,
+        costoEstimado: null,
+        costoIncompleto: false,
+      });
     });
   });
 });

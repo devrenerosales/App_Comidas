@@ -53,6 +53,21 @@ const completo = (
   ...extra,
 });
 
+const LB = { codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+/** 1 lb en una presentación de 1 lb a `precio`: con Σ 4 el platillo cuesta `precio`. */
+const conPrecio = (precio: number) => ({
+  porcionesBase: 4,
+  ingredientes: [
+    {
+      cantidad: 1,
+      unidad: LB,
+      presentacion: { cantidad: 1, unidad: LB },
+      equivalencia: null,
+      precioMediana: precio,
+    },
+  ],
+});
+
 const activo = (
   id: string,
   proteina: PlatilloActivo['proteina'],
@@ -94,6 +109,7 @@ describe('MenusAlternativaService (CU-05.5, HU-23)', () => {
     preparaciones: jest.fn(),
     alternativasMostradas: jest.fn(),
     aplicarCambios: jest.fn(),
+    ingredientesParaCosto: jest.fn(),
   };
   const preferencias = { platillosExcluidosParaMotor: jest.fn() };
   const servicio = new MenusAlternativaService(
@@ -116,6 +132,7 @@ describe('MenusAlternativaService (CU-05.5, HU-23)', () => {
     repo.preparaciones.mockResolvedValue([]);
     repo.alternativasMostradas.mockResolvedValue([]);
     repo.aplicarCambios.mockResolvedValue(undefined);
+    repo.ingredientesParaCosto.mockResolvedValue(new Map());
     preferencias.platillosExcluidosParaMotor.mockResolvedValue(new Set());
   });
 
@@ -210,5 +227,27 @@ describe('MenusAlternativaService (CU-05.5, HU-23)', () => {
     expect((await problema(pedir())).getStatus()).toBe(404);
     repo.cargar.mockResolvedValue(completo());
     expect((await problema(pedir('otro'))).getStatus()).toBe(404);
+  });
+
+  it('con precios la alternativa lleva su costo y el Ahorro lo usa', async () => {
+    repo.cargar.mockResolvedValue(completo({}, { sumaFactoresPorcion: '4.00' }));
+    repo.ingredientesParaCosto.mockResolvedValue(
+      new Map([
+        ['pollo', conPrecio(20)],
+        ['chile', conPrecio(50)],
+      ]),
+    );
+    await pedir();
+    const [, cambios] = aplicado();
+    expect(cambios[0]!.cambio).toMatchObject({
+      platilloId: 'pollo',
+      costoEstimado: '20.00',
+      costoIncompleto: false,
+      notas: null,
+    });
+    expect(repo.ingredientesParaCosto).toHaveBeenCalledWith(
+      'h1',
+      expect.arrayContaining(['pollo']),
+    );
   });
 });

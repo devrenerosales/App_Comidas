@@ -9,7 +9,7 @@ import { Problema } from '../comun/problema';
 import { PreferenciasRepositorio } from '../preferencias/preferencias.repositorio';
 import { RELOJ_MENUS } from './menus.constants';
 import { exigirBorrador } from './menus.guardas';
-import { construirCandidatos, ultimaFechaHistorial } from './menus.motor';
+import { construirCandidatos, costosPorPlatillo, ultimaFechaHistorial } from './menus.motor';
 import { MenusRepositorio } from './menus.repositorio';
 import { vistaMenu, type VistaMenu } from './menus.vista';
 
@@ -60,13 +60,25 @@ export class MenusAlternativaService {
           afinidad: Number(menu.pesoAfinidad),
         }
       : PESOS_MOTOR_POR_DEFECTO;
+    const platillosDelTiempo = todos.filter(
+      (p) => p.tiempo === espacio.tiempo && !excluidos.has(p.id),
+    );
+    const ids = platillosDelTiempo.map((p) => p.id);
+    const costos = menu.sumaFactoresPorcion
+      ? costosPorPlatillo(
+          ids,
+          await this.repo.ingredientesParaCosto(hogarId, ids),
+          Number(menu.sumaFactoresPorcion),
+        )
+      : undefined;
     const candidatos = construirCandidatos({
       tiempo: espacio.tiempo,
-      platillos: todos.filter((p) => p.tiempo === espacio.tiempo && !excluidos.has(p.id)),
+      platillos: platillosDelTiempo,
       preparaciones,
       referencia: fechaReferenciaMotor(menu.fechaInicio, ultimaFechaHistorial(preparaciones)),
       presupuestoPorComida: Number(tiempo?.presupuesto ?? 0) / COMIDAS_POR_SEMANA,
       pesos,
+      costos,
     });
     const elegido = siguienteAlternativa({
       fecha: espacio.fecha,
@@ -95,9 +107,10 @@ export class MenusAlternativaService {
             factorAhorro: elegido.factores.ahorro.toFixed(4),
             factorAfinidad: elegido.factores.afinidad.toFixed(4),
             costoEstimado: elegido.costo === null ? null : elegido.costo.toFixed(2),
-            // Sin precios (S5) el costo de un platillo es siempre incompleto (D-18).
+            // Sin ingredientes o sin precio el costo es incompleto (D-18).
             costoIncompleto: elegido.costo === null,
             reglasAplicadas: [],
+            notas: null,
             modificadoPorId: usuarioId,
             modificadoEn: this.reloj(),
           },

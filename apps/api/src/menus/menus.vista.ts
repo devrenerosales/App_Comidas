@@ -10,6 +10,12 @@ export interface AvisoMenu {
   mensaje: string;
 }
 
+/** Hasta 3 platillos más baratos para un día cuando el tiempo sigue excedido (CU-05.3 E1). */
+export interface AlternativasDelDia {
+  fecha: string;
+  platillos: { id: string; nombre: string; costo: string }[];
+}
+
 export type EstadoTiempoMenu = 'DENTRO_DEL_PRESUPUESTO' | 'EXCEDE' | 'COSTO_INCOMPLETO';
 
 export interface TiempoDeMenu {
@@ -20,6 +26,8 @@ export interface TiempoDeMenu {
   exceso: string;
   intentosAjuste: number;
   estado: EstadoTiempoMenu;
+  /** Solo en la respuesta de generar y solo si el tiempo sigue excedido. */
+  alternativas?: AlternativasDelDia[];
 }
 
 export interface DetalleDeMenu {
@@ -61,9 +69,18 @@ export interface VistaMenu {
 
 const MENSAJE_SIN_SUGERENCIA = 'Ningún platillo cumple RN-02 y RN-03 para este día';
 
-function estadoDelTiempo(costo: string | null, exceso: string): EstadoTiempoMenu {
+/**
+ * Sin costo conocido → incompleto; si el costo conocido ya pasa del presupuesto → excede aunque
+ * falten precios; con algún platillo sin costo no se puede afirmar que está dentro (D-18).
+ */
+function estadoDelTiempo(
+  costo: string | null,
+  exceso: string,
+  conPlatilloIncompleto: boolean,
+): EstadoTiempoMenu {
   if (costo === null) return 'COSTO_INCOMPLETO';
-  return Number(exceso) > 0 ? 'EXCEDE' : 'DENTRO_DEL_PRESUPUESTO';
+  if (Number(exceso) > 0) return 'EXCEDE';
+  return conPlatilloIncompleto ? 'COSTO_INCOMPLETO' : 'DENTRO_DEL_PRESUPUESTO';
 }
 
 /** Convierte lo guardado en la respuesta del contrato; ordena por fecha y tiempo de comida. */
@@ -114,7 +131,11 @@ export function vistaMenu({
         costoEstimado: t.costoEstimado,
         exceso: t.exceso,
         intentosAjuste: t.intentosAjuste,
-        estado: estadoDelTiempo(t.costoEstimado, t.exceso),
+        estado: estadoDelTiempo(
+          t.costoEstimado,
+          t.exceso,
+          detalles.some((d) => d.tiempo === t.tiempo && d.platilloId !== null && d.costoIncompleto),
+        ),
       })),
     detalles: ordenados.map((d) => ({
       id: d.id,
