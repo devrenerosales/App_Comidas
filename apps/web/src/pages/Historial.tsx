@@ -6,6 +6,8 @@ import { useApiHistorial } from '../api/contexto-historial';
 import type { SemanaHistorica } from '../api/historial';
 import { mensajeDeError } from '../api';
 import { CampoTexto } from './CampoTexto';
+import { Estrellas } from './Estrellas';
+import { hoyGuatemala } from './fechas';
 import { PaginaBase } from './PaginaBase';
 import './acceso.css';
 import './hogar.css';
@@ -22,6 +24,9 @@ export default function Historial() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [calificando, setCalificando] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [errorCalificar, setErrorCalificar] = useState<string | null>(null);
   useEffect(() => {
     let activo = true;
     setCargando(true);
@@ -44,10 +49,36 @@ export default function Historial() {
       activo = false;
     };
   }, [api, filtros, intento]);
+  /** CU-11.1: guarda la calificación y refleja el promedio actualizado del platillo. */
+  async function calificar(semana: SemanaHistorica, detalleId: string, valor: number) {
+    const detalle = semana.detalles.find((d) => d.id === detalleId);
+    setCalificando(detalleId);
+    setAviso(null);
+    setErrorCalificar(null);
+    try {
+      const r = await api.calificar(semana.id, detalleId, valor);
+      setSemanas((previas) =>
+        previas.map((s) => ({
+          ...s,
+          detalles: s.detalles.map((d) => (d.id === detalleId ? { ...d, calificacion: valor } : d)),
+        })),
+      );
+      const promedio = r.platillo.calificacionPromedio;
+      setAviso(
+        `Calificación guardada: ${valor} de 5 para ${detalle?.nombre ?? 'el platillo'}.` +
+          (promedio ? ` Promedio: ${promedio}.` : ''),
+      );
+    } catch (e) {
+      setErrorCalificar(mensajeDeError(e));
+    } finally {
+      setCalificando(null);
+    }
+  }
   function filtrar(e: FormEvent) {
     e.preventDefault();
     setFiltros({ desde, hasta, pagina: 1 });
   }
+  const hoy = hoyGuatemala();
   return (
     <PaginaBase titulo="Historial de comidas">
       <div className="mf-hogar">
@@ -83,6 +114,12 @@ export default function Historial() {
             Filtrar
           </button>
         </form>
+        {aviso && <p role="status">{aviso}</p>}
+        {errorCalificar && (
+          <p role="alert" className="mf-alerta">
+            {errorCalificar}
+          </p>
+        )}
         {error && (
           <div role="alert" className="mf-alerta">
             <p>{error}</p>
@@ -116,6 +153,14 @@ export default function Historial() {
                         <li key={`${d.fecha}:${d.tiempo}`}>
                           {d.fecha} · {d.tiempo.toLowerCase()}: {d.nombre ?? 'Sin platillo'}
                           {d.notas && <p>{d.notas}</p>}
+                          {d.platilloId && d.fecha <= hoy && (
+                            <Estrellas
+                              etiqueta={`Calificación de ${d.nombre ?? 'la comida'} del ${d.fecha}`}
+                              valor={d.calificacion}
+                              deshabilitado={calificando === d.id}
+                              onElegir={(valor) => void calificar(s, d.id, valor)}
+                            />
+                          )}
                         </li>
                       ))}
                     </ul>

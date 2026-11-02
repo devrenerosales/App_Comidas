@@ -1,0 +1,25 @@
+/* Control de estrellas (HU-14). Objetivos táctiles de 44 px. */
+.mf-estrellas {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.mf-estrella {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--mf-texto-suave);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mf-estrella--llena {
+  color: var(--mf-advertencia);
+}
+
+.mf-estrella:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
