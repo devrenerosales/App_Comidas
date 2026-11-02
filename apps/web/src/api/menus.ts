@@ -12,6 +12,7 @@ export interface DetalleMenu {
   puntaje: string | null;
   costoEstimado: string | null;
   costoIncompleto: boolean;
+  reglasAplicadas: string[];
 }
 
 export interface TiempoMenu {
@@ -30,7 +31,15 @@ export interface AvisoMenu {
   mensaje: string;
 }
 
-/** Respuesta de `POST /menus/generar`. */
+/** Advertencia RN-02 o RN-03 de un cambio manual, que el usuario puede confirmar (CU-06.1 3a). */
+export interface AdvertenciaPlan {
+  codigo: 'RN02_PROTEINA_CONSECUTIVA' | 'RN03_PLATILLO_REPETIDO';
+  fecha: string;
+  tiempo: TiempoComida;
+  mensaje: string;
+}
+
+/** Respuesta de `POST /menus/generar` y de las lecturas y cambios del menú. */
 export interface MenuGenerado {
   id: string;
   fechaInicio: string;
@@ -51,8 +60,39 @@ export interface DatosGenerarMenu {
   regenerar?: boolean;
 }
 
+export interface DatosEditarEspacio {
+  platilloId: string;
+  confirmar?: boolean;
+}
+
+export interface DatosMoverEspacio {
+  origenDetalleId: string;
+  destinoDetalleId: string;
+  confirmar?: boolean;
+}
+
+const id = (valor: string) => encodeURIComponent(valor);
+
 export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
   return {
+    /** El menú cuya semana contiene la fecha; 404 `SIN_MENU` si todavía no hay. */
+    obtenerPorSemana: (fecha: string) =>
+      cliente.peticion<MenuGenerado>(`/menus/semana/${id(fecha)}`),
+    editar: (menuId: string, detalleId: string, datos: DatosEditarEspacio) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}`, {
+        metodo: 'PATCH',
+        cuerpo: datos,
+      }),
+    mover: (menuId: string, datos: DatosMoverEspacio) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/mover`, {
+        metodo: 'POST',
+        cuerpo: datos,
+      }),
+    fijar: (menuId: string, detalleId: string, fijado: boolean) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/fijado`, {
+        metodo: 'PUT',
+        cuerpo: { fijado },
+      }),
     generar: (datos: DatosGenerarMenu) =>
       cliente.peticion<MenuGenerado>('/menus/generar', { metodo: 'POST', cuerpo: datos }),
   };

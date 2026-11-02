@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ORDEN_TIEMPOS } from '@menu/shared';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
 import { useApiMenus } from '../api/contexto-menus';
-import type { MenuGenerado } from '../api/menus';
+import type { AdvertenciaPlan, DetalleMenu, MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
+import { GrillaMenu } from './GrillaMenu';
 import { PaginaBase } from './PaginaBase';
-import { etiquetaDia, etiquetaSemana, sumarDiasFecha } from './fechas';
+import { SelectorPlatillo } from './SelectorPlatillo';
+import { etiquetaDia, etiquetaEspacio, etiquetaSemana, sumarDiasFecha } from './fechas';
 import { NOMBRES_TIEMPO } from './nombres-catalogo';
 import './acceso.css';
 import './hogar.css';
@@ -16,7 +17,19 @@ import './semana.css';
 /** Cuántas semanas futuras se ofrecen para sugerir. */
 const SEMANAS_OFRECIDAS = 4;
 
-/** Plan de la semana: pide la sugerencia del motor y muestra la grilla día × tiempo (HU-19). */
+const TITULO_ESTADO = {
+  BORRADOR: 'Borrador',
+  APROBADO: 'Menú aprobado',
+  HISTORICO: 'Menú histórico',
+} as const;
+
+/** Cambio que el servidor pidió confirmar porque incumple RN-02 o RN-03 (CU-06.1 3a). */
+interface Pendiente {
+  advertencias: AdvertenciaPlan[];
+  accion: (confirmar: boolean) => Promise<MenuGenerado>;
+}
+
+/** Plan de la semana: sugiere el menú y permite cambiar, mover y fijar platillos (HU-19, HU-24). */
 export default function Semana() {
   const configuracion = useApiConfiguracion();
   const menus = useApiMenus();
@@ -28,6 +41,9 @@ export default function Semana() {
   const [faltan, setFaltan] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
   const [intento, setIntento] = useState(0);
+  const [editando, setEditando] = useState<DetalleMenu | null>(null);
+  const [moviendo, setMoviendo] = useState<string | null>(null);
+  const [pendiente, setPendiente] = useState<Pendiente | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -50,6 +66,29 @@ export default function Semana() {
     };
   }, [configuracion, intento]);
 
+  // CU-06.1 paso 1: al elegir una semana se abre su menú si ya existe.
+  useEffect(() => {
+    if (!semana) return;
+    let activo = true;
+    setMenu(null);
+    setEditando(null);
+    setMoviendo(null);
+    setPendiente(null);
+    menus
+      .obtenerPorSemana(semana)
+      .then((m) => {
+        if (activo) setMenu(m);
+      })
+      .catch((e: unknown) => {
+        if (activo && !(e instanceof ProblemaApi && e.codigo === 'SIN_MENU')) {
+          setError(mensajeDeError(e));
+        }
+      });
+    return () => {
+      activo = false;
+    };
+  }, [menus, semana]);
+
   async function sugerir(regenerar: boolean) {
     setOcupado(true);
     setError(null);
@@ -57,6 +96,9 @@ export default function Semana() {
     setConfirmar(false);
     try {
       setMenu(await menus.generar({ semana, ...(regenerar ? { regenerar: true } : {}) }));
+      setEditando(null);
+      setMoviendo(null);
+      setPendiente(null);
     } catch (e) {
       if (e instanceof ProblemaApi && e.codigo === 'BORRADOR_EXISTENTE') setConfirmar(true);
       else {
@@ -68,8 +110,39 @@ export default function Semana() {
     }
   }
 
-  const fechas = menu ? [...new Set(menu.detalles.map((d) => d.fecha))] : [];
-  const tiempos = menu ? ORDEN_TIEMPOS.filter((t) => menu.tiempos.some((x) => x.tiempo === t)) : [];
+  /** Corre un cambio del menú; si incumple RN-02 o RN-03 pide confirmación y lo reintenta. */
+  async function cambiar(
+    accion: (confirmar: boolean) => Promise<MenuGenerado>,
+    confirmado = false,
+  ) {
+    setOcupado(true);
+    setError(null);
+    try {
+      setMenu(await accion(confirmado));
+      setEditando(null);
+      setMoviendo(null);
+      setPendiente(null);
+    } catch (e) {
+      if (e instanceof ProblemaApi && e.codigo === 'CONFIRMACION_REQUERIDA') {
+        setPendiente({ advertencias: (e.cuerpo.advertencias as AdvertenciaPlan[]) ?? [], accion });
+      } else {
+        setPendiente(null);
+        setError(mensajeDeError(e));
+      }
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  const editable = menu?.estado === 'BORRADOR';
+  const mover = (origenDetalleId: string, destinoDetalleId: string) =>
+    void cambiar((c) =>
+      menus.mover(menu!.id, {
+        origenDetalleId,
+        destinoDetalleId,
+        ...(c ? { confirmar: true } : {}),
+      }),
+    );
 
   return (
     <PaginaBase titulo="Semana">
@@ -108,6 +181,7 @@ export default function Semana() {
                 onChange={(e) => {
                   setSemana(e.target.value);
                   setConfirmar(false);
+                  setError(null);
                 }}
               >
                 {semanas.map((s) => (
@@ -123,7 +197,7 @@ export default function Semana() {
               disabled={ocupado}
               onClick={() => void sugerir(false)}
             >
-              {ocupado ? 'Sugiriendo…' : 'Sugerir menú'}
+              {ocupado ? 'Trabajando…' : 'Sugerir menú'}
             </button>
             {confirmar && (
               <div className="mf-advertencia" role="alert">
@@ -152,7 +226,15 @@ export default function Semana() {
         )}
         {menu && (
           <section aria-labelledby="titulo-menu" className="mf-tarjeta">
-            <h2 id="titulo-menu">Borrador del {etiquetaSemana(menu.fechaInicio)}</h2>
+            <h2 id="titulo-menu">
+              {TITULO_ESTADO[menu.estado]} del {etiquetaSemana(menu.fechaInicio)}
+            </h2>
+            {menu.estado === 'APROBADO' && (
+              <p role="status">Este menú está aprobado: solo se puede consultar.</p>
+            )}
+            {menu.estado === 'HISTORICO' && (
+              <p role="status">Esta semana está en el historial: solo se puede consultar.</p>
+            )}
             {menu.avisos.length > 0 && (
               <div className="mf-advertencia" role="status">
                 {menu.avisos.map((a) => (
@@ -162,42 +244,71 @@ export default function Semana() {
                 ))}
               </div>
             )}
-            <div className="mf-menu-tabla">
-              <table aria-label="Menú de la semana">
-                <thead>
-                  <tr>
-                    <th scope="col">Día</th>
-                    {tiempos.map((t) => (
-                      <th scope="col" key={t}>
-                        {NOMBRES_TIEMPO[t]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {fechas.map((fecha) => (
-                    <tr key={fecha}>
-                      <th scope="row">{etiquetaDia(fecha)}</th>
-                      {tiempos.map((t) => {
-                        const d = menu.detalles.find((x) => x.fecha === fecha && x.tiempo === t);
-                        return (
-                          <td key={t}>
-                            {d?.platillo ? (
-                              <>
-                                {d.platillo.nombre}
-                                {d.fijado && <small> (fijado)</small>}
-                              </>
-                            ) : (
-                              <span className="mf-menu-vacio">Sin sugerencia</span>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {moviendo && (
+              <p role="status">
+                Elige el espacio de destino con <strong>Mover aquí</strong>, o arrastra el platillo.{' '}
+                <button type="button" className="mf-enlace" onClick={() => setMoviendo(null)}>
+                  Cancelar movimiento
+                </button>
+              </p>
+            )}
+            {pendiente && (
+              <div className="mf-advertencia" role="alertdialog" aria-label="Confirmar cambio">
+                {pendiente.advertencias.map((a) => (
+                  <p key={`${a.codigo}:${a.fecha}`}>{a.mensaje}</p>
+                ))}
+                <p>¿Quieres guardar el cambio de todos modos?</p>
+                <button
+                  type="button"
+                  className="mf-boton mf-boton--primario"
+                  disabled={ocupado}
+                  onClick={() => void cambiar(pendiente.accion, true)}
+                >
+                  Confirmar
+                </button>{' '}
+                <button
+                  type="button"
+                  className="mf-boton mf-boton--secundario"
+                  onClick={() => setPendiente(null)}
+                >
+                  Cancelar cambio
+                </button>
+              </div>
+            )}
+            <GrillaMenu
+              menu={menu}
+              editable={editable}
+              moviendo={moviendo}
+              ocupado={ocupado}
+              onCambiar={(d) => {
+                setEditando(d);
+                setMoviendo(null);
+                setPendiente(null);
+              }}
+              onFijar={(d) => void cambiar(() => menus.fijar(menu.id, d.id, !d.fijado))}
+              onIniciarMover={(d) => {
+                setMoviendo(d.id);
+                setEditando(null);
+                setPendiente(null);
+              }}
+              onMover={mover}
+            />
+            {editable && editando && (
+              <SelectorPlatillo
+                espacio={etiquetaEspacio(editando)}
+                tiempo={editando.tiempo}
+                ocupado={ocupado}
+                onCancelar={() => setEditando(null)}
+                onElegir={(p) =>
+                  void cambiar((c) =>
+                    menus.editar(menu.id, editando.id, {
+                      platilloId: p.id,
+                      ...(c ? { confirmar: true } : {}),
+                    }),
+                  )
+                }
+              />
+            )}
             <p>
               <strong>Presupuesto semanal:</strong> Q{menu.presupuestoSemanal}
             </p>
