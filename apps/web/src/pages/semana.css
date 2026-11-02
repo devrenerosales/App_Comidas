@@ -1,0 +1,26 @@
+/* Menú semanal (HU-19): tabla día × tiempo que se desplaza en pantallas angostas. */
+.mf-menu-tabla {
+  overflow-x: auto;
+}
+
+.mf-menu-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mf-menu-tabla th,
+.mf-menu-tabla td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mf-borde);
+  text-align: left;
+  vertical-align: top;
+}
+
+.mf-menu-tabla th[scope='row'] {
+  white-space: nowrap;
+}
+
+.mf-menu-vacio {
+  color: var(--mf-advertencia);
+  font-weight: 600;
+}

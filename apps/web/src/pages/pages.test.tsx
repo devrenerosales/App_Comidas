@@ -1,12 +1,19 @@
 import { IonApp } from '@ionic/react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type { ApiConfiguracion } from '../api/configuracion';
+import { ContextoApiConfiguracion } from '../api/contexto-configuracion';
 import { ContextoAuth, type ValorAuth } from '../auth/contexto';
 import Configuracion from './Configuracion';
 import Inicio from './Inicio';
 import Lista from './Lista';
 import Platillos from './Platillos';
 import Semana from './Semana';
+
+/** Una carga que nunca termina: el test solo comprueba el título, sin estados que cambien después. */
+const configuracionPendiente = {
+  obtenerSemana: () => new Promise(() => undefined),
+} as unknown as ApiConfiguracion;
 
 describe.each([
   [Inicio, 'Inicio'],
@@ -20,9 +27,11 @@ describe.each([
     render(
       <IonApp>
         <ContextoAuth.Provider value={auth}>
-          <MemoryRouter>
-            <Pagina />
-          </MemoryRouter>
+          <ContextoApiConfiguracion.Provider value={configuracionPendiente}>
+            <MemoryRouter>
+              <Pagina />
+            </MemoryRouter>
+          </ContextoApiConfiguracion.Provider>
         </ContextoAuth.Provider>
       </IonApp>,
     );
