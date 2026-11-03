@@ -13,8 +13,9 @@ import './acceso.css';
 import './hogar.css';
 import './semana.css';
 
-/** Cuántas semanas futuras se ofrecen, igual que en la pantalla Semana. */
-const SEMANAS_OFRECIDAS = 4;
+/** Semanas que se ofrecen a partir de la que sigue al último menú aprobado: las ya aprobadas y las próximas. */
+const SEMANAS_ANTERIORES = 8;
+const SEMANAS_SIGUIENTES = 4;
 
 /** "7 lb" cuando se compra por libra, "3 × bolsa 2 lb" cuando la presentación trae más contenido. */
 function textoCompra(i: ItemLista): string {
@@ -66,9 +67,12 @@ export default function Lista() {
         if (!activo) return;
         const desde = c.proximaSemana.desde;
         setSemanas(
-          Array.from({ length: SEMANAS_OFRECIDAS }, (_, i) => sumarDiasFecha(desde, i * 7)),
+          Array.from({ length: SEMANAS_ANTERIORES + SEMANAS_SIGUIENTES }, (_, i) =>
+            sumarDiasFecha(desde, (i - SEMANAS_ANTERIORES) * 7),
+          ),
         );
-        setSemana(desde);
+        // Abre la semana más reciente ya planificada, que suele ser la que se está comprando.
+        setSemana(sumarDiasFecha(desde, -7));
       })
       .catch((e: unknown) => {
         if (activo) setError(mensajeDeError(e));

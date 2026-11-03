@@ -90,7 +90,7 @@ describe('HU-28 Lista de compras', () => {
     expect(filas[0]).toHaveTextContent('Pollo en piezas');
     expect(filas[0]).toHaveTextContent('Comprar: 7 lb');
     expect(filas[0]).toHaveTextContent('Requerido: 6.75 lb');
-    expect(menus.obtenerPorSemana).toHaveBeenCalledWith('2026-11-01');
+    expect(menus.obtenerPorSemana).toHaveBeenCalledWith('2026-10-25');
     expect(listas.obtener).toHaveBeenCalledWith('l1');
     expect(screen.getByRole('heading', { name: 'Lista del 01/11 al 07/11' })).toBeInTheDocument();
     expect(screen.getByText('0 de 1 productos')).toBeInTheDocument();
@@ -186,6 +186,17 @@ describe('HU-28 Lista de compras', () => {
   it('una lista sin productos explica que los platillos no tienen ingredientes', async () => {
     montar({ lista: lista([]) });
     expect(await screen.findByText(/todavía no tienen ingredientes/)).toBeInTheDocument();
+  });
+
+  it('ofrece las semanas ya aprobadas y las próximas, y abre la más reciente que ya pasó', async () => {
+    montar({});
+    await productos();
+    const opciones = within(screen.getByLabelText('Semana')).getAllByRole('option');
+    expect(opciones).toHaveLength(12);
+    expect(opciones[0]).toHaveValue('2026-09-06');
+    expect(opciones[8]).toHaveValue('2026-11-01');
+    expect(opciones[11]).toHaveValue('2026-11-22');
+    expect(screen.getByLabelText('Semana')).toHaveValue('2026-10-25');
   });
 
   it('cambiar de semana abre el menú de esa semana', async () => {
