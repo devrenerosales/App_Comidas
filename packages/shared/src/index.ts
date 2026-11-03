@@ -15,3 +15,4 @@ export * from './costos';
 export * from './lista';
 export * from './lista-sync';
 export * from './avance';
+export * from './precio-compra';

@@ -26,6 +26,10 @@ export interface IngredienteCosto {
   equivalencia: number | string | null;
   /** Precio mediana de una presentación completa; null si el producto no tiene precio. */
   precioMediana: number | string | null;
+  /** Sin ningún precio de los últimos 14 días (RN-08): el precio mediana es el último conocido. */
+  precioDesactualizado?: boolean;
+  /** Promedio de compra del hogar por presentación (RN-12): respaldo cuando no hay precio vigente. */
+  precioDeCompra?: number | string | null;
 }
 
 export interface CostoPlatillo {
@@ -33,6 +37,8 @@ export interface CostoPlatillo {
   costo: number;
   /** Sin ingredientes, o alguno sin precio o sin conversión de unidades (D-18). */
   incompleto: boolean;
+  /** Algún ingrediente se costeó con el promedio de compra por falta de precio vigente (CA-44.4). */
+  conPrecioDeCompra?: boolean;
 }
 
 const aQuetzales = (centavos: number) => centavos / 100;
@@ -58,16 +64,26 @@ export function costoDePlatillo(
 ): CostoPlatillo {
   let centavos = 0;
   let incompleto = ingredientes.length === 0;
+  let conPrecioDeCompra = false;
   for (const i of ingredientes) {
     const contenido = Number(i.presentacion.cantidad);
     const cantidad = enPresentacion(i, escalarCantidad(i.cantidad, porcionesBase, sumaFactores));
-    if (i.precioMediana === null || cantidad === null || !(contenido > 0)) {
+    // RN-08 y RN-12: sin precio vigente se usa el promedio de compra; si tampoco hay, el último precio.
+    const vigente = i.precioMediana !== null && !i.precioDesactualizado ? i.precioMediana : null;
+    const deCompra = vigente === null ? (i.precioDeCompra ?? null) : null;
+    const precio = vigente ?? deCompra ?? i.precioMediana;
+    if (precio === null || cantidad === null || !(contenido > 0)) {
       incompleto = true;
       continue;
     }
-    centavos += Math.round((Number(i.precioMediana) * cantidad * 100) / contenido);
+    conPrecioDeCompra ||= deCompra !== null;
+    centavos += Math.round((Number(precio) * cantidad * 100) / contenido);
   }
-  return { costo: aQuetzales(centavos), incompleto };
+  return {
+    costo: aQuetzales(centavos),
+    incompleto,
+    ...(conPrecioDeCompra ? { conPrecioDeCompra } : {}),
+  };
 }
 
 /** Espacio de un tiempo de comida dentro de la propuesta. */

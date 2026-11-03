@@ -61,6 +61,46 @@ describe('costoDePlatillo (CU-05.3 paso 2, RN-07, D-02)', () => {
     expect(costoDePlatillo([arroz], 4, 4)).toEqual({ costo: 10, incompleto: false });
   });
 
+  describe('respaldo con el promedio de compra (RN-08, RN-12, CA-44.4)', () => {
+    // 2 lb × (4 ÷ 4) = 2 lb de una bolsa de 5 lb: el 40 % del precio de la bolsa.
+    it('con precio vigente usa el de mercado y no el promedio de compra', () => {
+      const r = costoDePlatillo([pollo({ precioMediana: 50, precioDeCompra: 30 })], 4, 4);
+      expect(r).toEqual({ costo: 20, incompleto: false });
+    });
+
+    it('sin precio vigente (desactualizado) usa el promedio de compra y lo indica', () => {
+      const r = costoDePlatillo(
+        [pollo({ precioMediana: 50, precioDesactualizado: true, precioDeCompra: 30 })],
+        4,
+        4,
+      );
+      expect(r).toEqual({ costo: 12, incompleto: false, conPrecioDeCompra: true });
+    });
+
+    it('sin ningún precio de mercado usa el promedio de compra', () => {
+      const r = costoDePlatillo([pollo({ precioMediana: null, precioDeCompra: '8.75' })], 4, 4);
+      expect(r).toEqual({ costo: 3.5, incompleto: false, conPrecioDeCompra: true });
+    });
+
+    it('desactualizado y sin promedio usa el último precio conocido sin la marca', () => {
+      const r = costoDePlatillo([pollo({ precioMediana: 50, precioDesactualizado: true })], 4, 4);
+      expect(r).toEqual({ costo: 20, incompleto: false });
+      const r2 = costoDePlatillo(
+        [pollo({ precioMediana: 50, precioDesactualizado: true, precioDeCompra: null })],
+        4,
+        4,
+      );
+      expect(r2).toEqual({ costo: 20, incompleto: false });
+    });
+
+    it('sin precio de mercado ni promedio el costo queda incompleto', () => {
+      expect(costoDePlatillo([pollo({ precioMediana: null })], 4, 4)).toEqual({
+        costo: 0,
+        incompleto: true,
+      });
+    });
+  });
+
   it('suma varios ingredientes', () => {
     expect(costoDePlatillo([pollo(), pollo({ precioMediana: 25 })], 4, 4).costo).toBe(30);
   });

@@ -3,7 +3,7 @@
  * cola de cambios que todavía no se envían. Lo que se ve es la lista con la cola aplicada encima, así
  * que sigue funcionando sin conexión y el contador de pendientes sale de la cola.
  */
-import { resolverCambio, type CambioLista } from '@menu/shared';
+import { deCentavos, resolverCambio, type CambioLista } from '@menu/shared';
 import type { ItemLista, ListaCompras } from '../api/listas';
 
 export interface EstadoLocal {
@@ -16,6 +16,12 @@ export interface EstadoLocal {
 const contar = (items: ItemLista[]) => ({
   total: items.length,
   comprados: items.filter((i) => i.estado !== 'PENDIENTE').length,
+  // CU-07.7 paso 7: la suma de los precios reales de lo comprado se recalcula con cada cambio.
+  gastoSugerido: deCentavos(
+    items
+      .filter((i) => i.estado === 'COMPRADO' && i.precioReal)
+      .reduce((suma, i) => suma + Math.round(Number(i.precioReal) * 100), 0),
+  ),
 });
 
 /**
@@ -66,6 +72,19 @@ export function aplicarCambioLocal(lista: ListaCompras, cambio: CambioLista): Li
             ...(parche.estado ? { estado: parche.estado } : {}),
             ...(parche.cantidadComprar !== undefined
               ? { cantidadComprar: String(parche.cantidadComprar) }
+              : {}),
+            // El precio solo existe en un ítem comprado: al pasar a otro estado se descarta (E4).
+            ...(parche.estado && parche.estado !== 'COMPRADO'
+              ? { precioReal: null, contenidoComprado: null, precioNormalizado: null }
+              : {}),
+            ...(parche.precioReal !== undefined
+              ? {
+                  precioReal: parche.precioReal === null ? null : parche.precioReal.toFixed(2),
+                  contenidoComprado:
+                    parche.contenidoComprado == null ? null : String(parche.contenidoComprado),
+                  // El promedio y el precio normalizado los calcula el servidor.
+                  precioNormalizado: null,
+                }
               : {}),
           }
         : i,

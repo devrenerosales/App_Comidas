@@ -1,4 +1,10 @@
-import { enPresentacion, formatearCantidad, redondear, type ComidaDelMenu } from '@menu/shared';
+import {
+  deCentavos,
+  enPresentacion,
+  formatearCantidad,
+  redondear,
+  type ComidaDelMenu,
+} from '@menu/shared';
 import type { ItemDeLista, ListaCompleta } from './listas.repositorio';
 
 export interface CantidadConUnidad {
@@ -20,6 +26,16 @@ export interface ItemVista {
   estado: ItemDeLista['estado'];
   /** CU-07.1 E1: la unidad de la receta no tiene equivalencia con la de compra. */
   sinConversion: boolean;
+  /** Total pagado por el ítem (CU-07.7); null si no se registró precio. */
+  precioReal: string | null;
+  /** Contenido comprado si fue otra presentación que la del catálogo (CU-07.7 2b). */
+  contenidoComprado: string | null;
+  /** Precio por presentación del catálogo, base del promedio de compra. */
+  precioNormalizado: string | null;
+  /** RN-12: promedio de compra del hogar (últimas 12 semanas) con cuántas compras lo forman. */
+  promedioCompra: { precio: string; compras: number } | null;
+  /** Mediana de mercado del producto, junto al promedio de compra. */
+  medianaMercado: string | null;
   /** Comidas (detalles del menú) que originan el ítem. */
   comidas: string[];
 }
@@ -39,6 +55,8 @@ export interface VistaLista {
   items: ItemVista[];
   /** Comidas del menú; con `items[].comidas` permiten calcular el avance sin conexión (HU-43). */
   comidas: ComidaDelMenu[];
+  /** CU-07.7 paso 7: suma de los precios reales de los ítems comprados, sugerida como gasto real. */
+  gastoSugerido: string;
 }
 
 const cantidad = (valor: string | number) => formatearCantidad(valor);
@@ -92,6 +110,13 @@ function itemVista(i: ItemDeLista): ItemVista {
     origen: i.origen,
     estado: i.estado,
     sinConversion: i.sinConversion,
+    precioReal: i.precioReal,
+    contenidoComprado: i.contenidoComprado === null ? null : cantidad(i.contenidoComprado),
+    precioNormalizado: i.precioNormalizado,
+    promedioCompra: i.promedioCompra
+      ? { precio: i.promedioCompra.promedio.toFixed(2), compras: i.promedioCompra.compras }
+      : null,
+    medianaMercado: i.medianaMercado,
     comidas: i.comidas,
   };
 }
@@ -109,5 +134,10 @@ export function vistaLista(lista: ListaCompleta): VistaLista {
     sinConversion: lista.items.filter((i) => i.sinConversion).length,
     items: lista.items.map(itemVista),
     comidas: lista.comidas,
+    gastoSugerido: deCentavos(
+      lista.items
+        .filter((i) => i.estado === 'COMPRADO' && i.precioReal !== null)
+        .reduce((suma, i) => suma + Math.round(Number(i.precioReal) * 100), 0),
+    ),
   };
 }

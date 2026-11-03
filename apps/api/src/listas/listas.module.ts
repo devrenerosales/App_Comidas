@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { HogarModule } from '../hogar/hogar.module';
+import { RELOJ_LISTAS } from './listas.constants';
 import { ListasController } from './listas.controller';
 import { ListasRepositorio } from './listas.repositorio';
 import { ListasService } from './listas.service';
@@ -9,6 +10,10 @@ import { ListasService } from './listas.service';
 @Module({
   imports: [AuthModule, HogarModule],
   controllers: [ListasController],
-  providers: [ListasRepositorio, ListasService],
+  providers: [
+    ListasRepositorio,
+    ListasService,
+    { provide: RELOJ_LISTAS, useValue: () => new Date() },
+  ],
 })
 export class ListasModule {}

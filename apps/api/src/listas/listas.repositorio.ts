@@ -8,6 +8,7 @@ import {
   listaCompras,
   listaItem,
   listaItemOrigen,
+  precioResumen,
   menuDetalle,
   menuSemanal,
   platillo,
@@ -19,15 +20,18 @@ import {
   type Db,
 } from '@menu/db';
 import {
+  precioNormalizado,
   resolverCambio,
   type CambioLista,
   type ComidaDelMenu,
   type TiempoComida,
   type MagnitudUnidad,
   type ParcheItem,
+  type PromedioDeCompra,
   type ResultadoCambio,
 } from '@menu/shared';
 import { DB } from '../database/database.constants';
+import { promediosDeCompra } from './promedio-compra.consulta';
 
 export interface UnidadLista {
   id: string;
@@ -52,6 +56,14 @@ export interface ItemDeLista {
   presentacionCantidad: string | null;
   presentacionUnidad: UnidadLista | null;
   equivalencia: string | null;
+  /** Total pagado y lo que se anotó al comprarlo (CU-07.7); null si no se registró precio. */
+  precioReal: string | null;
+  contenidoComprado: string | null;
+  precioNormalizado: string | null;
+  /** RN-12: promedio de compra del hogar del producto en las últimas 12 semanas. */
+  promedioCompra: PromedioDeCompra | null;
+  /** Mediana de mercado del producto para el hogar, como referencia junto al promedio. */
+  medianaMercado: string | null;
   /** Comidas (detalles del menú) que originan el ítem. */
   comidas: string[];
 }
@@ -83,7 +95,11 @@ export class ListasRepositorio {
   constructor(@Inject(DB) private readonly db: Db) {}
 
   /** La lista con sus ítems vigentes; undefined si no existe o es de otro hogar (RNF-06). */
-  async cargar(hogarId: string, listaId: string): Promise<ListaCompleta | undefined> {
+  async cargar(
+    hogarId: string,
+    listaId: string,
+    hoy: Date = new Date(),
+  ): Promise<ListaCompleta | undefined> {
     const [lista] = await this.db
       .select({
         id: listaCompras.id,
@@ -115,6 +131,9 @@ export class ListasRepositorio {
         cantidadComprar: listaItem.cantidadComprar,
         sinConversion: listaItem.sinConversion,
         estado: listaItem.estado,
+        precioReal: listaItem.precioReal,
+        contenidoComprado: listaItem.contenidoComprado,
+        precioNormalizado: listaItem.precioNormalizado,
         unidadCompra: producto.unidadCompra,
         presentacionCantidad: producto.presentacionCantidad,
         presentacionId: presentacion.id,
@@ -154,6 +173,19 @@ export class ListasRepositorio {
     const comidas = new Map<string, string[]>();
     for (const o of origenes)
       comidas.set(o.itemId, [...(comidas.get(o.itemId) ?? []), o.menuDetalleId]);
+
+    const productoIds = [...new Set(filas.flatMap((f) => (f.productoId ? [f.productoId] : [])))];
+    const promedios = await promediosDeCompra(this.db, hogarId, productoIds, hoy);
+    const medianas = new Map<string, string>();
+    if (productoIds.length > 0) {
+      const resumenes = await this.db
+        .select({ productoId: precioResumen.productoId, mediana: precioResumen.precioMediana })
+        .from(precioResumen)
+        .where(
+          and(eq(precioResumen.hogarId, hogarId), inArray(precioResumen.productoId, productoIds)),
+        );
+      for (const r of resumenes) medianas.set(r.productoId, r.mediana);
+    }
 
     const filasComidas = await this.db
       .select({
@@ -205,6 +237,11 @@ export class ListasRepositorio {
             }
           : null,
         equivalencia: f.equivalencia,
+        precioReal: f.precioReal,
+        contenidoComprado: f.contenidoComprado,
+        precioNormalizado: f.precioNormalizado,
+        promedioCompra: f.productoId ? (promedios.get(f.productoId) ?? null) : null,
+        medianaMercado: f.productoId ? (medianas.get(f.productoId) ?? null) : null,
         comidas: comidas.get(f.id) ?? [],
       })),
     };
@@ -303,7 +340,16 @@ export class ListasRepositorio {
             cambio,
           );
       if (resultado.resultado === 'APLICADO') {
-        await this.aplicarParche(tx, listaId, itemId, !!fila, resultado.parche, usuarioId);
+        await this.aplicarParche(
+          tx,
+          listaId,
+          itemId,
+          fila
+            ? { productoId: fila.productoId, cantidadComprar: Number(fila.cantidadComprar) }
+            : undefined,
+          resultado.parche,
+          usuarioId,
+        );
       }
     }
 
@@ -329,10 +375,12 @@ export class ListasRepositorio {
     tx: Tx,
     listaId: string,
     itemId: string,
-    existe: boolean,
+    actual: { productoId: string | null; cantidadComprar: number } | undefined,
     parche: ParcheItem,
     usuarioId: string,
   ): Promise<void> {
+    const existe = actual !== undefined;
+    const precio = await this.camposDePrecio(tx, actual, parche);
     const cubierto = parche.estado !== undefined && parche.estado !== 'PENDIENTE';
     const campos = {
       ...(parche.estado !== undefined ? { estado: parche.estado } : {}),
@@ -350,6 +398,7 @@ export class ListasRepositorio {
       ...(parche.estado !== undefined && parche.estado !== 'COMPRADO'
         ? { precioReal: null, contenidoComprado: null, precioNormalizado: null }
         : {}),
+      ...precio,
       modificadoEnDispositivo: new Date(parche.modificadoEn),
     };
     if (existe) {
@@ -368,5 +417,42 @@ export class ListasRepositorio {
       cantidadComprar: String(parche.cantidadComprar),
       ...campos,
     });
+  }
+
+  /**
+   * CU-07.7 pasos 5 y 2b: guarda el precio pagado y su precio normalizado a la presentación del
+   * catálogo (precio × presentación ÷ contenido comprado; por defecto, lo que dice la lista). Un
+   * producto de texto libre suma al gasto pero no genera promedio (E3).
+   */
+  private async camposDePrecio(
+    tx: Tx,
+    actual: { productoId: string | null; cantidadComprar: number } | undefined,
+    parche: ParcheItem,
+  ): Promise<{
+    precioReal?: string | null;
+    contenidoComprado?: string | null;
+    precioNormalizado?: string | null;
+  }> {
+    if (parche.precioReal === undefined) return {};
+    if (parche.precioReal === null) {
+      return { precioReal: null, contenidoComprado: null, precioNormalizado: null };
+    }
+    const base = {
+      precioReal: parche.precioReal.toFixed(2),
+      contenidoComprado:
+        parche.contenidoComprado === null || parche.contenidoComprado === undefined
+          ? null
+          : String(parche.contenidoComprado),
+    };
+    if (!actual?.productoId) return { ...base, precioNormalizado: null };
+    const [p] = await tx
+      .select({ presentacion: producto.presentacionCantidad })
+      .from(producto)
+      .where(eq(producto.id, actual.productoId));
+    if (!p) return { ...base, precioNormalizado: null };
+    const contenido = parche.contenidoComprado ?? actual.cantidadComprar * Number(p.presentacion);
+    const normalizado = precioNormalizado(parche.precioReal, p.presentacion, contenido);
+    // La restricción lista_item_precio_ck exige un precio normalizado mayor que 0.
+    return { ...base, precioNormalizado: normalizado > 0 ? normalizado.toFixed(2) : null };
   }
 }

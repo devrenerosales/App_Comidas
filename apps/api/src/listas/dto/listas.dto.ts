@@ -35,6 +35,14 @@ export class DatosCambioListaDto {
 
   @IsOptional()
   cantidadComprar?: number | string | null;
+
+  /** Total pagado por el ítem (CU-07.7); lo valida `resolverCambio` por cambio. */
+  @IsOptional()
+  precioReal?: number | string | null;
+
+  /** Contenido comprado en la unidad de la presentación del catálogo (CU-07.7 2b). */
+  @IsOptional()
+  contenidoComprado?: number | string | null;
 }
 
 export class CambioListaDto {

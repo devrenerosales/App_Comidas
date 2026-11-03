@@ -271,10 +271,113 @@ describe('resolverCambio (CU-07.3, HU-30)', () => {
     });
   });
 
-  it('el precio real todavía no se admite (HU-44)', () => {
-    expect(resolverCambio(item(), cambio('REGISTRAR_PRECIO', '10:00'))).toEqual({
-      resultado: 'RECHAZADO',
-      motivo: 'OPERACION_NO_SOPORTADA',
+  describe('precio real (CU-07.7, HU-44)', () => {
+    const comprado = (extra: Partial<EstadoItemSync> = {}) =>
+      item({ estado: 'COMPRADO', ...extra });
+
+    it('CA-44.1 marcar comprado con precio guarda el precio y deja el contenido por defecto', () => {
+      expect(
+        resolverCambio(item(), cambio('MARCAR_COMPRADO', '10:00', { precioReal: '28.10' })),
+      ).toEqual({
+        resultado: 'APLICADO',
+        parche: {
+          estado: 'COMPRADO',
+          eliminado: false,
+          compradoEn: ms('10:00'),
+          precioReal: 28.1,
+          contenidoComprado: null,
+          modificadoEn: ms('10:00'),
+        },
+      });
+    });
+
+    it('CA-44.2 con otra presentación (bolsa de 5 lb) guarda el contenido comprado', () => {
+      expect(
+        resolverCambio(
+          item(),
+          cambio('MARCAR_COMPRADO', '10:00', { precioReal: 66.25, contenidoComprado: '5' }),
+        ),
+      ).toMatchObject({
+        resultado: 'APLICADO',
+        parche: { precioReal: 66.25, contenidoComprado: 5 },
+      });
+    });
+
+    it('marcar comprado sin precio no toca el precio que ya tenía', () => {
+      const r = resolverCambio(comprado(), cambio('MARCAR_COMPRADO', '10:00'));
+      expect(r).toMatchObject({ resultado: 'APLICADO' });
+      if (r.resultado === 'APLICADO') {
+        expect('precioReal' in r.parche).toBe(false);
+        expect('contenidoComprado' in r.parche).toBe(false);
+      }
+    });
+
+    it('CA-44.5 un precio inválido rechaza el cambio con PRECIO_INVALIDO', () => {
+      for (const precioReal of [0, '-5.00', '12.345', 'abc', 100000]) {
+        expect(resolverCambio(item(), cambio('MARCAR_COMPRADO', '10:00', { precioReal }))).toEqual({
+          resultado: 'RECHAZADO',
+          motivo: 'PRECIO_INVALIDO',
+        });
+      }
+    });
+
+    it('un contenido comprado inválido se rechaza con CONTENIDO_INVALIDO', () => {
+      expect(
+        resolverCambio(
+          item(),
+          cambio('MARCAR_COMPRADO', '10:00', { precioReal: 10, contenidoComprado: 0 }),
+        ),
+      ).toEqual({ resultado: 'RECHAZADO', motivo: 'CONTENIDO_INVALIDO' });
+    });
+
+    it('"Ya lo tengo" no se cotiza: ignora el precio', () => {
+      const r = resolverCambio(item(), cambio('MARCAR_YA_LO_TENGO', '10:00', { precioReal: 10 }));
+      expect(r).toMatchObject({ resultado: 'APLICADO' });
+      if (r.resultado === 'APLICADO') expect('precioReal' in r.parche).toBe(false);
+    });
+
+    it('REGISTRAR_PRECIO en un ítem comprado fija o corrige el precio', () => {
+      expect(
+        resolverCambio(
+          comprado(),
+          cambio('REGISTRAR_PRECIO', '10:00', { precioReal: 27, contenidoComprado: 4 }),
+        ),
+      ).toEqual({
+        resultado: 'APLICADO',
+        parche: { precioReal: 27, contenidoComprado: 4, modificadoEn: ms('10:00') },
+      });
+    });
+
+    it('REGISTRAR_PRECIO sin precio lo borra', () => {
+      for (const datos of [null, { precioReal: null }]) {
+        expect(resolverCambio(comprado(), cambio('REGISTRAR_PRECIO', '10:00', datos))).toEqual({
+          resultado: 'APLICADO',
+          parche: { precioReal: null, contenidoComprado: null, modificadoEn: ms('10:00') },
+        });
+      }
+    });
+
+    it('REGISTRAR_PRECIO con precio inválido se rechaza y el ítem sigue comprado', () => {
+      expect(
+        resolverCambio(comprado(), cambio('REGISTRAR_PRECIO', '10:00', { precioReal: 0 })),
+      ).toEqual({ resultado: 'RECHAZADO', motivo: 'PRECIO_INVALIDO' });
+    });
+
+    it('el precio solo se registra en ítems comprados', () => {
+      for (const estado of ['PENDIENTE', 'YA_LO_TENGO'] as const) {
+        expect(
+          resolverCambio(item({ estado }), cambio('REGISTRAR_PRECIO', '10:00', { precioReal: 10 })),
+        ).toEqual({ resultado: 'RECHAZADO', motivo: 'ITEM_NO_COMPRADO' });
+      }
+    });
+
+    it('un ítem eliminado no recibe precio', () => {
+      expect(
+        resolverCambio(
+          comprado({ eliminado: true }),
+          cambio('REGISTRAR_PRECIO', '10:00', { precioReal: 10 }),
+        ),
+      ).toEqual({ resultado: 'OBSOLETO', motivo: 'ITEM_ELIMINADO' });
     });
   });
 });
