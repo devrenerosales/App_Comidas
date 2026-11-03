@@ -1,11 +1,20 @@
+import type { SincronizarListaDto } from './dto/listas.dto';
 import { ListasController } from './listas.controller';
 import type { ListasService } from './listas.service';
 
-describe('ListasController (HU-28)', () => {
+describe('ListasController (HU-28, HU-30)', () => {
+  const obtener = jest.fn().mockResolvedValue('lista');
+  const sincronizar = jest.fn().mockResolvedValue('sincronizada');
+  const controlador = new ListasController({ obtener, sincronizar } as unknown as ListasService);
+
   it('lee la lista del hogar', async () => {
-    const obtener = jest.fn().mockResolvedValue('lista');
-    const controlador = new ListasController({ obtener } as unknown as ListasService);
     await expect(controlador.obtener('h1', 'l1')).resolves.toBe('lista');
     expect(obtener).toHaveBeenCalledWith('h1', 'l1');
+  });
+
+  it('sincroniza los cambios con el usuario que los envía', async () => {
+    const dto = { cambios: [] } as unknown as SincronizarListaDto;
+    await expect(controlador.sincronizar('h1', 'u1', 'l1', dto)).resolves.toBe('sincronizada');
+    expect(sincronizar).toHaveBeenCalledWith('h1', 'u1', 'l1', dto);
   });
 });

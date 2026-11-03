@@ -1,4 +1,5 @@
-/** Endpoints de la lista de compras (M07 · HU-28, api-contrato §2.7). */
+/** Endpoints de la lista de compras (M07 · HU-28 y HU-30, api-contrato §2.7). */
+import type { CambioLista } from '@menu/shared';
 import type { ClienteHttp } from './cliente';
 
 export interface CantidadConUnidad {
@@ -37,10 +38,30 @@ export interface ListaCompras {
   items: ItemLista[];
 }
 
+/** Qué pasó con un cambio del lote (api-contrato §2.7). */
+export interface ResultadoSync {
+  id: string;
+  resultado: 'APLICADO' | 'OBSOLETO' | 'RECHAZADO';
+  motivo?: string;
+}
+
+/** Respuesta de `POST /listas/{id}/sync`: resultados por cambio y la lista vigente. */
+export interface RespuestaSync {
+  version: number;
+  resultados: ResultadoSync[];
+  lista: ListaCompras;
+}
+
 export function crearApiListas(cliente: Pick<ClienteHttp, 'peticion'>) {
+  const id = (valor: string) => encodeURIComponent(valor);
   return {
-    obtener: (listaId: string) =>
-      cliente.peticion<ListaCompras>(`/listas/${encodeURIComponent(listaId)}`),
+    obtener: (listaId: string) => cliente.peticion<ListaCompras>(`/listas/${id(listaId)}`),
+    /** Envía los cambios hechos en el dispositivo; es idempotente por id de cambio (CU-07.3). */
+    sincronizar: (listaId: string, cambios: CambioLista[], versionBase?: number) =>
+      cliente.peticion<RespuestaSync>(`/listas/${id(listaId)}/sync`, {
+        metodo: 'POST',
+        cuerpo: { ...(versionBase !== undefined ? { versionBase } : {}), cambios },
+      }),
   };
 }
 
