@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-19 Generar propuesta de menú (S3) · HU-24 Editar, mover y fijar platillos (S3) · HU-21 a HU-23, HU-25 y HU-26 (S3, pendientes) |
+| Historias | HU-19 Generar propuesta de menú (S3) · HU-24 Editar, mover y fijar platillos (S3) · HU-21 a HU-23, HU-25 y HU-26 (S3) |
 | Versión de la app | Sprint 3 (rama `feature/HU-19-generar-menu`) |
 | Estado del capítulo | Parcial: "Sugerir menú" y cambiar, mover y fijar; faltan ajuste al presupuesto, motivo, alternativas y aprobación, y las capturas |
 
@@ -151,3 +151,16 @@ Cada tiempo de comida tiene su propio presupuesto (el semanal por el porcentaje 
 Cada vez que cambias, mueves o pides otra opción para un día, el costo y el exceso del tiempo se recalculan.
 
 **Mientras no haya precios** (llegan con la carga de tickets y precios) ningún platillo tiene costo y el menú se muestra con el costo incompleto, sin reemplazos.
+
+## 6.8 Costo del menú frente al presupuesto
+
+Debajo de la tabla, el recuadro **Costo del menú** te dice si la semana alcanza:
+
+- **Total:** lo que cuesta toda la semana, "Total: Q229.50 de Q245.00", con una barra. Si cumple, la barra y el aviso **Disponible Q15.50** salen en verde.
+- **Excede:** si el total pasa del presupuesto, la barra y el aviso **Excede por Q3.50** salen en rojo. Puedes aprobar igual (ver 6.3).
+- **Por tiempo de comida:** cada tiempo se compara con su propio presupuesto. Un tiempo puede salir en rojo ("Excede por Q10.00") aunque el total de la semana esté en verde.
+- **Por día:** cada platillo muestra su costo en la tabla ("Chile relleno Q34.00"). Si hay más de un tiempo de comida, el día suma lo de todos ("Día: Q480.00").
+- **Costo incompleto:** si a un platillo le falta el precio de algún ingrediente, su costo lleva un asterisco ("Q34.00\*") y aparece la nota "\* Costo incompleto: hay ingredientes sin precio". El costo que ves es solo lo que se conoce, así que el real puede ser mayor.
+- **Sin presupuesto:** si todavía no configuraste el presupuesto semanal, verás solo el costo y un enlace a **Configuración**.
+
+El costo se actualiza cada vez que cambias, mueves, fijas o pides otra opción para un día.

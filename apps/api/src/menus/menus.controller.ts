@@ -11,6 +11,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import type { CostosDelMenu } from '@menu/shared';
 import type { Response } from 'express';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import { Problema } from '../comun/problema';
@@ -85,6 +86,15 @@ export class MenusController {
     @Param('id', idMenu) id: string,
   ): Promise<VistaMenu> {
     return this.edicion.obtener(hogarId, id);
+  }
+
+  /** CU-06.3: costo estimado por día, por tiempo y total frente al presupuesto. */
+  @Get(':id/costos')
+  costos(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', idMenu) id: string,
+  ): Promise<CostosDelMenu> {
+    return this.edicion.costos(hogarId, id);
   }
 
   /** CU-05.4: por qué se sugirió el platillo de un espacio. */

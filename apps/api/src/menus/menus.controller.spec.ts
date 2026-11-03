@@ -10,6 +10,7 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
   const edicion = {
     obtenerPorSemana: jest.fn().mockResolvedValue('semana'),
     obtener: jest.fn().mockResolvedValue('menu'),
+    costos: jest.fn().mockResolvedValue('costos'),
     editar: jest.fn().mockResolvedValue('editado'),
     mover: jest.fn().mockResolvedValue('movido'),
     fijar: jest.fn().mockResolvedValue('fijado'),
@@ -45,6 +46,11 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
     await expect(controlador.obtener('h1', 'm1')).resolves.toBe('menu');
     await expect(controlador.porSemana('h1', '2026-11-03')).resolves.toBe('semana');
     expect(edicion.obtenerPorSemana).toHaveBeenCalledWith('h1', '2026-11-03');
+  });
+
+  it('CU-06.3 lee los costos del menú', async () => {
+    await expect(controlador.costos('h1', 'm1')).resolves.toBe('costos');
+    expect(edicion.costos).toHaveBeenCalledWith('h1', 'm1');
   });
 
   it('una fecha mal formada es "sin menú" (404)', () => {
