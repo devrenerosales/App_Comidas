@@ -1,8 +1,9 @@
 /**
  * HU-30 Editar y marcar la lista de compras y HU-43 Avance de compra por comida — integración
  * contra PostgreSQL real (TEST_DATABASE_URL). Cubre CA-30.1 a CA-30.4 sobre POST /listas/{id}/sync
- * (marcar, lote sin conexión, idempotencia, última escritura gana, validaciones) y el avance por
- * comida de GET /listas/{id}/avance (CA-43.1 a CA-43.4 y CA-43.6).
+ * (marcar, lote sin conexión, idempotencia, última escritura gana, validaciones), el avance por
+ * comida de GET /listas/{id}/avance (CA-43.1 a CA-43.4 y CA-43.6) y el precio real con su promedio
+ * de compra (HU-44: CA-44.1 a CA-44.3, CA-44.5 y CA-44.6).
  *
  * Semana del domingo 2026-11-01: lunes 11-02 y miércoles 11-04.
  */
@@ -10,6 +11,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import {
   eq,
+  listaCompras,
   listaItem,
   menuDetalle,
   menuSemanal,
@@ -17,7 +19,9 @@ import {
   platillo,
   platilloIngrediente,
   platilloTiempo,
+  precioResumen,
   producto,
+  supermercado,
   syncCambio,
   unidad,
 } from '@menu/db';
@@ -183,7 +187,10 @@ describeConBd('HU-30 y HU-43 Editar la lista y su avance por comida (integració
 
   let reloj = 0;
   // Las horas de los cambios son posteriores a la aprobación, que fija la hora de cada ítem.
-  const BASE = Date.now() + 60_000;
+  let BASE = Date.now() + 60_000;
+  beforeEach(() => {
+    BASE = Date.now() + 60_000;
+  });
   const hora = (minutos: number) => new Date(BASE + minutos * 60_000).toISOString();
   const cambio = (
     operacion: string,
@@ -399,7 +406,7 @@ describeConBd('HU-30 y HU-43 Editar la lista y su avance por comida (integració
       ['OBSOLETO', 'YA_EXISTE'],
       ['RECHAZADO', 'PRODUCTO_INVALIDO'],
       ['RECHAZADO', 'ITEM_NO_ENCONTRADO'],
-      ['RECHAZADO', 'OPERACION_NO_SOPORTADA'],
+      ['RECHAZADO', 'ITEM_NO_COMPRADO'],
     ]);
     expect(res.body.lista.total).toBe(3);
     expect(res.body.version).toBe(1);
@@ -583,5 +590,282 @@ describeConBd('HU-30 y HU-43 Editar la lista y su avance por comida (integració
 
     await avance(otro.token, listaId).expect(404);
     await http().get(`${API}/listas/no-es-uuid/avance`).set(con(token)).expect(404);
+  });
+
+  // --- HU-44 Precio real y promedio de compra ---------------------------------------------------
+
+  const DIA_MS = 86_400_000;
+  const haceDias = (dias: number) => new Date(Date.now() - dias * DIA_MS);
+
+  /** Menú con "Pollo en crema" (lunes) que usa azúcar (bolsa de 5 lb), ya aprobado. */
+  const listaConAzucar = async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    const crema = await crearPlatillo(hogarId, 'Pollo en crema', [['Azúcar', 1, 'lb']]);
+    const m = await crearBorrador(hogarId, [[LUNES, crema]]);
+    const res = await aprobar(token, m.menuId, m.version).expect(200);
+    const lista = await http().get(res.body.lista.url).set(con(token)).expect(200);
+    return {
+      token,
+      hogarId,
+      listaId: res.body.lista.id as string,
+      itemId: lista.body.items[0].id as string,
+    };
+  };
+
+  /** Compras anteriores del hogar con su precio normalizado, cada una en su propia lista de otra semana. */
+  const comprasPrevias = async (hogarId: string, nombre: string, compras: [number, number][]) => {
+    const [prod] = await bd.db
+      .select({ id: producto.id })
+      .from(producto)
+      .where(eq(producto.nombre, nombre));
+    let semana = 0;
+    for (const [dias, normalizado] of compras) {
+      semana += 1;
+      const inicio = new Date(Date.UTC(2026, 0, 4 + semana * 7)).toISOString().slice(0, 10);
+      const fin = new Date(Date.UTC(2026, 0, 10 + semana * 7)).toISOString().slice(0, 10);
+      const [menu] = await bd.db
+        .insert(menuSemanal)
+        .values({
+          hogarId,
+          fechaInicio: inicio,
+          fechaFin: fin,
+          estado: 'HISTORICO',
+          presupuestoSemanal: '100.00',
+        })
+        .returning();
+      const [lista] = await bd.db
+        .insert(listaCompras)
+        .values({ hogarId, menuId: menu!.id })
+        .returning();
+      await bd.db.insert(listaItem).values({
+        id: crypto.randomUUID(),
+        listaId: lista!.id,
+        productoId: prod!.id,
+        origen: 'MENU',
+        cantidadComprar: '1',
+        estado: 'COMPRADO',
+        compradoEn: haceDias(dias),
+        precioReal: normalizado.toFixed(2),
+        precioNormalizado: normalizado.toFixed(2),
+        modificadoEnDispositivo: haceDias(dias),
+      });
+    }
+  };
+
+  const itemDe = (cuerpo: { lista: { items: { id: string }[] } }, id: string) =>
+    cuerpo.lista.items.find((i) => i.id === id) as unknown as {
+      estado: string;
+      precioReal: string | null;
+      contenidoComprado: string | null;
+      precioNormalizado: string | null;
+      promedioCompra: { precio: string; compras: number } | null;
+      medianaMercado: string | null;
+    };
+
+  it('CA-44.1 registrar el precio al comprar recalcula el promedio de 12 semanas y lo muestra con la mediana', async () => {
+    const { token, hogarId, listaId, itemId } = await listaConAzucar();
+    // Compras previas: Q26.50 (hace 40 días), Q27.00 (hace 20) y Q24.00 hace 120 días, fuera de la ventana.
+    await comprasPrevias(hogarId, 'Azúcar', [
+      [40, 26.5],
+      [20, 27],
+      [120, 24],
+    ]);
+    const [tienda] = await bd.db.select({ id: supermercado.id }).from(supermercado).limit(1);
+    const [azucar] = await bd.db
+      .select({ id: producto.id })
+      .from(producto)
+      .where(eq(producto.nombre, 'Azúcar'));
+    await bd.db.insert(precioResumen).values({
+      productoId: azucar!.id,
+      hogarId,
+      precioMediana: '27.50',
+      precioMinimo: '26.00',
+      supermercadoMinimoId: tienda!.id,
+      fechaPrecioMinimo: '2026-10-20',
+      cantidadPrecios: 3,
+      fechaPrecioMasAntiguo: '2026-10-10',
+    });
+
+    const res = await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: '28.10' }),
+    ]).expect(200);
+
+    expect(res.body.resultados[0].resultado).toBe('APLICADO');
+    expect(itemDe(res.body, itemId)).toMatchObject({
+      estado: 'COMPRADO',
+      precioReal: '28.10',
+      precioNormalizado: '28.10',
+      promedioCompra: { precio: '27.20', compras: 3 },
+      medianaMercado: '27.50',
+    });
+    expect(res.body.lista.gastoSugerido).toBe('28.10');
+  });
+
+  it('CA-44.2 una presentación distinta normaliza el precio a la del catálogo', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+
+    // La bolsa del catálogo es de 5 lb; se compró media bolsa (2.5 lb) por Q10.00 → Q20.00 por bolsa.
+    const res = await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: 10, contenidoComprado: 2.5 }),
+    ]).expect(200);
+
+    expect(itemDe(res.body, itemId)).toMatchObject({
+      precioReal: '10.00',
+      contenidoComprado: '2.5',
+      precioNormalizado: '20.00',
+      promedioCompra: { precio: '20.00', compras: 1 },
+    });
+  });
+
+  it('CA-44.3 la suma de precios reales de lo comprado es el gasto sugerido; "Ya lo tengo" no suma', async () => {
+    const { token, listaId, items } = await listaAprobada();
+
+    const res = await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', items.get('Pechuga de pollo')!, 0, { precioReal: '54.00' }),
+      cambio('MARCAR_COMPRADO', items.get('Tomate')!, 1, { precioReal: '45.50' }),
+      cambio('MARCAR_YA_LO_TENGO', items.get('Mantequilla')!, 2),
+    ]).expect(200);
+
+    expect(res.body.lista.gastoSugerido).toBe('99.50');
+    expect(itemDe(res.body, items.get('Mantequilla')!)).toMatchObject({
+      estado: 'YA_LO_TENGO',
+      precioReal: null,
+    });
+  });
+
+  it('CA-44.5 un precio inválido deja el producto comprado sin precio', async () => {
+    const { token, listaId, items } = await listaAprobada();
+    const pollo = items.get('Pechuga de pollo')!;
+    await sync(token, listaId, [cambio('MARCAR_COMPRADO', pollo, 0)]).expect(200);
+
+    for (const [i, precioReal] of ['0', '-5.00', '12.345'].entries()) {
+      const res = await sync(token, listaId, [
+        cambio('REGISTRAR_PRECIO', pollo, 1 + i, { precioReal }),
+      ]).expect(200);
+      expect(res.body.resultados[0]).toMatchObject({
+        resultado: 'RECHAZADO',
+        motivo: 'PRECIO_INVALIDO',
+      });
+      expect(itemDe(res.body, pollo)).toMatchObject({ estado: 'COMPRADO', precioReal: null });
+    }
+    // Marcar con un precio inválido rechaza el cambio completo.
+    const tomate = items.get('Tomate')!;
+    const rechazado = await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', tomate, 5, { precioReal: 0 }),
+    ]).expect(200);
+    expect(rechazado.body.resultados[0].resultado).toBe('RECHAZADO');
+    expect(itemDe(rechazado.body, tomate).estado).toBe('PENDIENTE');
+  });
+
+  it('corregir el precio reemplaza al anterior y quitarlo lo borra del promedio y de la suma', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+    await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: '30.00' }),
+    ]).expect(200);
+
+    const corregido = await sync(token, listaId, [
+      cambio('REGISTRAR_PRECIO', itemId, 1, { precioReal: '25.00' }),
+    ]).expect(200);
+    expect(itemDe(corregido.body, itemId)).toMatchObject({
+      precioReal: '25.00',
+      precioNormalizado: '25.00',
+      promedioCompra: { precio: '25.00', compras: 1 },
+    });
+    expect(corregido.body.lista.gastoSugerido).toBe('25.00');
+
+    const sinPrecio = await sync(token, listaId, [cambio('REGISTRAR_PRECIO', itemId, 2)]).expect(
+      200,
+    );
+    expect(itemDe(sinPrecio.body, itemId)).toMatchObject({
+      estado: 'COMPRADO',
+      precioReal: null,
+      precioNormalizado: null,
+      promedioCompra: null,
+    });
+    expect(sinPrecio.body.lista.gastoSugerido).toBe('0.00');
+  });
+
+  it('E4 desmarcar o pasar a "Ya lo tengo" descarta el precio y sale del promedio', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+    await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: '30.00' }),
+    ]).expect(200);
+
+    const desmarcado = await sync(token, listaId, [cambio('DESMARCAR_COMPRADO', itemId, 1)]).expect(
+      200,
+    );
+    expect(itemDe(desmarcado.body, itemId)).toMatchObject({
+      estado: 'PENDIENTE',
+      precioReal: null,
+      promedioCompra: null,
+    });
+
+    await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 2, { precioReal: '30.00' }),
+    ]).expect(200);
+    const yaTengo = await sync(token, listaId, [cambio('MARCAR_YA_LO_TENGO', itemId, 3)]).expect(
+      200,
+    );
+    expect(itemDe(yaTengo.body, itemId)).toMatchObject({
+      estado: 'YA_LO_TENGO',
+      precioReal: null,
+      promedioCompra: null,
+    });
+    expect(yaTengo.body.lista.gastoSugerido).toBe('0.00');
+  });
+
+  it('el precio solo se registra en un producto comprado', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+
+    const res = await sync(token, listaId, [
+      cambio('REGISTRAR_PRECIO', itemId, 0, { precioReal: 10 }),
+    ]).expect(200);
+
+    expect(res.body.resultados[0]).toMatchObject({
+      resultado: 'RECHAZADO',
+      motivo: 'ITEM_NO_COMPRADO',
+    });
+  });
+
+  it('E3 un producto de texto libre suma al gasto pero no genera promedio', async () => {
+    const { token, listaId } = await listaConAzucar();
+    const tortillas = '12121212-1212-4212-8212-121212121212';
+
+    const res = await sync(token, listaId, [
+      cambio('AGREGAR', tortillas, 0, { textoLibre: 'Tortillas', cantidadComprar: 30 }),
+      cambio('MARCAR_COMPRADO', tortillas, 1, { precioReal: '15.00' }),
+    ]).expect(200);
+
+    expect(itemDe(res.body, tortillas)).toMatchObject({
+      precioReal: '15.00',
+      precioNormalizado: null,
+      promedioCompra: null,
+      medianaMercado: null,
+    });
+    expect(res.body.lista.gastoSugerido).toBe('15.00');
+  });
+
+  it('CA-44.6 reenviar el cambio con precio no lo repite: el precio cuenta una sola vez', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+    const lote = [cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: '12.50' })];
+
+    await sync(token, listaId, lote).expect(200);
+    const otra = await sync(token, listaId, lote).expect(200);
+
+    expect(otra.body.resultados[0]).toMatchObject({ resultado: 'APLICADO', motivo: 'DUPLICADO' });
+    expect(itemDe(otra.body, itemId).promedioCompra).toEqual({ precio: '12.50', compras: 1 });
+    expect(otra.body.lista.gastoSugerido).toBe('12.50');
+  });
+
+  it('una lista nueva no ve los precios de otro hogar en su promedio', async () => {
+    const { token, listaId, itemId } = await listaConAzucar();
+    const ajeno = await hogarDe('Ana');
+    await comprasPrevias(ajeno.hogarId, 'Azúcar', [[10, 99]]);
+
+    const res = await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', itemId, 0, { precioReal: '20.00' }),
+    ]).expect(200);
+
+    expect(itemDe(res.body, itemId).promedioCompra).toEqual({ precio: '20.00', compras: 1 });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   CAMBIOS_MAXIMOS_POR_LOTE,
   avanceDeLista,
@@ -7,6 +7,7 @@ import {
 } from '@menu/shared';
 import { Problema } from '../comun/problema';
 import type { SincronizarListaDto } from './dto/listas.dto';
+import { RELOJ_LISTAS } from './listas.constants';
 import { ListasRepositorio, type ResultadoSync } from './listas.repositorio';
 import { vistaLista, type VistaLista } from './listas.vista';
 
@@ -22,17 +23,20 @@ const noEncontrada = () => new Problema(404, 'NO_ENCONTRADO', 'La lista no exist
 /** M07 — lectura y edición de la lista de compras (CU-07.1 y CU-07.3, HU-28 y HU-30). */
 @Injectable()
 export class ListasService {
-  constructor(private readonly repo: ListasRepositorio) {}
+  constructor(
+    private readonly repo: ListasRepositorio,
+    @Inject(RELOJ_LISTAS) private readonly reloj: () => Date,
+  ) {}
 
   async obtener(hogarId: string, listaId: string): Promise<VistaLista> {
-    const lista = await this.repo.cargar(hogarId, listaId);
+    const lista = await this.repo.cargar(hogarId, listaId, this.reloj());
     if (!lista) throw noEncontrada();
     return vistaLista(lista);
   }
 
   /** CU-07.6: avance de la compra por comida y general (RN-13). */
   async avance(hogarId: string, listaId: string): Promise<AvanceLista> {
-    const lista = await this.repo.cargar(hogarId, listaId);
+    const lista = await this.repo.cargar(hogarId, listaId, this.reloj());
     if (!lista) throw noEncontrada();
     return avanceDeLista(
       lista.items.map((i) => ({
@@ -70,7 +74,7 @@ export class ListasService {
       dto.cambios as CambioLista[],
     );
     if (!aplicado) throw noEncontrada();
-    const lista = await this.repo.cargar(hogarId, listaId);
+    const lista = await this.repo.cargar(hogarId, listaId, this.reloj());
     if (!lista) throw noEncontrada();
     return { version: lista.version, resultados: aplicado.resultados, lista: vistaLista(lista) };
   }

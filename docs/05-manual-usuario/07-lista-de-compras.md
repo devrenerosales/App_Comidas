@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) · HU-43 Avance de compra por comida (S4) |
+| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) · HU-43 Avance de compra por comida (S4) · HU-44 Precio real y promedio de compra (S4) |
 | Versión de la app | Sprint 4 (rama `feature/HU-28-consolidar-lista`) |
-| Estado del capítulo | Parcial: lista consolidada, marcar, quitar y agregar, y uso sin conexión, y avance por comida; faltan despensa, precio real y compartir, y las capturas |
+| Estado del capítulo | Parcial: lista consolidada, marcar, quitar y agregar, y uso sin conexión, avance por comida y precio real; faltan despensa y compartir, y las capturas |
 
 > **Capturas:** los recuadros `[Captura …]` marcan dónde irá la imagen de la pantalla real (teléfono 390 × 844, carpeta `docs/05-manual-usuario/img/`).
 
@@ -91,3 +91,24 @@ Algunos casos:
 El avance también se actualiza sin conexión: lo calcula tu teléfono con los cambios que vas haciendo (ver 7.5).
 
 [Captura 7.6: pestaña Por comida con el avance general y las comidas]
+
+## 7.7 Anotar el precio que pagaste
+
+Al marcar un producto como **comprado** la app te ofrece anotar cuánto pagaste. Es opcional y sirve para dos cosas: que el gasto de la semana se llene solo y que la app conozca el precio al que de verdad compras.
+
+1. Marca la casilla del producto. Se abre **Precio pagado (Q)**.
+2. Escribe el **total** que pagaste por ese producto (lo de todas las bolsas o libras que compraste, no el precio de una sola) y toca **Guardar precio**. Si no quieres anotarlo, toca **Omitir precio**: el producto queda comprado sin precio.
+3. Si compraste **otra presentación** que la sugerida (por ejemplo, una bolsa de 5 lb cuando la lista pedía bolsas de 2 lb), escribe el **contenido comprado** (5) y la app calcula el precio por la presentación de siempre.
+4. Si te equivocaste, toca **Corregir precio** y escribe el valor correcto; el nuevo reemplaza al anterior.
+
+Las reglas del precio: mayor que Q0.00, con hasta 2 decimales y hasta Q99,999.99. Si no cumple, la app te lo dice ("El precio debe ser mayor que Q0.00", "Usa máximo 2 decimales") y el producto sigue comprado, solo que sin precio.
+
+**Promedio de compra.** Debajo de un producto verás, cuando hay datos, "Promedio de compra Q27.20 (3 compras) · Mediana Q27.50": el promedio de lo que tu hogar pagó en las últimas 12 semanas junto al precio típico del mercado. Ayuda a decidir si un precio es bueno.
+
+**Si falta el precio del mercado.** Cuando un producto no tiene un precio de mercado de los últimos 14 días, la app usa tu promedio de compra para estimar lo que cuesta el menú.
+
+**Gasto de la semana.** La suma de los precios que anotas es la que se propondrá como gasto real de la semana. Los productos marcados **Ya lo tengo** no suman. Si desmarcas un producto o lo pasas a **Ya lo tengo**, su precio se descarta.
+
+**Sin conexión.** Puedes anotar el precio en el supermercado sin señal: viaja junto con la marca de comprado como un solo cambio pendiente y se envía una sola vez al reconectar (ver 7.5).
+
+[Captura 7.7: producto comprado con el formulario de precio y el promedio de compra]

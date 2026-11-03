@@ -50,6 +50,8 @@ export interface ListaSincronizada {
   agregar: (nombre: string, cantidad: string) => string | null;
   marcar: (itemId: string, estado: 'COMPRADO' | 'YA_LO_TENGO' | 'PENDIENTE') => void;
   quitar: (itemId: string) => void;
+  /** CU-07.7: anota el precio pagado de un producto comprado y, si compró otra presentación, su contenido. */
+  registrarPrecio: (itemId: string, precio: number, contenidoComprado?: number) => void;
 }
 
 /**
@@ -71,6 +73,8 @@ export function useListaSincronizada(
   const [intento, setIntento] = useState(0);
   const ref = useRef<EstadoLocal | null>(null);
   const enVuelo = useRef(false);
+  /** Cambios que van en el lote que se está enviando: no se les puede unir otro cambio. */
+  const enLote = useRef<Set<string>>(new Set());
 
   const fijar = useCallback(
     (siguiente: EstadoLocal | null) => {
@@ -89,6 +93,7 @@ export function useListaSincronizada(
       while (ref.current && ref.current.cola.length > 0 && enLinea()) {
         const lote = ref.current.cola;
         const ids = new Set(lote.map((c) => c.id));
+        enLote.current = ids;
         try {
           const respuesta = await listas.sincronizar(listaId, lote, ref.current.base.version);
           const rechazados = respuesta.resultados.filter((r) => r.resultado === 'RECHAZADO').length;
@@ -120,6 +125,7 @@ export function useListaSincronizada(
       }
     } finally {
       enVuelo.current = false;
+      enLote.current = new Set();
     }
   }, [listaId, listas, fijar]);
 
@@ -185,7 +191,22 @@ export function useListaSincronizada(
       ...(datos ? { datos } : {}),
       marcaTiempo: ahora().toISOString(),
     };
-    fijar({ base: ref.current.base, cola: [...ref.current.cola, cambio] });
+    const cola = ref.current.cola;
+    // CU-07.7 / CA-44.6: el precio de un producto que se acaba de marcar viaja en el mismo cambio, así
+    // que sin conexión sigue siendo "1 cambio pendiente". El último precio anotado reemplaza al anterior.
+    const ultimo = cola.map((c) => c.itemId).lastIndexOf(itemId);
+    const previo = ultimo >= 0 ? cola[ultimo] : undefined;
+    const fusionable =
+      operacion === 'REGISTRAR_PRECIO' &&
+      previo !== undefined &&
+      !enLote.current.has(previo.id) &&
+      (previo.operacion === 'MARCAR_COMPRADO' || previo.operacion === 'REGISTRAR_PRECIO');
+    fijar({
+      base: ref.current.base,
+      cola: fusionable
+        ? cola.map((c, i) => (i === ultimo ? { ...c, datos: { ...c.datos, ...datos } } : c))
+        : [...cola, cambio],
+    });
     void enviar();
   };
 
@@ -215,5 +236,10 @@ export function useListaSincronizada(
         itemId,
       ),
     quitar: (itemId) => registrar('ELIMINAR', itemId),
+    registrarPrecio: (itemId, precio, contenidoComprado) =>
+      registrar('REGISTRAR_PRECIO', itemId, {
+        precioReal: precio,
+        contenidoComprado: contenidoComprado ?? null,
+      }),
   };
 }

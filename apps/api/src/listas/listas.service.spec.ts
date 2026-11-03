@@ -29,14 +29,15 @@ async function problema(promesa: Promise<unknown>): Promise<Problema> {
 
 describe('ListasService (HU-28, HU-30)', () => {
   const repo = { cargar: jest.fn(), aplicarSync: jest.fn() };
-  const servicio = new ListasService(repo as unknown as ListasRepositorio);
+  const HOY = new Date('2026-10-25T12:00:00.000Z');
+  const servicio = new ListasService(repo as unknown as ListasRepositorio, () => HOY);
 
   beforeEach(() => jest.resetAllMocks());
 
   it('devuelve la lista del hogar', async () => {
     repo.cargar.mockResolvedValue(completa());
     await expect(servicio.obtener('h1', 'l1')).resolves.toMatchObject({ id: 'l1', total: 0 });
-    expect(repo.cargar).toHaveBeenCalledWith('h1', 'l1');
+    expect(repo.cargar).toHaveBeenCalledWith('h1', 'l1', HOY);
   });
 
   it('una lista de otro hogar o inexistente es 404', async () => {

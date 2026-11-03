@@ -6,6 +6,7 @@
  * de comprado se restaura como comprado.
  */
 import { redondear } from './catalogo';
+import { validarPrecio } from './precio-compra';
 
 export type OperacionLista =
   | 'AGREGAR'
@@ -31,6 +32,10 @@ export interface DatosCambioLista {
   productoId?: string | null;
   textoLibre?: string | null;
   cantidadComprar?: number | string | null;
+  /** Total pagado por el ítem en quetzales (CU-07.7); solo con comprado. */
+  precioReal?: number | string | null;
+  /** Contenido comprado en la unidad de la presentación del catálogo (CU-07.7 2b). */
+  contenidoComprado?: number | string | null;
 }
 
 export interface CambioLista {
@@ -61,6 +66,9 @@ export interface ParcheItem {
   eliminado?: boolean;
   /** Momento en que pasó a comprado o "Ya lo tengo"; null al desmarcar. */
   compradoEn?: number | null;
+  /** Precio pagado; null lo borra (al corregir) y lo borran los cambios a pendiente o "Ya lo tengo". */
+  precioReal?: number | null;
+  contenidoComprado?: number | null;
   modificadoEn: number;
 }
 
@@ -79,6 +87,30 @@ export function cantidadValida(valor: number | string | null | undefined): numbe
   if (valor === null || valor === undefined || valor === '') return null;
   const n = redondear(Number(valor), 3);
   return Number.isFinite(n) && n > 0 && n <= CANTIDAD_MAXIMA_ITEM ? n : null;
+}
+
+const OBSOLETO_ITEM_ELIMINADO = obsoleto('ITEM_ELIMINADO');
+
+type PrecioDeCambio =
+  | { ok: true; campos: Pick<ParcheItem, 'precioReal' | 'contenidoComprado'> }
+  | { ok: false; resultado: ResultadoCambio };
+
+/**
+ * Precio y contenido comprado de un cambio (CU-07.7). Sin precio no hay campos que cambiar; con
+ * precio, el contenido es opcional (por defecto lo comprado según la lista).
+ */
+function precioDeCambio(datos: DatosCambioLista | null | undefined): PrecioDeCambio {
+  const precio = datos?.precioReal;
+  if (precio === undefined || precio === null) return { ok: true, campos: {} };
+  const validado = validarPrecio(precio);
+  if (!validado.ok) return { ok: false, resultado: rechazo('PRECIO_INVALIDO') };
+  const contenido = datos?.contenidoComprado;
+  if (contenido === undefined || contenido === null) {
+    return { ok: true, campos: { precioReal: validado.valor, contenidoComprado: null } };
+  }
+  const valido = cantidadValida(contenido);
+  if (valido === null) return { ok: false, resultado: rechazo('CONTENIDO_INVALIDO') };
+  return { ok: true, campos: { precioReal: validado.valor, contenidoComprado: valido } };
 }
 
 function agregar(cambio: CambioLista, marca: number): ResultadoCambio {
@@ -140,18 +172,27 @@ export function resolverCambio(
       return actual.eliminado
         ? obsoleto('YA_ELIMINADO')
         : { resultado: 'APLICADO', parche: { eliminado: true, modificadoEn: marca } };
-    case 'MARCAR_COMPRADO':
     case 'MARCAR_YA_LO_TENGO':
-      // CA-30.3: comprar un ítem que otro quitó antes lo restaura como comprado.
+      // CA-30.3: marcar un ítem que otro quitó antes lo restaura. "Ya lo tengo" no se cotiza.
+      return {
+        resultado: 'APLICADO',
+        parche: { estado: 'YA_LO_TENGO', eliminado: false, compradoEn: marca, modificadoEn: marca },
+      };
+    case 'MARCAR_COMPRADO': {
+      // CA-30.3: comprar un ítem que otro quitó antes lo restaura como comprado; el precio es opcional.
+      const precio = precioDeCambio(cambio.datos);
+      if (!precio.ok) return precio.resultado;
       return {
         resultado: 'APLICADO',
         parche: {
-          estado: cambio.operacion === 'MARCAR_COMPRADO' ? 'COMPRADO' : 'YA_LO_TENGO',
+          estado: 'COMPRADO',
           eliminado: false,
           compradoEn: marca,
+          ...precio.campos,
           modificadoEn: marca,
         },
       };
+    }
     case 'DESMARCAR_COMPRADO':
       return actual.eliminado
         ? obsoleto('ITEM_ELIMINADO')
@@ -165,8 +206,17 @@ export function resolverCambio(
       if (cantidad === null) return rechazo('CANTIDAD_INVALIDA');
       return { resultado: 'APLICADO', parche: { cantidadComprar: cantidad, modificadoEn: marca } };
     }
-    case 'REGISTRAR_PRECIO':
-      // El precio real se registra con HU-44.
-      return rechazo('OPERACION_NO_SOPORTADA');
+    case 'REGISTRAR_PRECIO': {
+      // CU-07.7: el precio solo existe en ítems comprados; sin precio se borra el anterior (2c).
+      if (actual.eliminado) return OBSOLETO_ITEM_ELIMINADO;
+      if (actual.estado !== 'COMPRADO') return rechazo('ITEM_NO_COMPRADO');
+      const precio = precioDeCambio(cambio.datos);
+      if (!precio.ok) return precio.resultado;
+      const campos =
+        precio.campos.precioReal === undefined
+          ? { precioReal: null, contenidoComprado: null }
+          : precio.campos;
+      return { resultado: 'APLICADO', parche: { ...campos, modificadoEn: marca } };
+    }
   }
 }

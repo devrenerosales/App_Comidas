@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { cantidadValida, validarPrecio } from '@menu/shared';
 import { Link } from 'react-router-dom';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
@@ -65,12 +66,102 @@ interface FilaProps {
   editable: boolean;
   alMarcar: ListaSincronizada['marcar'];
   alQuitar: ListaSincronizada['quitar'];
+  alPrecio: ListaSincronizada['registrarPrecio'];
 }
 
-function FilaItem({ item, editable, alMarcar, alQuitar }: FilaProps) {
+/** "Promedio de compra Q27.20 (3 compras) · Mediana Q27.50" (RN-12), solo con lo que se conoce. */
+function textoReferencia(i: ItemLista): string | null {
+  const partes = [
+    i.promedioCompra
+      ? `Promedio de compra Q${i.promedioCompra.precio} (${i.promedioCompra.compras} ${
+          i.promedioCompra.compras === 1 ? 'compra' : 'compras'
+        })`
+      : null,
+    i.medianaMercado ? `Mediana Q${i.medianaMercado}` : null,
+  ].filter((p): p is string => p !== null);
+  return partes.length > 0 ? partes.join(' · ') : null;
+}
+
+/** Precio pagado de un producto comprado (CU-07.7): opcional, con el contenido si fue otra presentación. */
+function FormularioPrecio({
+  item,
+  alGuardar,
+  alCerrar,
+}: {
+  item: ItemLista;
+  alGuardar: FilaProps['alPrecio'];
+  alCerrar: () => void;
+}) {
+  const [precio, setPrecio] = useState(item.precioReal ?? '');
+  const [contenido, setContenido] = useState(item.contenidoComprado ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const unidad = item.presentacion?.unidad;
+
+  function guardar(e: FormEvent) {
+    e.preventDefault();
+    const validado = validarPrecio(precio);
+    if (!validado.ok) {
+      setError(validado.mensaje);
+      return;
+    }
+    let contenidoValido: number | undefined;
+    if (contenido.trim() !== '') {
+      const c = cantidadValida(contenido);
+      if (c === null) {
+        setError('El contenido comprado debe ser mayor que 0');
+        return;
+      }
+      contenidoValido = c;
+    }
+    alGuardar(item.id, validado.valor, contenidoValido);
+    alCerrar();
+  }
+
+  return (
+    <form onSubmit={guardar} aria-label={`Precio de ${item.producto.nombre}`} noValidate>
+      <div className="mf-campo">
+        <label htmlFor={`precio-${item.id}`}>Precio pagado (Q)</label>
+        <input
+          id={`precio-${item.id}`}
+          inputMode="decimal"
+          value={precio}
+          onChange={(e) => setPrecio(e.target.value)}
+        />
+      </div>
+      {item.presentacion && unidad && (
+        <div className="mf-campo">
+          <label htmlFor={`contenido-${item.id}`}>
+            Contenido comprado ({unidad}), si no fue {item.presentacion.texto}
+          </label>
+          <input
+            id={`contenido-${item.id}`}
+            inputMode="decimal"
+            value={contenido}
+            onChange={(e) => setContenido(e.target.value)}
+          />
+        </div>
+      )}
+      {error && (
+        <p className="mf-exceso" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="mf-boton mf-boton--secundario">
+        Guardar precio
+      </button>{' '}
+      <button type="button" className="mf-enlace" onClick={alCerrar}>
+        {item.precioReal ? 'Cancelar' : 'Omitir precio'}
+      </button>
+    </form>
+  );
+}
+
+function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
+  const [anotandoPrecio, setAnotandoPrecio] = useState(false);
   const requerida = item.cantidadRequerida;
   const cubierto = item.estado !== 'PENDIENTE';
   const nombre = item.producto.nombre;
+  const referencia = textoReferencia(item);
   return (
     <li className="mf-lista-item">
       <label className="mf-lista-nombre">
@@ -79,7 +170,11 @@ function FilaItem({ item, editable, alMarcar, alQuitar }: FilaProps) {
             type="checkbox"
             checked={item.estado === 'COMPRADO'}
             aria-label={`Marcar ${nombre} como comprado`}
-            onChange={(e) => alMarcar(item.id, e.target.checked ? 'COMPRADO' : 'PENDIENTE')}
+            onChange={(e) => {
+              alMarcar(item.id, e.target.checked ? 'COMPRADO' : 'PENDIENTE');
+              // CU-07.7 paso 1: al marcar comprado se ofrece anotar el precio pagado.
+              setAnotandoPrecio(e.target.checked);
+            }}
           />
         )}{' '}
         <strong className={cubierto ? 'mf-tachado' : undefined}>{nombre}</strong>
@@ -91,10 +186,24 @@ function FilaItem({ item, editable, alMarcar, alQuitar }: FilaProps) {
           {item.equivalente && ` (≈ ${item.equivalente.cantidad} ${item.equivalente.unidad})`}
         </small>
       )}
+      {referencia && <small className="mf-menu-costo">{referencia}</small>}
       {item.sinConversion && <small className="mf-dia-marca">Sin conversión</small>}
       {item.estado === 'YA_LO_TENGO' && <small className="mf-dia-marca">Ya lo tengo</small>}
+      {item.estado === 'COMPRADO' && item.precioReal && (
+        <small className="mf-dia-marca">Pagado Q{item.precioReal}</small>
+      )}
       {editable && (
         <span className="mf-menu-acciones">
+          {item.estado === 'COMPRADO' && !anotandoPrecio && (
+            <button
+              type="button"
+              className="mf-enlace"
+              aria-label={`${item.precioReal ? 'Corregir' : 'Anotar'} precio de ${nombre}`}
+              onClick={() => setAnotandoPrecio(true)}
+            >
+              {item.precioReal ? 'Corregir precio' : 'Anotar precio'}
+            </button>
+          )}
           <button
             type="button"
             className="mf-enlace"
@@ -115,6 +224,13 @@ function FilaItem({ item, editable, alMarcar, alQuitar }: FilaProps) {
             Quitar
           </button>
         </span>
+      )}
+      {editable && item.estado === 'COMPRADO' && anotandoPrecio && (
+        <FormularioPrecio
+          item={item}
+          alGuardar={alPrecio}
+          alCerrar={() => setAnotandoPrecio(false)}
+        />
       )}
     </li>
   );
@@ -330,6 +446,7 @@ export default function Lista() {
                         editable={editable}
                         alMarcar={sincronizada.marcar}
                         alQuitar={sincronizada.quitar}
+                        alPrecio={sincronizada.registrarPrecio}
                       />
                     ))}
                   </ul>

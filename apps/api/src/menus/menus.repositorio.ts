@@ -39,6 +39,7 @@ import {
 } from '@menu/shared';
 import { esViolacionUnicidad } from '../comun/postgres';
 import { DB } from '../database/database.constants';
+import { promediosDeCompra } from '../listas/promedio-compra.consulta';
 
 /** Ya existe un menú de esa semana para el hogar (índice único hogar + inicio). */
 export class MenuDuplicadoError extends Error {
@@ -250,6 +251,7 @@ export class MenusRepositorio {
     const filas = await this.db
       .select({
         platilloId: platilloIngrediente.platilloId,
+        productoId: platilloIngrediente.productoId,
         porcionesBase: platillo.porcionesBase,
         cantidad: platilloIngrediente.cantidad,
         usadaCodigo: usada.codigo,
@@ -261,6 +263,7 @@ export class MenusRepositorio {
         presFactor: presentacion.factorBase,
         equivalencia: productoEquivalencia.factor,
         precioMediana: precioResumen.precioMediana,
+        precioDesactualizado: precioResumen.desactualizado,
       })
       .from(platilloIngrediente)
       .innerJoin(platillo, eq(platillo.id, platilloIngrediente.platilloId))
@@ -279,6 +282,13 @@ export class MenusRepositorio {
         and(eq(precioResumen.productoId, producto.id), eq(precioResumen.hogarId, hogarId)),
       )
       .where(inArray(platilloIngrediente.platilloId, platilloIds));
+    // RN-08 y RN-12: sin precio vigente el costo usa el promedio de compra del hogar (CA-44.4).
+    const promedios = await promediosDeCompra(
+      this.db,
+      hogarId,
+      [...new Set(filas.map((f) => f.productoId))],
+      new Date(),
+    );
     for (const f of filas) {
       const datos = mapa.get(f.platilloId) ?? { porcionesBase: f.porcionesBase, ingredientes: [] };
       datos.ingredientes.push({
@@ -298,6 +308,8 @@ export class MenusRepositorio {
         },
         equivalencia: f.equivalencia,
         precioMediana: f.precioMediana,
+        precioDesactualizado: f.precioDesactualizado ?? false,
+        precioDeCompra: promedios.get(f.productoId)?.promedio ?? null,
       });
       mapa.set(f.platilloId, datos);
     }

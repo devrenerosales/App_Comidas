@@ -26,6 +26,11 @@ const item = (extra: Partial<ItemDeLista> = {}): ItemDeLista => ({
   presentacionCantidad: '1.000',
   presentacionUnidad: LB,
   equivalencia: null,
+  precioReal: null,
+  contenidoComprado: null,
+  precioNormalizado: null,
+  promedioCompra: null,
+  medianaMercado: null,
   comidas: ['d1', 'd2'],
   ...extra,
 });
@@ -65,6 +70,11 @@ describe('vistaLista (CU-07.1, HU-28)', () => {
       origen: 'MENU',
       estado: 'PENDIENTE',
       sinConversion: false,
+      precioReal: null,
+      contenidoComprado: null,
+      precioNormalizado: null,
+      promedioCompra: null,
+      medianaMercado: null,
       comidas: ['d1', 'd2'],
     });
   });
@@ -161,6 +171,46 @@ describe('vistaLista (CU-07.1, HU-28)', () => {
       },
     ];
     expect(vistaLista(lista([item()], { comidas })).comidas).toEqual(comidas);
+  });
+
+  it('CA-44.1 muestra el precio pagado, el promedio de compra y la mediana de mercado', () => {
+    const v = vistaLista(
+      lista([
+        item({
+          estado: 'COMPRADO',
+          precioReal: '28.10',
+          contenidoComprado: '2.000',
+          precioNormalizado: '28.10',
+          promedioCompra: { promedio: 27.2, compras: 3 },
+          medianaMercado: '27.50',
+        }),
+      ]),
+    );
+    expect(v.items[0]).toMatchObject({
+      precioReal: '28.10',
+      contenidoComprado: '2',
+      precioNormalizado: '28.10',
+      promedioCompra: { precio: '27.20', compras: 3 },
+      medianaMercado: '27.50',
+    });
+  });
+
+  it('CA-44.3 el gasto sugerido suma solo los precios reales de los ítems comprados', () => {
+    const v = vistaLista(
+      lista([
+        item({ id: 'a', estado: 'COMPRADO', precioReal: '54.00' }),
+        item({ id: 'b', estado: 'COMPRADO', precioReal: '27.00' }),
+        item({ id: 'c', estado: 'COMPRADO', precioReal: '18.50' }),
+        item({ id: 'd', estado: 'YA_LO_TENGO' }),
+        item({ id: 'e', estado: 'COMPRADO' }),
+        item({ id: 'f', estado: 'PENDIENTE' }),
+      ]),
+    );
+    expect(v.gastoSugerido).toBe('99.50');
+  });
+
+  it('sin precios registrados el gasto sugerido es Q0.00', () => {
+    expect(vistaLista(lista([item()])).gastoSugerido).toBe('0.00');
   });
 
   it('CA-28.6 el encabezado trae el exceso con que se aprobó y cuenta los cubiertos', () => {

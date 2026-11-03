@@ -106,6 +106,61 @@ describe('aplicarCambioLocal (CU-07.3)', () => {
   });
 });
 
+describe('aplicarCambioLocal con precio (CU-07.7)', () => {
+  it('marcar comprado con precio lo guarda y suma al gasto sugerido', () => {
+    const r = aplicarCambioLocal(
+      lista([item('a'), item('b')]),
+      cambio('MARCAR_COMPRADO', 'a', { precioReal: '28.10', contenidoComprado: 5 }),
+    );
+    expect(r.items[0]).toMatchObject({
+      estado: 'COMPRADO',
+      precioReal: '28.10',
+      contenidoComprado: '5',
+      precioNormalizado: null,
+    });
+    expect(r.gastoSugerido).toBe('28.10');
+  });
+
+  it('registrar o corregir el precio de un comprado actualiza el gasto y borrarlo lo quita', () => {
+    const comprado = aplicarCambioLocal(
+      lista([item('a'), item('b')]),
+      cambio('MARCAR_COMPRADO', 'a'),
+    );
+    const conPrecio = aplicarCambioLocal(
+      comprado,
+      cambio('REGISTRAR_PRECIO', 'a', { precioReal: 54 }),
+    );
+    expect(conPrecio.items[0]!.precioReal).toBe('54.00');
+    const dos = aplicarCambioLocal(
+      aplicarCambioLocal(conPrecio, cambio('MARCAR_COMPRADO', 'b', { precioReal: 45.5 })),
+      cambio('REGISTRAR_PRECIO', 'a', { precioReal: 50 }),
+    );
+    expect(dos.gastoSugerido).toBe('95.50');
+    const sinPrecio = aplicarCambioLocal(dos, cambio('REGISTRAR_PRECIO', 'a'));
+    expect(sinPrecio.items[0]).toMatchObject({ precioReal: null, contenidoComprado: null });
+    expect(sinPrecio.gastoSugerido).toBe('45.50');
+  });
+
+  it('desmarcar o pasar a "Ya lo tengo" descarta el precio', () => {
+    const comprado = aplicarCambioLocal(
+      lista([item('a')]),
+      cambio('MARCAR_COMPRADO', 'a', { precioReal: 10 }),
+    );
+    for (const operacion of ['DESMARCAR_COMPRADO', 'MARCAR_YA_LO_TENGO'] as const) {
+      const r = aplicarCambioLocal(comprado, cambio(operacion, 'a'));
+      expect(r.items[0]).toMatchObject({ precioReal: null, contenidoComprado: null });
+      expect(r.gastoSugerido).toBe('0.00');
+    }
+  });
+
+  it('un precio inválido no cambia la lista', () => {
+    const base = lista([item('a')]);
+    expect(aplicarCambioLocal(base, cambio('MARCAR_COMPRADO', 'a', { precioReal: '12.345' }))).toBe(
+      base,
+    );
+  });
+});
+
 describe('listaVisible', () => {
   it('aplica la cola en orden sobre la lista del servidor', () => {
     const visible = listaVisible({

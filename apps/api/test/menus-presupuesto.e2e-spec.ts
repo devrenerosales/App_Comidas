@@ -13,7 +13,10 @@ import {
   and,
   configuracion,
   eq,
+  listaCompras,
+  listaItem,
   menuDetalle,
+  menuSemanal,
   menuTiempo,
   platillo,
   platilloIngrediente,
@@ -391,6 +394,78 @@ describeConBd('HU-21 Ajustar al presupuesto (integración)', () => {
 
     await http().get(`${API}/menus/${menu.body.id}/costos`).set(con(otro.token)).expect(404);
     await http().get(`${API}/menus/no-es-uuid/costos`).set(con(token)).expect(404);
+  });
+
+  /**
+   * CA-44.4: el precio de mercado de la pechuga está desactualizado (RN-08) y el hogar la compró
+   * a Q20 la libra en las últimas semanas (RN-12).
+   */
+  const conPromedioDeCompra = async (hogarId: string) => {
+    await bd.db
+      .update(precioResumen)
+      .set({ desactualizado: true })
+      .where(eq(precioResumen.hogarId, hogarId));
+    const [pechuga] = await bd.db
+      .select({ id: producto.id })
+      .from(producto)
+      .where(eq(producto.nombre, 'Pechuga de pollo'));
+    const [anterior] = await bd.db
+      .insert(menuSemanal)
+      .values({
+        hogarId,
+        fechaInicio: '2026-01-04',
+        fechaFin: '2026-01-10',
+        estado: 'HISTORICO',
+        presupuestoSemanal: '100.00',
+      })
+      .returning();
+    const [lista] = await bd.db
+      .insert(listaCompras)
+      .values({ hogarId, menuId: anterior!.id })
+      .returning();
+    const hace = new Date(Date.now() - 10 * 86_400_000);
+    await bd.db.insert(listaItem).values({
+      id: crypto.randomUUID(),
+      listaId: lista!.id,
+      productoId: pechuga!.id,
+      origen: 'MENU',
+      cantidadComprar: '1',
+      estado: 'COMPRADO',
+      compradoEn: hace,
+      precioReal: '20.00',
+      precioNormalizado: '20.00',
+      modificadoEnDispositivo: hace,
+    });
+  };
+
+  it('CA-44.4 sin precio de mercado vigente el costo usa el promedio de compra del hogar', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    const suma = await sumaFactores(token);
+    await configurar(hogarId, '1000.00');
+    await crearCatalogo(hogarId);
+    await conPromedioDeCompra(hogarId);
+
+    const res = await generar(token).expect(201);
+
+    // Los 7 favoritos de 5 lb se costean a Q20 la libra en lugar de los Q10 de mercado.
+    const caro = Math.round(20 * escalarCantidad(LIBRAS_CAROS, 4, suma) * 100) / 100;
+    expect(res.body.tiempos[0]).toMatchObject({ costoEstimado: q(7 * caro), exceso: '0.00' });
+    expect(res.body.costoIncompleto).toBe(false);
+  });
+
+  it('con el precio de mercado desactualizado y sin promedio de compra usa el último precio conocido', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    const suma = await sumaFactores(token);
+    await configurar(hogarId, '1000.00');
+    await crearCatalogo(hogarId);
+    await bd.db
+      .update(precioResumen)
+      .set({ desactualizado: true })
+      .where(eq(precioResumen.hogarId, hogarId));
+
+    const res = await generar(token).expect(201);
+
+    expect(res.body.tiempos[0].costoEstimado).toBe(q(7 * costoDe(LIBRAS_CAROS, suma)));
   });
 
   it('un platillo sin ingredientes con precio deja el costo incompleto y no se ajusta', async () => {

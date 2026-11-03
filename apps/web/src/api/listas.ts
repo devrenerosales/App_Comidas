@@ -21,6 +21,14 @@ export interface ItemLista {
   estado: 'PENDIENTE' | 'COMPRADO' | 'YA_LO_TENGO';
   /** La unidad de la receta no tiene equivalencia con la de compra (CU-07.1 E1). */
   sinConversion: boolean;
+  /** Total pagado y lo anotado al comprar (CU-07.7); null o ausente si no se registró precio. */
+  precioReal?: string | null;
+  contenidoComprado?: string | null;
+  precioNormalizado?: string | null;
+  /** RN-12: promedio de compra del hogar en las últimas 12 semanas. */
+  promedioCompra?: { precio: string; compras: number } | null;
+  /** Mediana de mercado del producto, como referencia junto al promedio. */
+  medianaMercado?: string | null;
   comidas: string[];
 }
 
@@ -38,6 +46,8 @@ export interface ListaCompras {
   items: ItemLista[];
   /** Comidas del menú; con `items[].comidas` dan el avance por comida (HU-43). Puede faltar en copias antiguas. */
   comidas?: ComidaDelMenu[];
+  /** Suma de los precios reales de lo comprado, sugerida como gasto real de la semana (CU-07.7). */
+  gastoSugerido?: string;
 }
 
 /** Qué pasó con un cambio del lote (api-contrato §2.7). */
