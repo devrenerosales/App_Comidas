@@ -1,5 +1,5 @@
-import type { ProteinaPrincipal, TiempoComida } from '@menu/shared';
-import { ORDEN_TIEMPOS } from '@menu/shared';
+import type { Diferencia, ProteinaPrincipal, TiempoComida } from '@menu/shared';
+import { ORDEN_TIEMPOS, compararGasto } from '@menu/shared';
 import type { MenuCompleto } from './menus.repositorio';
 
 /** Aviso por un espacio que quedó vacío (CU-05.1 E3). */
@@ -44,6 +44,19 @@ export interface DetalleDeMenu {
   reglasAplicadas: string[];
 }
 
+/** Gasto real de la semana con su comparación (CU-06.4, api-contrato §3.3). */
+export interface GastoRegistrado {
+  gastoReal: string;
+  nota: string | null;
+  /** Gasto − costo estimado; null si el menú no tiene costo estimado. */
+  diferenciaVsEstimado: Diferencia | null;
+  /** Gasto − presupuesto semanal; null si el hogar no tiene presupuesto. */
+  diferenciaVsPresupuesto: Diferencia | null;
+  /** Null si el gasto llegó de una importación del cuaderno. */
+  registradoPor: { id: string; nombre: string } | null;
+  registradoEn: string | null;
+}
+
 /** Menú semanal tal como lo devuelven `POST /menus/generar` y sus lecturas (api-contrato §3.1). */
 export interface VistaMenu {
   id: string;
@@ -62,9 +75,31 @@ export interface VistaMenu {
   aprobadoEn: string | null;
   /** Lista de compras de la semana; solo existe cuando el menú está aprobado. */
   listaId: string | null;
+  /** Gasto real registrado; null mientras no haya (CU-06.4). */
+  gasto: GastoRegistrado | null;
+  /** Suma de los precios reales anotados en la lista, para prellenar el gasto (CU-06.4 2b). */
+  gastoSugerido: string | null;
   tiempos: TiempoDeMenu[];
   detalles: DetalleDeMenu[];
   avisos: AvisoMenu[];
+}
+
+/** Gasto real del menú con sus diferencias frente al estimado y al presupuesto (CA-27.1). */
+export function gastoDelMenu({ menu, gastoRegistradoPor }: MenuCompleto): GastoRegistrado | null {
+  if (!menu.gastoReal) return null;
+  const { frenteAlEstimado, frenteAlPresupuesto } = compararGasto(
+    menu.gastoReal,
+    menu.costoEstimado,
+    menu.presupuestoSemanal,
+  );
+  return {
+    gastoReal: menu.gastoReal,
+    nota: menu.notaGasto,
+    diferenciaVsEstimado: frenteAlEstimado,
+    diferenciaVsPresupuesto: frenteAlPresupuesto,
+    registradoPor: gastoRegistradoPor ?? null,
+    registradoEn: menu.gastoRegistradoEn ? menu.gastoRegistradoEn.toISOString() : null,
+  };
 }
 
 const MENSAJE_SIN_SUGERENCIA = 'Ningún platillo cumple RN-02 y RN-03 para este día';
@@ -84,13 +119,8 @@ function estadoDelTiempo(
 }
 
 /** Convierte lo guardado en la respuesta del contrato; ordena por fecha y tiempo de comida. */
-export function vistaMenu({
-  menu,
-  tiempos,
-  detalles,
-  aprobadoPor,
-  listaId,
-}: MenuCompleto): VistaMenu {
+export function vistaMenu(completo: MenuCompleto): VistaMenu {
+  const { menu, tiempos, detalles, aprobadoPor, listaId, gastoSugerido } = completo;
   const ordenados = [...detalles].sort(
     (a, b) =>
       a.fecha.localeCompare(b.fecha) ||
@@ -122,6 +152,8 @@ export function vistaMenu({
     aprobadoPor: aprobadoPor ?? null,
     aprobadoEn: menu.aprobadoEn ? menu.aprobadoEn.toISOString() : null,
     listaId: listaId ?? null,
+    gasto: gastoDelMenu(completo),
+    gastoSugerido: gastoSugerido ?? null,
     tiempos: [...tiempos]
       .sort((a, b) => ORDEN_TIEMPOS.indexOf(a.tiempo) - ORDEN_TIEMPOS.indexOf(b.tiempo))
       .map((t) => ({

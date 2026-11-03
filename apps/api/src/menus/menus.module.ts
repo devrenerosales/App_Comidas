@@ -9,6 +9,7 @@ import { MenusController } from './menus.controller';
 import { MenusAlternativaService } from './menus-alternativa.service';
 import { MenusAprobacionService } from './menus-aprobacion.service';
 import { MenusEdicionService } from './menus-edicion.service';
+import { MenusGastoService } from './menus-gasto.service';
 import { MenusRepositorio } from './menus.repositorio';
 import { MenusService } from './menus.service';
 
@@ -22,6 +23,7 @@ import { MenusService } from './menus.service';
     MenusEdicionService,
     MenusAprobacionService,
     MenusAlternativaService,
+    MenusGastoService,
     { provide: RELOJ_MENUS, useValue: () => new Date() },
   ],
 })

@@ -13,6 +13,7 @@ import type {
 } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { CalendarioMenu } from './CalendarioMenu';
+import { GastoReal } from './GastoReal';
 import { GrillaMenu } from './GrillaMenu';
 import { PanelMotivo } from './PanelMotivo';
 import { ResumenCostos } from './ResumenCostos';
@@ -463,6 +464,13 @@ export default function Semana() {
               ))}
             </ul>
             <ResumenCostos costos={costosDelMenu(menu)} />
+            {menu.estado === 'APROBADO' && (
+              <GastoReal
+                menu={menu}
+                sugerido={menu.gastoSugerido}
+                alRegistrar={(gasto) => setMenu({ ...menu, gasto })}
+              />
+            )}
             {editable && baratas.length > 0 && (
               <section aria-label="Alternativas más baratas">
                 <h3>Alternativas más baratas</h3>

@@ -107,7 +107,7 @@ Las reglas del precio: mayor que Q0.00, con hasta 2 decimales y hasta Q99,999.99
 
 **Si falta el precio del mercado.** Cuando un producto no tiene un precio de mercado de los últimos 14 días, la app usa tu promedio de compra para estimar lo que cuesta el menú.
 
-**Gasto de la semana.** La suma de los precios que anotas es la que se propondrá como gasto real de la semana. Los productos marcados **Ya lo tengo** no suman. Si desmarcas un producto o lo pasas a **Ya lo tengo**, su precio se descarta.
+**Gasto de la semana.** La suma de los precios que anotas es la que se propone como gasto real de la semana (ver 6.10). Los productos marcados **Ya lo tengo** no suman. Si desmarcas un producto o lo pasas a **Ya lo tengo**, su precio se descarta.
 
 **Sin conexión.** Puedes anotar el precio en el supermercado sin señal: viaja junto con la marca de comprado como un solo cambio pendiente y se envía una sola vez al reconectar (ver 7.5).
 
