@@ -93,7 +93,7 @@ describe('HU-28 Lista de compras', () => {
     expect(menus.obtenerPorSemana).toHaveBeenCalledWith('2026-10-25');
     expect(listas.obtener).toHaveBeenCalledWith('l1');
     expect(screen.getByRole('heading', { name: 'Lista del 01/11 al 07/11' })).toBeInTheDocument();
-    expect(screen.getByText('0 de 1 productos')).toBeInTheDocument();
+    expect(screen.getByText('0 / 1 comprados')).toBeInTheDocument();
   });
 
   it('CA-28.2 muestra el equivalente en la unidad de compra y presentaciones con contenido', async () => {
@@ -180,7 +180,7 @@ describe('HU-28 Lista de compras', () => {
 
   it('con los ítems cubiertos cuenta cuántos van', async () => {
     montar({ lista: lista([item(), item({ id: 'i2', estado: 'COMPRADO' })], { comprados: 1 }) });
-    expect(await screen.findByText('1 de 2 productos')).toBeInTheDocument();
+    expect(await screen.findByText('1 / 2 comprados')).toBeInTheDocument();
   });
 
   it('una lista sin productos explica que los platillos no tienen ingredientes', async () => {

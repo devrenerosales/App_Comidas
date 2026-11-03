@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
-import { useApiListas } from '../api/contexto-listas';
 import { useApiMenus } from '../api/contexto-menus';
-import type { ItemLista, ListaCompras } from '../api/listas';
+import type { ItemLista } from '../api/listas';
 import type { MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { PaginaBase } from './PaginaBase';
 import { etiquetaSemana, sumarDiasFecha } from './fechas';
+import { useListaSincronizada, type ListaSincronizada } from './useListaSincronizada';
 import './acceso.css';
 import './hogar.css';
 import './semana.css';
@@ -25,12 +25,34 @@ function textoCompra(i: ItemLista): string {
   return `${i.cantidadComprar} × ${p.texto}`;
 }
 
-function FilaItem({ item }: { item: ItemLista }) {
+const cambiosPendientes = (n: number) =>
+  `${n} ${n === 1 ? 'cambio pendiente' : 'cambios pendientes'}`;
+
+interface FilaProps {
+  item: ItemLista;
+  editable: boolean;
+  alMarcar: ListaSincronizada['marcar'];
+  alQuitar: ListaSincronizada['quitar'];
+}
+
+function FilaItem({ item, editable, alMarcar, alQuitar }: FilaProps) {
   const requerida = item.cantidadRequerida;
+  const cubierto = item.estado !== 'PENDIENTE';
+  const nombre = item.producto.nombre;
   return (
     <li className="mf-lista-item">
-      <strong>{item.producto.nombre}</strong>
-      <span>Comprar: {textoCompra(item)}</span>
+      <label className="mf-lista-nombre">
+        {editable && (
+          <input
+            type="checkbox"
+            checked={item.estado === 'COMPRADO'}
+            aria-label={`Marcar ${nombre} como comprado`}
+            onChange={(e) => alMarcar(item.id, e.target.checked ? 'COMPRADO' : 'PENDIENTE')}
+          />
+        )}{' '}
+        <strong className={cubierto ? 'mf-tachado' : undefined}>{nombre}</strong>
+      </label>
+      <span className={cubierto ? 'mf-tachado' : undefined}>Comprar: {textoCompra(item)}</span>
       {requerida && (
         <small className="mf-menu-costo">
           Requerido: {requerida.cantidad} {requerida.unidad}
@@ -38,25 +60,100 @@ function FilaItem({ item }: { item: ItemLista }) {
         </small>
       )}
       {item.sinConversion && <small className="mf-dia-marca">Sin conversión</small>}
+      {item.estado === 'YA_LO_TENGO' && <small className="mf-dia-marca">Ya lo tengo</small>}
+      {editable && (
+        <span className="mf-menu-acciones">
+          <button
+            type="button"
+            className="mf-enlace"
+            aria-pressed={item.estado === 'YA_LO_TENGO'}
+            aria-label={`Ya lo tengo ${nombre}`}
+            onClick={() =>
+              alMarcar(item.id, item.estado === 'YA_LO_TENGO' ? 'PENDIENTE' : 'YA_LO_TENGO')
+            }
+          >
+            Ya lo tengo
+          </button>
+          <button
+            type="button"
+            className="mf-enlace"
+            aria-label={`Quitar ${nombre}`}
+            onClick={() => alQuitar(item.id)}
+          >
+            Quitar
+          </button>
+        </span>
+      )}
     </li>
   );
 }
 
+/** Formulario para agregar un producto a mano (texto libre, CU-07.3 paso 2). */
+function AgregarProducto({ alAgregar }: { alAgregar: ListaSincronizada['agregar'] }) {
+  const [nombre, setNombre] = useState('');
+  const [cantidad, setCantidad] = useState('1');
+  const [error, setError] = useState<string | null>(null);
+
+  function enviar(e: FormEvent) {
+    e.preventDefault();
+    const problema = alAgregar(nombre, cantidad);
+    setError(problema);
+    if (!problema) {
+      setNombre('');
+      setCantidad('1');
+    }
+  }
+
+  return (
+    <form onSubmit={enviar} aria-label="Agregar producto" noValidate>
+      <h3>Agregar producto</h3>
+      <div className="mf-campo">
+        <label htmlFor="producto-nuevo">Producto</label>
+        <input
+          id="producto-nuevo"
+          value={nombre}
+          maxLength={80}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+      </div>
+      <div className="mf-campo">
+        <label htmlFor="cantidad-nueva">Cantidad</label>
+        <input
+          id="cantidad-nueva"
+          inputMode="decimal"
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+        />
+      </div>
+      {error && (
+        <p className="mf-exceso" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="mf-boton mf-boton--secundario">
+        Agregar
+      </button>
+    </form>
+  );
+}
+
 /**
- * Lista de compras de la semana (CU-07.1, HU-28): los ingredientes del menú aprobado sumados por
- * producto y en la unidad en que se compran. Un menú sin aprobar todavía no tiene lista.
+ * Lista de compras de la semana (CU-07.1 y CU-07.3, HU-28 y HU-30): los ingredientes del menú
+ * aprobado sumados por producto, que se pueden marcar, quitar y ampliar, también sin conexión. Un
+ * menú sin aprobar todavía no tiene lista.
  */
 export default function Lista() {
   const configuracion = useApiConfiguracion();
   const menus = useApiMenus();
-  const listas = useApiListas();
   const [semanas, setSemanas] = useState<string[] | null>(null);
   const [semana, setSemana] = useState('');
   const [menu, setMenu] = useState<MenuGenerado | null>(null);
   const [sinMenu, setSinMenu] = useState(false);
-  const [lista, setLista] = useState<ListaCompras | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const sincronizada = useListaSincronizada(menu?.listaId ?? null);
+  const { lista, pendientes, sinConexion, aviso } = sincronizada;
+  const editable = menu?.estado === 'APROBADO';
 
   useEffect(() => {
     let activo = true;
@@ -82,23 +179,17 @@ export default function Lista() {
     };
   }, [configuracion, intento]);
 
-  // Al elegir una semana se abre su menú y, si está aprobado, su lista.
+  // Al elegir una semana se abre su menú; la lista se abre desde su id.
   useEffect(() => {
     if (!semana) return;
     let activo = true;
     setMenu(null);
     setSinMenu(false);
-    setLista(null);
     setError(null);
     menus
       .obtenerPorSemana(semana)
-      .then(async (m) => {
-        if (!activo) return;
-        setMenu(m);
-        if (m.listaId) {
-          const l = await listas.obtener(m.listaId);
-          if (activo) setLista(l);
-        }
+      .then((m) => {
+        if (activo) setMenu(m);
       })
       .catch((e: unknown) => {
         if (!activo) return;
@@ -108,25 +199,30 @@ export default function Lista() {
     return () => {
       activo = false;
     };
-  }, [menus, listas, semana, intento]);
+  }, [menus, semana, intento]);
+
+  const mensajeError = error ?? sincronizada.error;
 
   return (
     <PaginaBase titulo="Lista de compras">
       <div className="mf-hogar">
-        {error && (
+        {mensajeError && (
           <div className="mf-alerta" role="alert">
-            <p>{error}</p>
+            <p>{mensajeError}</p>
             <button
               type="button"
               className="mf-boton mf-boton--secundario"
-              onClick={() => setIntento((n) => n + 1)}
+              onClick={() => {
+                setIntento((n) => n + 1);
+                sincronizada.reintentar();
+              }}
             >
               Reintentar
             </button>
           </div>
         )}
         {!semanas ? (
-          !error && <Cargando />
+          !mensajeError && <Cargando />
         ) : (
           <div className="mf-campo">
             <label htmlFor="semana-lista">Semana</label>
@@ -159,8 +255,23 @@ export default function Lista() {
           <section aria-labelledby="titulo-lista" className="mf-tarjeta">
             <h2 id="titulo-lista">Lista del {etiquetaSemana(lista.semana.desde)}</h2>
             {lista.excede && <p className="mf-exceso">{lista.excede.texto}</p>}
+            {sinConexion && (
+              <p role="status" className="mf-texto-suave">
+                Sin conexión: los cambios se guardan en este teléfono y se envían al reconectar.
+              </p>
+            )}
+            {pendientes > 0 && (
+              <p role="status" className="mf-advertencia">
+                {cambiosPendientes(pendientes)}
+              </p>
+            )}
+            {aviso && (
+              <p role="alert" className="mf-exceso">
+                {aviso}
+              </p>
+            )}
             <p>
-              {lista.comprados} de {lista.total} productos
+              {lista.comprados} / {lista.total} comprados
             </p>
             {lista.sinConversion > 0 && (
               <p className="mf-texto-suave">
@@ -175,10 +286,17 @@ export default function Lista() {
             ) : (
               <ul className="mf-lista" aria-label="Productos de la lista">
                 {lista.items.map((i) => (
-                  <FilaItem key={i.id} item={i} />
+                  <FilaItem
+                    key={i.id}
+                    item={i}
+                    editable={editable}
+                    alMarcar={sincronizada.marcar}
+                    alQuitar={sincronizada.quitar}
+                  />
                 ))}
               </ul>
             )}
+            {editable && <AgregarProducto alAgregar={sincronizada.agregar} />}
           </section>
         )}
       </div>

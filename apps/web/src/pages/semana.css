@@ -164,3 +164,20 @@
   padding: 10px 0;
   border-bottom: 1px solid var(--mf-borde);
 }
+
+/* Producto comprado o que ya se tiene: tachado en la lista (HU-30). */
+.mf-tachado {
+  text-decoration: line-through;
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+.mf-lista-nombre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mf-lista-nombre input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+}
