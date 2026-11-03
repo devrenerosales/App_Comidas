@@ -88,6 +88,17 @@ export class MenusController {
     return this.edicion.obtener(hogarId, id);
   }
 
+  /** CU-07.1: redirige a la lista de compras del menú aprobado (409 si todavía no lo está). */
+  @Get(':id/lista')
+  async lista(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', idMenu) id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const listaId = await this.edicion.listaDelMenu(hogarId, id);
+    res.redirect(303, `/api/v1/listas/${listaId}`);
+  }
+
   /** CU-06.3: costo estimado por día, por tiempo y total frente al presupuesto. */
   @Get(':id/costos')
   costos(

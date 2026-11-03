@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   alias,
@@ -6,6 +7,8 @@ import {
   eq,
   inArray,
   listaCompras,
+  listaItem,
+  listaItemOrigen,
   menuAlternativaMostrada,
   menuDetalle,
   menuSemanal,
@@ -28,6 +31,8 @@ import {
   aCentavos,
   deCentavos,
   type IngredienteCosto,
+  type IngredienteDeComida,
+  type ItemConsolidado,
   type MagnitudUnidad,
   type ProteinaPrincipal,
   type TiempoComida,
@@ -80,6 +85,8 @@ export interface DatosAprobacion {
   aprobadoEn: Date;
   /** Suma de los excesos por tiempo, en texto con 2 decimales ("0.00" si está dentro). */
   excesoAlAprobar: string;
+  /** Ítems consolidados de la lista de compras (CU-07.1, HU-28). */
+  items: ItemConsolidado[];
 }
 
 export interface ListaCreada {
@@ -132,6 +139,12 @@ export interface DatosMenu {
 export interface DatosCostoPlatillo {
   porcionesBase: number;
   ingredientes: IngredienteCosto[];
+}
+
+/** Ingredientes de un platillo con lo que la lista de compras necesita (CU-07.1). */
+export interface DatosListaPlatillo {
+  porcionesBase: number;
+  ingredientes: Omit<IngredienteDeComida, 'menuDetalleId'>[];
 }
 
 /** Platillo del hogar con los tiempos de comida en que aplica (RF-11). */
@@ -285,6 +298,70 @@ export class MenusRepositorio {
         },
         equivalencia: f.equivalencia,
         precioMediana: f.precioMediana,
+      });
+      mapa.set(f.platilloId, datos);
+    }
+    return mapa;
+  }
+
+  /** Ingredientes con producto, unidades y presentación de compra para consolidar la lista (HU-28). */
+  async ingredientesParaLista(platilloIds: string[]): Promise<Map<string, DatosListaPlatillo>> {
+    const mapa = new Map<string, DatosListaPlatillo>();
+    if (platilloIds.length === 0) return mapa;
+    const usada = alias(unidad, 'usada');
+    const presentacion = alias(unidad, 'presentacion');
+    const filas = await this.db
+      .select({
+        platilloId: platilloIngrediente.platilloId,
+        porcionesBase: platillo.porcionesBase,
+        productoId: platilloIngrediente.productoId,
+        cantidad: platilloIngrediente.cantidad,
+        usadaId: usada.id,
+        usadaCodigo: usada.codigo,
+        usadaMagnitud: usada.magnitud,
+        usadaFactor: usada.factorBase,
+        presCantidad: producto.presentacionCantidad,
+        presId: presentacion.id,
+        presCodigo: presentacion.codigo,
+        presMagnitud: presentacion.magnitud,
+        presFactor: presentacion.factorBase,
+        equivalencia: productoEquivalencia.factor,
+      })
+      .from(platilloIngrediente)
+      .innerJoin(platillo, eq(platillo.id, platilloIngrediente.platilloId))
+      .innerJoin(producto, eq(producto.id, platilloIngrediente.productoId))
+      .innerJoin(usada, eq(usada.id, platilloIngrediente.unidadId))
+      .innerJoin(presentacion, eq(presentacion.id, producto.presentacionUnidadId))
+      .leftJoin(
+        productoEquivalencia,
+        and(
+          eq(productoEquivalencia.productoId, producto.id),
+          eq(productoEquivalencia.unidadId, platilloIngrediente.unidadId),
+        ),
+      )
+      .where(inArray(platilloIngrediente.platilloId, platilloIds));
+    for (const f of filas) {
+      const datos = mapa.get(f.platilloId) ?? { porcionesBase: f.porcionesBase, ingredientes: [] };
+      datos.ingredientes.push({
+        productoId: f.productoId,
+        cantidad: f.cantidad,
+        porcionesBase: f.porcionesBase,
+        unidad: {
+          id: f.usadaId,
+          codigo: f.usadaCodigo,
+          magnitud: f.usadaMagnitud as MagnitudUnidad,
+          factorBase: f.usadaFactor,
+        },
+        presentacion: {
+          cantidad: f.presCantidad,
+          unidad: {
+            id: f.presId,
+            codigo: f.presCodigo,
+            magnitud: f.presMagnitud as MagnitudUnidad,
+            factorBase: f.presFactor,
+          },
+        },
+        equivalencia: f.equivalencia,
       });
       mapa.set(f.platilloId, datos);
     }
@@ -565,7 +642,41 @@ export class MenusRepositorio {
         .insert(listaCompras)
         .values({ hogarId, menuId, generadaEn: datos.aprobadoEn })
         .returning({ id: listaCompras.id, version: listaCompras.version });
+      await this.insertarItems(tx, lista!.id, datos.items, datos.aprobadoEn);
       return lista as ListaCreada;
     });
+  }
+
+  /** Guarda los ítems consolidados con origen "Menú" y las comidas que los originan (CU-07.1 paso 8). */
+  private async insertarItems(
+    tx: Pick<Db, 'insert'>,
+    listaId: string,
+    items: ItemConsolidado[],
+    creadoEn: Date,
+  ): Promise<void> {
+    if (items.length === 0) return;
+    const filas = items.map((i) => ({ ...i, id: randomUUID() }));
+    await tx.insert(listaItem).values(
+      filas.map((i) => ({
+        id: i.id,
+        listaId,
+        productoId: i.productoId,
+        origen: 'MENU' as const,
+        cantidadRequerida: i.cantidadRequerida === null ? null : String(i.cantidadRequerida),
+        unidadRequeridaId: i.unidadRequeridaId,
+        cantidadComprar: String(i.cantidadComprar),
+        sinConversion: i.sinConversion,
+        modificadoEnDispositivo: creadoEn,
+      })),
+    );
+    await tx.insert(listaItemOrigen).values(
+      filas.flatMap((i) =>
+        i.origenes.map((o) => ({
+          listaItemId: i.id,
+          menuDetalleId: o.menuDetalleId,
+          cantidadRequerida: o.cantidadRequerida === null ? null : String(o.cantidadRequerida),
+        })),
+      ),
+    );
   }
 }

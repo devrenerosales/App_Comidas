@@ -1,5 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { NOMBRE_TIEMPO, aCentavos, deCentavos, nombreDiaSemana } from '@menu/shared';
+import {
+  NOMBRE_TIEMPO,
+  aCentavos,
+  consolidarLista,
+  deCentavos,
+  nombreDiaSemana,
+  type ItemConsolidado,
+} from '@menu/shared';
 import { Problema } from '../comun/problema';
 import type { AprobarMenuDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
@@ -16,6 +23,8 @@ export interface RespuestaAprobacion {
     totalItems: number;
     itemsMenu: number;
     itemsDespensa: number;
+    /** Ítems cuya unidad de receta no se pudo convertir a la de compra (CU-07.1 E1). */
+    sinConversion: number;
     url: string;
   };
 }
@@ -47,10 +56,12 @@ export class MenusAprobacionService {
     this.exigirSinVacios(completo);
     if (completo.menu.version !== dto.version) throw this.desactualizado();
 
+    const items = await this.consolidar(completo);
     const lista = await this.repo.aprobar(hogarId, menuId, dto.version, {
       usuarioId,
       aprobadoEn: this.reloj(),
       excesoAlAprobar: this.exceso(completo),
+      items,
     });
     if (!lista) {
       // Otro miembro lo cambió entre la lectura y la escritura: se informa con lo más reciente.
@@ -62,16 +73,33 @@ export class MenusAprobacionService {
     return {
       menu,
       excede: menu.excede,
-      // La consolidación de ingredientes y la despensa llegan en S4 (CU-07).
+      // La despensa de la semana llega con HU-29.
       lista: {
         id: lista.id,
         version: lista.version,
-        totalItems: 0,
-        itemsMenu: 0,
+        totalItems: items.length,
+        itemsMenu: items.length,
         itemsDespensa: 0,
+        sinConversion: items.filter((i) => i.sinConversion).length,
         url: `/api/v1/listas/${lista.id}`,
       },
     };
+  }
+
+  /**
+   * CU-07.1: ingredientes de cada comida escalados con la Σ de factores congelada del menú (D-04),
+   * convertidos a la unidad de compra y sumados por producto. Un platillo sin ingredientes no aporta.
+   */
+  private async consolidar({ menu, detalles }: MenuCompleto): Promise<ItemConsolidado[]> {
+    const ids = [...new Set(detalles.flatMap((d) => (d.platilloId ? [d.platilloId] : [])))];
+    const platillos = await this.repo.ingredientesParaLista(ids);
+    const ingredientes = detalles.flatMap((d) =>
+      (d.platilloId ? (platillos.get(d.platilloId)?.ingredientes ?? []) : []).map((i) => ({
+        ...i,
+        menuDetalleId: d.id,
+      })),
+    );
+    return consolidarLista(ingredientes, menu.sumaFactoresPorcion ?? 0);
   }
 
   /** E3: si ya está aprobado se informa quién y cuándo; el histórico no se aprueba. */

@@ -16,6 +16,7 @@ import { RedisModule } from './redis/redis.module';
 import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
+import { ListasModule } from './listas/listas.module';
 import { MenusModule } from './menus/menus.module';
 import { CalificacionesModule } from './calificaciones/calificaciones.module';
 
@@ -59,6 +60,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     PreferenciasModule,
     CalificacionesModule,
     MenusModule,
+    ListasModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

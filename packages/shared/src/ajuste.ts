@@ -38,7 +38,10 @@ export interface CostoPlatillo {
 const aQuetzales = (centavos: number) => centavos / 100;
 
 /** Cantidad del ingrediente expresada en la unidad de la presentación; null si no se puede. */
-function enPresentacion(i: IngredienteCosto, cantidadEscalada: number): number | null {
+export function enPresentacion(
+  i: Pick<IngredienteCosto, 'unidad' | 'presentacion' | 'equivalencia'>,
+  cantidadEscalada: number,
+): number | null {
   const mismaMagnitud = i.unidad.magnitud === i.presentacion.unidad.magnitud;
   if (!mismaMagnitud && i.equivalencia !== null) return cantidadEscalada * Number(i.equivalencia);
   return convertirCantidad(cantidadEscalada, i.unidad, i.presentacion.unidad);

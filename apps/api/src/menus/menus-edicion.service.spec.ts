@@ -118,6 +118,25 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
     });
   });
 
+  describe('lista del menú', () => {
+    it('CA-28.4 un Borrador no tiene lista: 409 "Aprueba el menú para generar la lista"', async () => {
+      const p = await problema(servicio.listaDelMenu('h1', 'm1'));
+      expect([p.getStatus(), p.codigo, p.detalle]).toEqual([
+        409,
+        'MENU_NO_APROBADO',
+        'Aprueba el menú para generar la lista',
+      ]);
+    });
+
+    it('un menú aprobado devuelve el id de su lista; ajeno es 404', async () => {
+      const base = completo('APROBADO');
+      repo.cargar.mockResolvedValue({ ...base, listaId: 'l1' });
+      await expect(servicio.listaDelMenu('h1', 'm1')).resolves.toBe('l1');
+      repo.cargar.mockResolvedValue(undefined);
+      expect((await problema(servicio.listaDelMenu('h1', 'mx'))).getStatus()).toBe(404);
+    });
+  });
+
   describe('costos', () => {
     it('CU-06.3 resume el costo y la diferencia con el presupuesto; menú ajeno es 404', async () => {
       const base = completo();

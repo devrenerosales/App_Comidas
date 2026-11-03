@@ -149,3 +149,18 @@
 .mf-dia-marca {
   color: var(--mf-texto-suave, #5f6b64);
 }
+
+/* Lista de compras (HU-28): un producto por fila con lo que hay que comprar. */
+.mf-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mf-lista-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mf-borde);
+}
