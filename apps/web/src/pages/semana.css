@@ -85,3 +85,67 @@
   width: 100%;
   height: 14px;
 }
+
+/* Selector Tabla / Calendario del menú. */
+.mf-selector-vista {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* Vista de calendario: una tarjeta por día, en columnas que se acomodan al ancho disponible. */
+.mf-calendario {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.mf-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--mf-borde);
+  border-radius: 12px;
+}
+
+.mf-dia-titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mf-dia-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-left: 4px solid var(--mf-exito, #1b6b3a);
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.mf-dia-espacio[draggable='true'] {
+  cursor: grab;
+}
+
+.mf-dia-espacio--excede {
+  border-left-color: var(--mf-error, #b3261e);
+}
+
+.mf-dia-espacio--moviendo {
+  outline: 2px dashed var(--mf-borde);
+}
+
+.mf-dia-tiempo {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+.mf-dia-marca {
+  color: var(--mf-texto-suave, #5f6b64);
+}
