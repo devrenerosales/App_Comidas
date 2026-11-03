@@ -314,6 +314,85 @@ describeConBd('HU-21 Ajustar al presupuesto (integración)', () => {
     expect(cambiado).toMatchObject({ origen: 'USUARIO', costoEstimado: q(caro) });
   });
 
+  it('HU-26 GET /menus/:id/costos resume por día, por tiempo y total y se recalcula al editar', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    const suma = await sumaFactores(token);
+    const caro = costoDe(LIBRAS_CAROS, suma);
+    const barato = costoDe(LIBRAS_BARATOS, suma);
+    const dosReemplazos = 5 * caro + 2 * barato;
+    const unReemplazo = 6 * caro + barato;
+    const presupuesto = Math.floor(((dosReemplazos + unReemplazo) / 2) * 100) / 100;
+    await configurar(hogarId, presupuesto.toFixed(2));
+    const creados = await crearCatalogo(hogarId);
+    const menu = await generar(token).expect(201);
+
+    const antes = await http()
+      .get(`${API}/menus/${menu.body.id}/costos`)
+      .set(con(token))
+      .expect(200);
+    expect(antes.body).toMatchObject({
+      total: q(dosReemplazos),
+      presupuesto: presupuesto.toFixed(2),
+      diferencia: q(presupuesto - dosReemplazos),
+      excede: false,
+      exceso: '0.00',
+      costoIncompleto: false,
+    });
+    expect(antes.body.porTiempo).toEqual([
+      {
+        tiempo: 'ALMUERZO',
+        costo: q(dosReemplazos),
+        presupuesto: presupuesto.toFixed(2),
+        exceso: '0.00',
+        excede: false,
+        estado: 'DENTRO_DEL_PRESUPUESTO',
+      },
+    ]);
+    expect(antes.body.porDia).toHaveLength(7);
+    for (const dia of antes.body.porDia as { costo: string; incompleto: boolean }[]) {
+      expect(dia.incompleto).toBe(false);
+      expect([q(caro), q(barato)]).toContain(dia.costo);
+    }
+
+    // CA-26.4: cambiar un barato por un caro sube el total y lo deja excedido.
+    const reemplazado = (menu.body.detalles as Detalle[]).find(
+      (d) => d.origen === 'REEMPLAZO_PRESUPUESTO',
+    )!;
+    const enUso = new Set(
+      (await bd.db.select().from(menuDetalle).where(eq(menuDetalle.menuId, menu.body.id))).map(
+        (d) => d.platilloId,
+      ),
+    );
+    const favoritoLibre = creados.slice(0, 7).find((c) => !enUso.has(c.id))!;
+    await http()
+      .patch(`${API}/menus/${menu.body.id}/detalles/${reemplazado.id}`)
+      .set(con(token))
+      .send({ platilloId: favoritoLibre.id, confirmar: true })
+      .expect(200);
+
+    const despues = await http()
+      .get(`${API}/menus/${menu.body.id}/costos`)
+      .set(con(token))
+      .expect(200);
+    expect(despues.body).toMatchObject({
+      total: q(unReemplazo),
+      diferencia: q(presupuesto - unReemplazo),
+      excede: true,
+      exceso: q(unReemplazo - presupuesto),
+    });
+  });
+
+  it('HU-26 un menú ajeno o un id mal formado es 404 en costos', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    await configurar(hogarId, '245.00');
+    await crearCatalogo(hogarId);
+    const menu = await generar(token).expect(201);
+    const otro = await hogarDe('Ana');
+
+    await http().get(`${API}/menus/${menu.body.id}/costos`).set(con(otro.token)).expect(404);
+    await http().get(`${API}/menus/no-es-uuid/costos`).set(con(token)).expect(404);
+  });
+
   it('un platillo sin ingredientes con precio deja el costo incompleto y no se ajusta', async () => {
     const { token, hogarId } = await hogarDe('Rene');
     await configurar(hogarId, '245.00');

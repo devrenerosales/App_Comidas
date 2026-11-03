@@ -2,8 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   NOMBRE_TIEMPO,
   advertenciasDePlan,
+  costosDelMenu,
   resumenMotivo,
   type AdvertenciaPlan,
+  type CostosDelMenu,
   type EspacioPlan,
   type EspacioRevisado,
   type OrigenAsignacion,
@@ -65,6 +67,11 @@ export class MenusEdicionService {
     const completo = await this.repo.cargar(hogarId, menuId);
     if (!completo) throw noEncontrado();
     return vistaMenu(completo);
+  }
+
+  /** CU-06.3: costo del menú por día, por tiempo y total frente al presupuesto. */
+  async costos(hogarId: string, menuId: string): Promise<CostosDelMenu> {
+    return costosDelMenu(await this.obtener(hogarId, menuId));
   }
 
   /** CU-06.1 paso 1: el menú cuya semana contiene la fecha, sea cual sea su estado. */
@@ -150,7 +157,7 @@ export class MenusEdicionService {
       [detalle.id, { platilloId: elegido.id, nombre: elegido.nombre, proteina: elegido.proteina }],
     ]);
     const advertencias = this.advertencias(completo, contenido, [detalle], dto.confirmar);
-    const costos = await this.costos(hogarId, completo, [elegido.id]);
+    const costos = await this.costosDeEspacios(hogarId, completo, [elegido.id]);
     await this.repo.aplicarCambios(menuId, [
       {
         id: detalle.id,
@@ -198,7 +205,7 @@ export class MenusEdicionService {
       [origen.id, destino.platilloId ? this.contenidoDe(destino) : null],
     ]);
     const advertencias = this.advertencias(completo, contenido, [origen, destino], dto.confirmar);
-    const costos = await this.costos(hogarId, completo, ids);
+    const costos = await this.costosDeEspacios(hogarId, completo, ids);
     const cambios = [origen, destino].map((d) => {
       const nuevo = contenido.get(d.id)!;
       return {
@@ -298,7 +305,7 @@ export class MenusEdicionService {
   }
 
   /** Costo de los platillos con la Σ de factores guardada en el menú (D-04); sin ella, incompleto. */
-  private async costos(
+  private async costosDeEspacios(
     hogarId: string,
     { menu }: MenuCompleto,
     ids: string[],

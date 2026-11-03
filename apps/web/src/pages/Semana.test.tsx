@@ -120,9 +120,7 @@ describe('HU-19 Sugerir menú', () => {
       screen.getByRole('heading', { name: 'Borrador del 01/11 al 07/11' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Q245.00/, { selector: 'p' })).toBeInTheDocument();
-    expect(
-      screen.getByText('Costo estimado incompleto: todavía no hay precios para los ingredientes.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('* Costo incompleto: hay ingredientes sin precio')).toBeInTheDocument();
   });
 
   it('cambiar de semana pide esa semana', async () => {

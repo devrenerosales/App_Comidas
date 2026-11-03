@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { aCentavos, deCentavos } from '@menu/shared';
+import { aCentavos, costosDelMenu, deCentavos } from '@menu/shared';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
 import { useApiMenus } from '../api/contexto-menus';
@@ -14,6 +14,7 @@ import type {
 import { Cargando } from '../auth/Cargando';
 import { GrillaMenu } from './GrillaMenu';
 import { PanelMotivo } from './PanelMotivo';
+import { ResumenCostos } from './ResumenCostos';
 import { PaginaBase } from './PaginaBase';
 import { SelectorPlatillo } from './SelectorPlatillo';
 import {
@@ -56,7 +57,10 @@ function EstadoPresupuesto({ t }: { t: TiempoMenu }) {
   return (
     <>
       {' · '}costo Q{t.costoEstimado}
-      {' · '}Dentro del presupuesto (Q{deCentavos(disponible)} disponibles)
+      {' · '}
+      <span className="mf-costo-ok">
+        Dentro del presupuesto (Q{deCentavos(disponible)} disponibles)
+      </span>
     </>
   );
 }
@@ -424,11 +428,7 @@ export default function Semana() {
                 </li>
               ))}
             </ul>
-            {menu.costoIncompleto && (
-              <p className="mf-texto-suave">
-                Costo estimado incompleto: todavía no hay precios para los ingredientes.
-              </p>
-            )}
+            <ResumenCostos costos={costosDelMenu(menu)} />
             {editable && baratas.length > 0 && (
               <section aria-label="Alternativas más baratas">
                 <h3>Alternativas más baratas</h3>
@@ -468,7 +468,6 @@ export default function Semana() {
                 </ul>
               </section>
             )}
-            {menu.excede && <p className="mf-exceso">{menu.excede.texto}</p>}
             {editable && (
               <button
                 type="button"

@@ -11,3 +11,4 @@ export * from './motor';
 export * from './motivo';
 export * from './ajuste';
 export * from './plan';
+export * from './costos';

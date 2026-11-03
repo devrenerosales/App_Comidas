@@ -118,6 +118,29 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
     });
   });
 
+  describe('costos', () => {
+    it('CU-06.3 resume el costo y la diferencia con el presupuesto; menú ajeno es 404', async () => {
+      const base = completo();
+      repo.cargar.mockResolvedValue({
+        ...base,
+        menu: {
+          ...base.menu,
+          presupuestoSemanal: '245.00',
+          costoEstimado: '229.50',
+          costoIncompleto: false,
+        } as MenuSemanal,
+      });
+      await expect(servicio.costos('h1', 'm1')).resolves.toMatchObject({
+        total: '229.50',
+        presupuesto: '245.00',
+        diferencia: '15.50',
+        excede: false,
+      });
+      repo.cargar.mockResolvedValue(undefined);
+      expect((await problema(servicio.costos('h1', 'mx'))).getStatus()).toBe(404);
+    });
+  });
+
   describe('editar', () => {
     const editar = (extra: { confirmar?: boolean; platilloId?: string } = {}) =>
       servicio.editar('h1', 'u1', 'm1', 'mie', { platilloId: 'chile', ...extra });
