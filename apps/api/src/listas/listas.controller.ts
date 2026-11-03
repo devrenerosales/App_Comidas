@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import type { AvanceLista } from '@menu/shared';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import { Problema } from '../comun/problema';
 import { HogarActual } from '../hogar/decoradores/hogar-actual.decorator';
@@ -35,6 +36,15 @@ export class ListasController {
     @Param('id', idLista) id: string,
   ): Promise<VistaLista> {
     return this.listas.obtener(hogarId, id);
+  }
+
+  /** CU-07.6: avance de la compra por comida y general. */
+  @Get(':id/avance')
+  avance(
+    @HogarActual('hogarId') hogarId: string,
+    @Param('id', idLista) id: string,
+  ): Promise<AvanceLista> {
+    return this.listas.avance(hogarId, id);
   }
 
   /** CU-07.3: aplica los cambios de un dispositivo (idempotente, última escritura gana). */

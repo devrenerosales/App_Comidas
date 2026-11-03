@@ -6,6 +6,7 @@ import { useApiMenus } from '../api/contexto-menus';
 import type { ItemLista } from '../api/listas';
 import type { MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
+import { AvanceComidas } from './AvanceComidas';
 import { PaginaBase } from './PaginaBase';
 import { etiquetaSemana, sumarDiasFecha } from './fechas';
 import { useListaSincronizada, type ListaSincronizada } from './useListaSincronizada';
@@ -23,6 +24,37 @@ function textoCompra(i: ItemLista): string {
   if (!p) return i.cantidadComprar;
   if (p.cantidad === '1' && p.unidadCompra === p.unidad) return `${i.cantidadComprar} ${p.unidad}`;
   return `${i.cantidadComprar} × ${p.texto}`;
+}
+
+type VistaLista = 'PRODUCTOS' | 'POR_COMIDA';
+
+/** Alterna entre ver los productos de la lista o el avance por comida (HU-43). */
+function SelectorVistaLista({
+  vista,
+  alCambiar,
+}: {
+  vista: VistaLista;
+  alCambiar: (v: VistaLista) => void;
+}) {
+  const opciones: [VistaLista, string][] = [
+    ['PRODUCTOS', 'Productos'],
+    ['POR_COMIDA', 'Por comida'],
+  ];
+  return (
+    <div className="mf-selector-vista" role="group" aria-label="Vista de la lista">
+      {opciones.map(([valor, texto]) => (
+        <button
+          key={valor}
+          type="button"
+          className={`mf-boton ${vista === valor ? 'mf-boton--primario' : 'mf-boton--secundario'}`}
+          aria-pressed={vista === valor}
+          onClick={() => alCambiar(valor)}
+        >
+          {texto}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 const cambiosPendientes = (n: number) =>
@@ -151,6 +183,7 @@ export default function Lista() {
   const [sinMenu, setSinMenu] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
+  const [vista, setVista] = useState<VistaLista>('PRODUCTOS');
   const sincronizada = useListaSincronizada(menu?.listaId ?? null);
   const { lista, pendientes, sinConexion, aviso } = sincronizada;
   const editable = menu?.estado === 'APROBADO';
@@ -278,25 +311,32 @@ export default function Lista() {
                 Hay productos sin conversión de unidades: revisa cuánto comprar de ellos.
               </p>
             )}
-            {lista.items.length === 0 ? (
-              <p>
-                Los platillos de este menú todavía no tienen ingredientes, así que no hay productos
-                que comprar.
-              </p>
+            <SelectorVistaLista vista={vista} alCambiar={setVista} />
+            {vista === 'POR_COMIDA' ? (
+              <AvanceComidas lista={lista} editable={editable} alMarcar={sincronizada.marcar} />
             ) : (
-              <ul className="mf-lista" aria-label="Productos de la lista">
-                {lista.items.map((i) => (
-                  <FilaItem
-                    key={i.id}
-                    item={i}
-                    editable={editable}
-                    alMarcar={sincronizada.marcar}
-                    alQuitar={sincronizada.quitar}
-                  />
-                ))}
-              </ul>
+              <>
+                {lista.items.length === 0 ? (
+                  <p>
+                    Los platillos de este menú todavía no tienen ingredientes, así que no hay
+                    productos que comprar.
+                  </p>
+                ) : (
+                  <ul className="mf-lista" aria-label="Productos de la lista">
+                    {lista.items.map((i) => (
+                      <FilaItem
+                        key={i.id}
+                        item={i}
+                        editable={editable}
+                        alMarcar={sincronizada.marcar}
+                        alQuitar={sincronizada.quitar}
+                      />
+                    ))}
+                  </ul>
+                )}
+                {editable && <AgregarProducto alAgregar={sincronizada.agregar} />}
+              </>
             )}
-            {editable && <AgregarProducto alAgregar={sincronizada.agregar} />}
           </section>
         )}
       </div>

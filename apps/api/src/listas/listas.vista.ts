@@ -1,4 +1,4 @@
-import { enPresentacion, formatearCantidad, redondear } from '@menu/shared';
+import { enPresentacion, formatearCantidad, redondear, type ComidaDelMenu } from '@menu/shared';
 import type { ItemDeLista, ListaCompleta } from './listas.repositorio';
 
 export interface CantidadConUnidad {
@@ -37,6 +37,8 @@ export interface VistaLista {
   /** Algún ítem sin conversión de unidades: la cantidad a comprar es una estimación mínima. */
   sinConversion: number;
   items: ItemVista[];
+  /** Comidas del menú; con `items[].comidas` permiten calcular el avance sin conexión (HU-43). */
+  comidas: ComidaDelMenu[];
 }
 
 const cantidad = (valor: string | number) => formatearCantidad(valor);
@@ -106,5 +108,6 @@ export function vistaLista(lista: ListaCompleta): VistaLista {
     comprados: lista.items.filter((i) => i.estado !== 'PENDIENTE').length,
     sinConversion: lista.items.filter((i) => i.sinConversion).length,
     items: lista.items.map(itemVista),
+    comidas: lista.comidas,
   };
 }

@@ -8,7 +8,9 @@ import {
   listaCompras,
   listaItem,
   listaItemOrigen,
+  menuDetalle,
   menuSemanal,
+  platillo,
   producto,
   productoEquivalencia,
   sql,
@@ -19,6 +21,8 @@ import {
 import {
   resolverCambio,
   type CambioLista,
+  type ComidaDelMenu,
+  type TiempoComida,
   type MagnitudUnidad,
   type ParcheItem,
   type ResultadoCambio,
@@ -60,6 +64,8 @@ export interface ListaCompleta {
   fechaFin: string;
   excesoAlAprobar: string | null;
   items: ItemDeLista[];
+  /** Comidas del menú aprobado, con y sin ingredientes en la lista (base del avance, HU-43). */
+  comidas: ComidaDelMenu[];
 }
 
 /** Resultado de un cambio del lote: lo que se devuelve y lo que queda registrado (idempotencia). */
@@ -149,8 +155,27 @@ export class ListasRepositorio {
     for (const o of origenes)
       comidas.set(o.itemId, [...(comidas.get(o.itemId) ?? []), o.menuDetalleId]);
 
+    const filasComidas = await this.db
+      .select({
+        menuDetalleId: menuDetalle.id,
+        fecha: menuDetalle.fecha,
+        tiempo: menuDetalle.tiempo,
+        platilloId: platillo.id,
+        platilloNombre: platillo.nombre,
+      })
+      .from(menuDetalle)
+      .leftJoin(platillo, eq(platillo.id, menuDetalle.platilloId))
+      .where(eq(menuDetalle.menuId, lista.menuId))
+      .orderBy(asc(menuDetalle.fecha));
+
     return {
       ...lista,
+      comidas: filasComidas.map((c) => ({
+        menuDetalleId: c.menuDetalleId,
+        fecha: c.fecha,
+        tiempo: c.tiempo as TiempoComida,
+        platillo: c.platilloId ? { id: c.platilloId, nombre: c.platilloNombre! } : null,
+      })),
       items: filas.map((f) => ({
         id: f.id,
         productoId: f.productoId,
