@@ -22,7 +22,7 @@ Los platillos que todavía no tienen ingredientes registrados no aportan nada a 
 ## 7.2 Ver la lista
 
 1. Abre la pestaña **Lista**.
-2. Elige la **semana** (la app ofrece las mismas cuatro que en **Semana**).
+2. Elige la **semana**. La app ofrece las últimas ocho semanas ya planificadas y las próximas cuatro, y abre la más reciente que ya pasó.
 3. Si el menú de esa semana está aprobado, verás los productos ordenados por nombre. Cada uno muestra **Comprar** y, debajo, lo **Requerido**.
 
 [Captura 7.2: pestaña Lista con la semana elegida y los productos]
