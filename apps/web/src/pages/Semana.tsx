@@ -12,11 +12,13 @@ import type {
   TiempoMenu,
 } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
+import { CalendarioMenu } from './CalendarioMenu';
 import { GrillaMenu } from './GrillaMenu';
 import { PanelMotivo } from './PanelMotivo';
 import { ResumenCostos } from './ResumenCostos';
 import { PaginaBase } from './PaginaBase';
 import { SelectorPlatillo } from './SelectorPlatillo';
+import { SelectorVista } from './SelectorVista';
 import {
   etiquetaDia,
   etiquetaEspacio,
@@ -25,6 +27,7 @@ import {
   sumarDiasFecha,
 } from './fechas';
 import { NOMBRES_TIEMPO } from './nombres-catalogo';
+import { guardarVista, vistaGuardada, type VistaSemana } from './vista-semana';
 import './acceso.css';
 import './hogar.css';
 import './semana.css';
@@ -100,6 +103,7 @@ export default function Semana() {
   const [aprobada, setAprobada] = useState(false);
   const [motivo, setMotivo] = useState<DetalleMenu | null>(null);
   const [baratas, setBaratas] = useState<BarataDelDia[]>([]);
+  const [vista, setVista] = useState<VistaSemana>(vistaGuardada);
 
   useEffect(() => {
     let activo = true;
@@ -373,26 +377,56 @@ export default function Semana() {
                 </button>
               </div>
             )}
-            <GrillaMenu
-              menu={menu}
-              editable={editable}
-              moviendo={moviendo}
-              ocupado={ocupado}
-              onMotivo={setMotivo}
-              onAlternativa={(d) => void cambiar(() => menus.alternativa(menu.id, d.id))}
-              onCambiar={(d) => {
-                setEditando(d);
-                setMoviendo(null);
-                setPendiente(null);
+            <SelectorVista
+              vista={vista}
+              onCambiar={(v) => {
+                setVista(v);
+                guardarVista(v);
               }}
-              onFijar={(d) => void cambiar(() => menus.fijar(menu.id, d.id, !d.fijado))}
-              onIniciarMover={(d) => {
-                setMoviendo(d.id);
-                setEditando(null);
-                setPendiente(null);
-              }}
-              onMover={mover}
             />
+            {vista === 'CALENDARIO' ? (
+              <CalendarioMenu
+                menu={menu}
+                editable={editable}
+                moviendo={moviendo}
+                ocupado={ocupado}
+                onMotivo={setMotivo}
+                onAlternativa={(d) => void cambiar(() => menus.alternativa(menu.id, d.id))}
+                onCambiar={(d) => {
+                  setEditando(d);
+                  setMoviendo(null);
+                  setPendiente(null);
+                }}
+                onFijar={(d) => void cambiar(() => menus.fijar(menu.id, d.id, !d.fijado))}
+                onIniciarMover={(d) => {
+                  setMoviendo(d.id);
+                  setEditando(null);
+                  setPendiente(null);
+                }}
+                onMover={mover}
+              />
+            ) : (
+              <GrillaMenu
+                menu={menu}
+                editable={editable}
+                moviendo={moviendo}
+                ocupado={ocupado}
+                onMotivo={setMotivo}
+                onAlternativa={(d) => void cambiar(() => menus.alternativa(menu.id, d.id))}
+                onCambiar={(d) => {
+                  setEditando(d);
+                  setMoviendo(null);
+                  setPendiente(null);
+                }}
+                onFijar={(d) => void cambiar(() => menus.fijar(menu.id, d.id, !d.fijado))}
+                onIniciarMover={(d) => {
+                  setMoviendo(d.id);
+                  setEditando(null);
+                  setPendiente(null);
+                }}
+                onMover={mover}
+              />
+            )}
             {motivo && (
               <PanelMotivo
                 menuId={menu.id}

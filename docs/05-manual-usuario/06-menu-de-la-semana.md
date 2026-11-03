@@ -164,3 +164,12 @@ Debajo de la tabla, el recuadro **Costo del menú** te dice si la semana alcanza
 - **Sin presupuesto:** si todavía no configuraste el presupuesto semanal, verás solo el costo y un enlace a **Configuración**.
 
 El costo se actualiza cada vez que cambias, mueves, fijas o pides otra opción para un día.
+
+## 6.9 Ver el menú como tabla o como calendario
+
+Arriba de la tabla hay dos botones, **Tabla** y **Calendario**. Elige cómo quieres ver la semana; la app recuerda tu elección en ese navegador.
+
+- **Tabla:** una fila por día y una columna por tiempo de comida, como siempre.
+- **Calendario:** una tarjeta por día, de domingo a sábado, que se acomodan según el ancho de la pantalla. Cada tarjeta muestra el platillo de cada tiempo de comida, su costo, y las marcas **Fijado** y **Ajustado al presupuesto** cuando corresponden. El borde de cada espacio es verde si su tiempo de comida cumple el presupuesto y rojo si lo excede.
+
+En el calendario tienes las mismas acciones que en la tabla: **¿Por qué?**, **Cambiar**, **Otra opción**, **Fijar**, **Mover** y arrastrar un platillo a otro día. En un menú aprobado o del historial solo se puede consultar. El recuadro **Costo del menú** (6.8) se ve igual en las dos vistas.
