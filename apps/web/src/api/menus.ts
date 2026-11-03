@@ -47,6 +47,23 @@ export interface AlternativasDelDia {
   platillos: { id: string; nombre: string; costo: string }[];
 }
 
+/** Una diferencia entre el gasto y una referencia: gasto − referencia (positiva = se gastó más). */
+export interface Diferencia {
+  monto: string;
+  /** Frase lista para mostrar, p. ej. "Q9.25 más que lo estimado". */
+  texto: string;
+}
+
+/** Gasto real de la semana con su comparación (HU-27, api-contrato §3.3). */
+export interface GastoRegistrado {
+  gastoReal: string;
+  nota: string | null;
+  diferenciaVsEstimado: Diferencia | null;
+  diferenciaVsPresupuesto: Diferencia | null;
+  registradoPor: { id: string; nombre: string } | null;
+  registradoEn: string | null;
+}
+
 /** Respuesta de `POST /menus/generar` y de las lecturas y cambios del menú. */
 export interface MenuGenerado {
   id: string;
@@ -62,6 +79,10 @@ export interface MenuGenerado {
   aprobadoEn: string | null;
   /** Lista de compras de la semana; solo existe cuando el menú está aprobado. */
   listaId: string | null;
+  /** Gasto real registrado; null mientras no haya. */
+  gasto?: GastoRegistrado | null;
+  /** Suma de los precios reales anotados en la lista, para prellenar el gasto. */
+  gastoSugerido?: string | null;
   tiempos: TiempoMenu[];
   detalles: DetalleMenu[];
   avisos: AvisoMenu[];
@@ -138,6 +159,12 @@ export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
       cliente.peticion<RespuestaAprobacion>(`/menus/${id(menuId)}/aprobar`, {
         metodo: 'POST',
         cuerpo: { version },
+      }),
+    /** Registra o corrige el gasto real de la semana de un menú aprobado (HU-27). */
+    registrarGasto: (menuId: string, monto: string, nota?: string) =>
+      cliente.peticion<GastoRegistrado>(`/menus/${id(menuId)}/gasto-real`, {
+        metodo: 'PUT',
+        cuerpo: nota ? { monto, nota } : { monto },
       }),
     generar: (datos: DatosGenerarMenu) =>
       cliente.peticion<MenuGenerado>('/menus/generar', { metodo: 'POST', cuerpo: datos }),

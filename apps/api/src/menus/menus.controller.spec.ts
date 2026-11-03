@@ -3,6 +3,7 @@ import { MenusController } from './menus.controller';
 import type { MenusAlternativaService } from './menus-alternativa.service';
 import type { MenusAprobacionService } from './menus-aprobacion.service';
 import type { MenusEdicionService } from './menus-edicion.service';
+import type { MenusGastoService } from './menus-gasto.service';
 import type { MenusService } from './menus.service';
 
 describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
@@ -19,11 +20,13 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
   };
   const aprobar = jest.fn().mockResolvedValue('aprobado');
   const alternativa = jest.fn().mockResolvedValue('alternativa');
+  const registrar = jest.fn().mockResolvedValue('gasto');
   const controlador = new MenusController(
     { generar } as unknown as MenusService,
     edicion as unknown as MenusEdicionService,
     { aprobar } as unknown as MenusAprobacionService,
     { alternativa } as unknown as MenusAlternativaService,
+    { registrar } as unknown as MenusGastoService,
   );
   const dto = { semana: '2026-11-01' };
   const respuesta = () => ({ status: jest.fn() });
@@ -89,6 +92,12 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
   it('delega aprobar con hogar, usuario, menú y versión', async () => {
     await expect(controlador.aprobar('h1', 'u1', 'm1', { version: 4 })).resolves.toBe('aprobado');
     expect(aprobar).toHaveBeenCalledWith('h1', 'u1', 'm1', { version: 4 });
+  });
+
+  it('delega el gasto real con hogar, usuario, menú y monto (HU-27)', async () => {
+    const dto = { monto: '238.75', nota: 'Paiz' };
+    await expect(controlador.registrarGasto('h1', 'u1', 'm1', dto)).resolves.toBe('gasto');
+    expect(registrar).toHaveBeenCalledWith('h1', 'u1', 'm1', dto);
   });
 
   it('delega el motivo con hogar, menú y espacio (HU-22)', async () => {

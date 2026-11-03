@@ -6,6 +6,7 @@ import {
   asc,
   eq,
   inArray,
+  isNotNull,
   listaCompras,
   listaItem,
   listaItemOrigen,
@@ -78,6 +79,18 @@ export interface MenuCompleto {
   aprobadoPor?: { id: string; nombre: string } | null;
   /** Lista de compras creada al aprobar (null mientras es Borrador). */
   listaId?: string | null;
+  /** Quién registró el gasto real (null si no hay gasto o lo trajo una importación). */
+  gastoRegistradoPor?: { id: string; nombre: string } | null;
+  /** Suma de los precios reales de lo comprado en la lista; null si no se anotó ninguno (CU-06.4 2b). */
+  gastoSugerido?: string | null;
+}
+
+/** Lo que fija el registro del gasto real (CU-06.4 paso 4). */
+export interface DatosGasto {
+  usuarioId: string;
+  monto: string;
+  nota: string | null;
+  registradoEn: Date;
 }
 
 /** Lo que fija la aprobación del menú (CU-06.2 paso 4, D-03, D-04). */
@@ -192,6 +205,23 @@ export class MenusRepositorio {
     return fila;
   }
 
+  /** Suma de los precios reales de los ítems comprados; null si ninguno tiene precio. */
+  private async gastoSugerido(listaId: string): Promise<string | null> {
+    const [fila] = await this.db
+      .select({ total: sql<string | null>`sum(${listaItem.precioReal})` })
+      .from(listaItem)
+      .where(
+        and(
+          eq(listaItem.listaId, listaId),
+          eq(listaItem.estado, 'COMPRADO'),
+          eq(listaItem.eliminado, false),
+          isNotNull(listaItem.precioReal),
+        ),
+      );
+    const centavos = fila?.total ? aCentavos(fila.total) : null;
+    return centavos !== null && centavos > 0 ? deCentavos(centavos) : null;
+  }
+
   /** Menú del hogar con sus tiempos y espacios (null = otro hogar o inexistente). */
   async cargar(hogarId: string, menuId: string): Promise<MenuCompleto | undefined> {
     const [menu] = await this.db
@@ -223,11 +253,20 @@ export class MenusRepositorio {
       .from(listaCompras)
       .where(eq(listaCompras.menuId, menuId))
       .limit(1);
+    const [registrador] = menu.gastoRegistradoPorId
+      ? await this.db
+          .select({ id: usuario.id, nombre: usuario.nombre })
+          .from(usuario)
+          .where(eq(usuario.id, menu.gastoRegistradoPorId))
+          .limit(1)
+      : [];
     return {
       menu,
       tiempos,
       aprobadoPor: aprobador ?? null,
       listaId: lista?.id ?? null,
+      gastoRegistradoPor: registrador ?? null,
+      gastoSugerido: lista ? await this.gastoSugerido(lista.id) : null,
       detalles: detalles.map((d) => ({
         ...d.detalle,
         platilloNombre: d.platilloNombre,
@@ -657,6 +696,30 @@ export class MenusRepositorio {
       await this.insertarItems(tx, lista!.id, datos.items, datos.aprobadoEn);
       return lista as ListaCreada;
     });
+  }
+
+  /**
+   * CU-06.4 paso 4: guarda monto, nota, usuario y fecha. Devuelve `false` si el menú ya no está
+   * aprobado (otro miembro lo cambió); el último valor registrado es el que queda.
+   */
+  async registrarGasto(hogarId: string, menuId: string, datos: DatosGasto): Promise<boolean> {
+    const filas = await this.db
+      .update(menuSemanal)
+      .set({
+        gastoReal: datos.monto,
+        notaGasto: datos.nota,
+        gastoRegistradoPorId: datos.usuarioId,
+        gastoRegistradoEn: datos.registradoEn,
+      })
+      .where(
+        and(
+          eq(menuSemanal.id, menuId),
+          eq(menuSemanal.hogarId, hogarId),
+          eq(menuSemanal.estado, 'APROBADO'),
+        ),
+      )
+      .returning({ id: menuSemanal.id });
+    return filas.length > 0;
   }
 
   /** Guarda los ítems consolidados con origen "Menú" y las comidas que los originan (CU-07.1 paso 8). */

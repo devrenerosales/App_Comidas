@@ -173,3 +173,21 @@ Arriba de la tabla hay dos botones, **Tabla** y **Calendario**. Elige cómo quie
 - **Calendario:** una tarjeta por día, de domingo a sábado, que se acomodan según el ancho de la pantalla. Cada tarjeta muestra el platillo de cada tiempo de comida, su costo, y las marcas **Fijado** y **Ajustado al presupuesto** cuando corresponden. El borde de cada espacio es verde si su tiempo de comida cumple el presupuesto y rojo si lo excede.
 
 En el calendario tienes las mismas acciones que en la tabla: **¿Por qué?**, **Cambiar**, **Otra opción**, **Fijar**, **Mover** y arrastrar un platillo a otro día. En un menú aprobado o del historial solo se puede consultar. El recuadro **Costo del menú** (6.8) se ve igual en las dos vistas.
+
+## 6.10 Registrar lo que gastaste en la semana
+
+Cuando el menú ya está **aprobado**, debajo del recuadro **Costo del menú** aparece **Gasto real**. Sirve para comparar lo que de verdad gastaste con lo que la app estimó. Un menú en borrador no lo muestra.
+
+1. Toca **Registrar gasto real**.
+2. Escribe el **monto total** que gastaste en la semana, en quetzales, y si quieres una **nota** ("Paiz y mercado").
+3. Toca **Guardar gasto**. Verás el gasto y dos comparaciones: contra lo estimado ("Q9.25 más que lo estimado") y contra tu presupuesto ("Q6.25 por debajo del presupuesto"). En verde si te quedaste dentro, en rojo si te pasaste.
+
+**Si anotaste precios en la lista de compras**, el monto aparece ya escrito con la suma de esos precios y la nota "Sugerido con los precios que anotaste en la lista". Puedes cambiarlo antes de guardar: a veces compras cosas que no estaban en la lista.
+
+**Corregir.** Toca **Corregir gasto**, cambia el monto y guarda. Queda el último valor, con quién lo registró y cuándo.
+
+**Reglas del monto:** mayor que Q0.00, con hasta 2 decimales y hasta Q99,999.99. Si no cumple, la app te lo dice ("El monto debe ser mayor que Q0.00", "El monto admite como máximo 2 decimales") y no guarda nada.
+
+También puedes registrarlo desde **Lista**, debajo de la lista de compras, con la misma pantalla.
+
+[Captura 6.10: recuadro Gasto real con las comparaciones]

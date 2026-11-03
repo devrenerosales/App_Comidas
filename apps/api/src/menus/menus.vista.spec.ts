@@ -1,6 +1,6 @@
 import type { MenuSemanal, MenuTiempo } from '@menu/db';
 import type { DetalleConPlatillo, MenuCompleto } from './menus.repositorio';
-import { vistaMenu } from './menus.vista';
+import { gastoDelMenu, vistaMenu } from './menus.vista';
 
 const menu = (extra: Partial<MenuSemanal> = {}): MenuSemanal =>
   ({
@@ -146,6 +146,51 @@ describe('vistaMenu (api-contrato §3.1)', () => {
   it('un Borrador no trae aprobador, fecha de aprobación ni lista', () => {
     const v = vistaMenu({ menu: menu({ aprobadoEn: null }), tiempos: [], detalles: [] });
     expect(v).toMatchObject({ aprobadoPor: null, aprobadoEn: null, listaId: null });
+  });
+
+  it('un menú sin gasto no trae gasto ni sugerido; con gasto compara con lo estimado y el presupuesto (HU-27)', () => {
+    const sin = vistaMenu({ menu: menu(), tiempos: [], detalles: [] });
+    expect(sin).toMatchObject({ gasto: null, gastoSugerido: null });
+
+    const con = vistaMenu({
+      menu: menu({
+        estado: 'APROBADO',
+        presupuestoSemanal: '245.00',
+        costoEstimado: '229.50',
+        gastoReal: '238.75',
+        notaGasto: 'Paiz',
+        gastoRegistradoEn: new Date('2026-11-08T16:00:00.000Z'),
+      }),
+      tiempos: [],
+      detalles: [],
+      gastoRegistradoPor: { id: 'u1', nombre: 'Ana' },
+      gastoSugerido: '73.60',
+    });
+    expect(con.gastoSugerido).toBe('73.60');
+    expect(con.gasto).toEqual({
+      gastoReal: '238.75',
+      nota: 'Paiz',
+      diferenciaVsEstimado: { monto: '9.25', texto: 'Q9.25 más que lo estimado' },
+      diferenciaVsPresupuesto: { monto: '-6.25', texto: 'Q6.25 por debajo del presupuesto' },
+      registradoPor: { id: 'u1', nombre: 'Ana' },
+      registradoEn: '2026-11-08T16:00:00.000Z',
+    });
+  });
+
+  it('un gasto que trajo una importación no tiene quién ni cuándo', () => {
+    const gasto = gastoDelMenu({
+      menu: menu({ gastoReal: '224.00', costoEstimado: null, presupuestoSemanal: null }),
+      tiempos: [],
+      detalles: [],
+    });
+    expect(gasto).toEqual({
+      gastoReal: '224.00',
+      nota: undefined,
+      diferenciaVsEstimado: null,
+      diferenciaVsPresupuesto: null,
+      registradoPor: null,
+      registradoEn: null,
+    });
   });
 
   it('el estado del tiempo distingue dentro, excede e incompleto (HU-21, D-18)', () => {

@@ -1,4 +1,15 @@
-import { IsBoolean, IsInt, IsOptional, IsUUID, Matches, Min } from 'class-validator';
+import {
+  Allow,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { NOTA_GASTO_MAXIMA } from '@menu/shared';
 
 /** POST /menus/generar. El calendario real de la semana lo valida el servicio (422). */
 export class GenerarMenuDto {
@@ -44,4 +55,18 @@ export class AprobarMenuDto {
   @IsInt({ message: 'La versión del menú no es válida' })
   @Min(1, { message: 'La versión del menú no es válida' })
   version!: number;
+}
+
+/**
+ * PUT /menus/{id}/gasto-real (CU-06.4). El monto se valida en el servicio para responder con el
+ * mensaje de CA-27.3 (422 MONTO_INVALIDO) y no con el formato genérico de los DTO.
+ */
+export class RegistrarGastoDto {
+  @Allow()
+  monto?: unknown;
+
+  @IsOptional()
+  @IsString({ message: 'La nota no es válida' })
+  @MaxLength(NOTA_GASTO_MAXIMA, { message: `La nota admite hasta ${NOTA_GASTO_MAXIMA} caracteres` })
+  nota?: string;
 }

@@ -8,6 +8,7 @@ import type { ItemLista } from '../api/listas';
 import type { MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { AvanceComidas } from './AvanceComidas';
+import { GastoReal } from './GastoReal';
 import { PaginaBase } from './PaginaBase';
 import { etiquetaSemana, sumarDiasFecha } from './fechas';
 import { useListaSincronizada, type ListaSincronizada } from './useListaSincronizada';
@@ -455,6 +456,13 @@ export default function Lista() {
               </>
             )}
           </section>
+        )}
+        {lista && menu?.estado === 'APROBADO' && (
+          <GastoReal
+            menu={menu}
+            sugerido={lista.gastoSugerido ?? menu.gastoSugerido}
+            alRegistrar={(gasto) => setMenu({ ...menu, gasto })}
+          />
         )}
       </div>
     </PaginaBase>

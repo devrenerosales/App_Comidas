@@ -215,3 +215,32 @@ describe('HU-28 Lista de compras', () => {
     await waitFor(() => expect(menus.obtenerPorSemana).toHaveBeenCalledTimes(2));
   });
 });
+
+describe('HU-27 Gasto real desde la lista', () => {
+  it('ofrece registrar el gasto con la suma de los precios anotados como sugerencia', async () => {
+    const { menus, user } = montar({ lista: lista([item()], { gastoSugerido: '73.60' }) });
+    const registrarGasto = vi.fn().mockResolvedValue({
+      gastoReal: '73.60',
+      nota: null,
+      diferenciaVsEstimado: null,
+      diferenciaVsPresupuesto: null,
+      registradoPor: null,
+      registradoEn: null,
+    });
+    Object.assign(menus, { registrarGasto });
+    await productos();
+
+    await user.click(await screen.findByRole('button', { name: 'Registrar gasto real' }));
+    expect(screen.getByLabelText('Monto gastado (Q)')).toHaveValue('73.60');
+    await user.click(screen.getByRole('button', { name: 'Guardar gasto' }));
+
+    await waitFor(() => expect(registrarGasto).toHaveBeenCalledWith('m1', '73.60', undefined));
+    expect(await screen.findByRole('button', { name: 'Corregir gasto' })).toBeVisible();
+  });
+
+  it('un menú sin aprobar no ofrece el gasto', async () => {
+    montar({ menu: menu({ estado: 'BORRADOR', listaId: null }) });
+    await screen.findByText(/Aprueba el menú para generar la lista/);
+    expect(screen.queryByRole('button', { name: 'Registrar gasto real' })).not.toBeInTheDocument();
+  });
+});

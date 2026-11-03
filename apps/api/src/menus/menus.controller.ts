@@ -24,12 +24,14 @@ import {
   FijarDetalleDto,
   GenerarMenuDto,
   MoverDetalleDto,
+  RegistrarGastoDto,
 } from './dto/menus.dto';
 import { MenusAprobacionService, type RespuestaAprobacion } from './menus-aprobacion.service';
 import { MenusAlternativaService } from './menus-alternativa.service';
 import { MenusEdicionService, type MotivoSugerencia } from './menus-edicion.service';
+import { MenusGastoService } from './menus-gasto.service';
 import { MenusService } from './menus.service';
-import type { VistaMenu } from './menus.vista';
+import type { GastoRegistrado, VistaMenu } from './menus.vista';
 
 /** Un id mal formado se trata como inexistente (404), igual que uno de otro hogar (RNF-06). */
 const idMenu = new ParseUUIDPipe({
@@ -53,6 +55,7 @@ export class MenusController {
     private readonly edicion: MenusEdicionService,
     private readonly aprobacion: MenusAprobacionService,
     private readonly alternativas: MenusAlternativaService,
+    private readonly gasto: MenusGastoService,
   ) {}
 
   /** 201 con el menú nuevo; 200 si se regeneró un Borrador conservando los fijados. */
@@ -161,6 +164,17 @@ export class MenusController {
     @Body() dto: FijarDetalleDto,
   ): Promise<VistaMenu> {
     return this.edicion.fijar(hogarId, usuarioId, id, detalleId, dto);
+  }
+
+  /** CU-06.4: registra o corrige el gasto real de la semana de un menú aprobado. */
+  @Put(':id/gasto-real')
+  registrarGasto(
+    @HogarActual('hogarId') hogarId: string,
+    @UsuarioActual('id') usuarioId: string,
+    @Param('id', idMenu) id: string,
+    @Body() dto: RegistrarGastoDto,
+  ): Promise<GastoRegistrado> {
+    return this.gasto.registrar(hogarId, usuarioId, id, dto);
   }
 
   /** CU-06.2: aprueba el Borrador (con exceso también, D-03) y crea la lista de compras. */
