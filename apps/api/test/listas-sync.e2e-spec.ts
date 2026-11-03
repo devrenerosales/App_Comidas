@@ -1,7 +1,8 @@
 /**
- * HU-30 Editar y marcar la lista de compras — integración contra PostgreSQL real
- * (TEST_DATABASE_URL). Cubre CA-30.1 a CA-30.4 sobre POST /listas/{id}/sync: marcar, lote sin
- * conexión, idempotencia por id de cambio, conflictos de última escritura gana y validaciones.
+ * HU-30 Editar y marcar la lista de compras y HU-43 Avance de compra por comida — integración
+ * contra PostgreSQL real (TEST_DATABASE_URL). Cubre CA-30.1 a CA-30.4 sobre POST /listas/{id}/sync
+ * (marcar, lote sin conexión, idempotencia, última escritura gana, validaciones) y el avance por
+ * comida de GET /listas/{id}/avance (CA-43.1 a CA-43.4 y CA-43.6).
  *
  * Semana del domingo 2026-11-01: lunes 11-02 y miércoles 11-04.
  */
@@ -28,7 +29,7 @@ const SEMANA = '2026-11-01';
 const LUNES = '2026-11-02';
 const MIERCOLES = '2026-11-04';
 
-describeConBd('HU-30 Editar y marcar la lista de compras (integración)', () => {
+describeConBd('HU-30 y HU-43 Editar la lista y su avance por comida (integración)', () => {
   const bd = usarBaseDePruebas({
     suite: 'listas-sync',
     sembrar: true,
@@ -436,5 +437,151 @@ describeConBd('HU-30 Editar y marcar la lista de compras (integración)', () => 
     const grande = Array.from({ length: 501 }, () => cambio('MARCAR_COMPRADO', tomate, 0));
     const res = await sync(token, listaId, grande).expect(422);
     expect(res.body.codigo).toBe('LOTE_DEMASIADO_GRANDE');
+  });
+
+  const avance = (token: string, listaId: string) =>
+    http().get(`${API}/listas/${listaId}/avance`).set(con(token));
+
+  type ComidaAvance = {
+    menuDetalleId: string;
+    platillo: { nombre: string };
+    cubiertos: number;
+    total: number;
+    listaParaPreparar: boolean;
+    sinIngredientes: boolean;
+    pendientes: { producto: string }[];
+  };
+  const comidaDe = (cuerpo: { comidas: ComidaAvance[] }, platillo: string) =>
+    cuerpo.comidas.find((c) => c.platillo.nombre === platillo)!;
+
+  it('CA-43.1 avance parcial de cada comida con sus ingredientes pendientes', async () => {
+    const { token, listaId, items, m } = await listaAprobada();
+
+    const inicial = await avance(token, listaId).expect(200);
+    expect(inicial.body.general).toEqual({ cubiertos: 0, total: 3, porcentaje: 0 });
+    expect(inicial.body.comidas.map((c: ComidaAvance) => c.menuDetalleId)).toEqual([
+      m.detalle('2026-11-02'),
+      m.detalle('2026-11-04'),
+    ]);
+
+    await sync(token, listaId, [cambio('MARCAR_COMPRADO', items.get('Tomate')!, 0)]).expect(200);
+    const res = await avance(token, listaId).expect(200);
+
+    // Pollo en crema usa pechuga, tomate y mantequilla; el pepián, pechuga y tomate.
+    expect(comidaDe(res.body, 'Pollo en crema')).toMatchObject({
+      cubiertos: 1,
+      total: 3,
+      listaParaPreparar: false,
+      sinIngredientes: false,
+    });
+    expect(
+      comidaDe(res.body, 'Pollo en crema')
+        .pendientes.map((p) => p.producto)
+        .sort(),
+    ).toEqual(['Mantequilla', 'Pechuga de pollo']);
+    expect(comidaDe(res.body, 'Pepián de pollo')).toMatchObject({ cubiertos: 1, total: 2 });
+    expect(res.body.general).toEqual({ cubiertos: 1, total: 3, porcentaje: 33 });
+  });
+
+  it('CA-43.2 y CA-43.3 "Ya lo tengo" cubre y un producto compartido cuenta en todas sus comidas', async () => {
+    const { token, listaId, items } = await listaAprobada();
+
+    await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', items.get('Pechuga de pollo')!, 0),
+      cambio('MARCAR_COMPRADO', items.get('Tomate')!, 1),
+    ]).expect(200);
+    const parcial = await avance(token, listaId).expect(200);
+    // La pechuga y el tomate se marcaron una sola vez y suman en las dos comidas.
+    expect(comidaDe(parcial.body, 'Pollo en crema')).toMatchObject({ cubiertos: 2, total: 3 });
+    expect(comidaDe(parcial.body, 'Pepián de pollo')).toMatchObject({
+      cubiertos: 2,
+      total: 2,
+      listaParaPreparar: true,
+    });
+
+    await sync(token, listaId, [cambio('MARCAR_YA_LO_TENGO', items.get('Mantequilla')!, 2)]).expect(
+      200,
+    );
+    const completa = await avance(token, listaId).expect(200);
+    expect(comidaDe(completa.body, 'Pollo en crema')).toMatchObject({
+      cubiertos: 3,
+      total: 3,
+      listaParaPreparar: true,
+      pendientes: [],
+    });
+    expect(completa.body.general).toEqual({ cubiertos: 3, total: 3, porcentaje: 100 });
+  });
+
+  it('CA-43.6 desmarcar un ingrediente de una comida lista le quita la marca', async () => {
+    const { token, listaId, items } = await listaAprobada();
+    await sync(token, listaId, [
+      cambio('MARCAR_COMPRADO', items.get('Pechuga de pollo')!, 0),
+      cambio('MARCAR_COMPRADO', items.get('Tomate')!, 1),
+    ]).expect(200);
+    expect(comidaDe((await avance(token, listaId)).body, 'Pepián de pollo').listaParaPreparar).toBe(
+      true,
+    );
+
+    await sync(token, listaId, [cambio('DESMARCAR_COMPRADO', items.get('Tomate')!, 2)]).expect(200);
+
+    expect(comidaDe((await avance(token, listaId)).body, 'Pepián de pollo')).toMatchObject({
+      cubiertos: 1,
+      total: 2,
+      listaParaPreparar: false,
+    });
+  });
+
+  it('E1 y E3 un producto agregado a mano cuenta solo en el general y uno quitado deja de contar', async () => {
+    const { token, listaId, items } = await listaAprobada();
+
+    await sync(token, listaId, [
+      cambio('AGREGAR', '99999999-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 0, {
+        textoLibre: 'Tortillas',
+        cantidadComprar: 30,
+      }),
+      cambio('MARCAR_COMPRADO', '99999999-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 1),
+      cambio('ELIMINAR', items.get('Mantequilla')!, 2),
+    ]).expect(200);
+    const res = await avance(token, listaId).expect(200);
+
+    expect(res.body.general).toEqual({ cubiertos: 1, total: 3, porcentaje: 33 });
+    expect(comidaDe(res.body, 'Pollo en crema')).toMatchObject({ cubiertos: 0, total: 2 });
+  });
+
+  it('E2 un platillo sin ingredientes en la lista aparece como "sin ingredientes" y nunca lista', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    const vacio = await crearPlatillo(hogarId, 'Arroz blanco', []);
+    const m = await crearBorrador(hogarId, [[LUNES, vacio]]);
+    const aprobado = await aprobar(token, m.menuId, m.version).expect(200);
+
+    const res = await avance(token, aprobado.body.lista.id).expect(200);
+
+    expect(res.body.general).toEqual({ cubiertos: 0, total: 0, porcentaje: 0 });
+    expect(comidaDe(res.body, 'Arroz blanco')).toMatchObject({
+      total: 0,
+      sinIngredientes: true,
+      listaParaPreparar: false,
+    });
+  });
+
+  it('la lista trae sus comidas para calcular el avance sin conexión', async () => {
+    const { lista, m } = await listaAprobada();
+    expect(lista.comidas).toEqual([
+      expect.objectContaining({
+        menuDetalleId: m.detalle(LUNES),
+        fecha: LUNES,
+        tiempo: 'ALMUERZO',
+        platillo: { id: expect.any(String), nombre: 'Pollo en crema' },
+      }),
+      expect.objectContaining({ menuDetalleId: m.detalle(MIERCOLES), fecha: MIERCOLES }),
+    ]);
+  });
+
+  it('el avance de una lista de otro hogar o con un id mal formado es 404', async () => {
+    const { listaId, token } = await listaAprobada();
+    const otro = await hogarDe('Ana');
+
+    await avance(otro.token, listaId).expect(404);
+    await http().get(`${API}/listas/no-es-uuid/avance`).set(con(token)).expect(404);
   });
 });

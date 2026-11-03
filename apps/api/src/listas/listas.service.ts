@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CAMBIOS_MAXIMOS_POR_LOTE, type CambioLista } from '@menu/shared';
+import {
+  CAMBIOS_MAXIMOS_POR_LOTE,
+  avanceDeLista,
+  type AvanceLista,
+  type CambioLista,
+} from '@menu/shared';
 import { Problema } from '../comun/problema';
 import type { SincronizarListaDto } from './dto/listas.dto';
 import { ListasRepositorio, type ResultadoSync } from './listas.repositorio';
@@ -23,6 +28,21 @@ export class ListasService {
     const lista = await this.repo.cargar(hogarId, listaId);
     if (!lista) throw noEncontrada();
     return vistaLista(lista);
+  }
+
+  /** CU-07.6: avance de la compra por comida y general (RN-13). */
+  async avance(hogarId: string, listaId: string): Promise<AvanceLista> {
+    const lista = await this.repo.cargar(hogarId, listaId);
+    if (!lista) throw noEncontrada();
+    return avanceDeLista(
+      lista.items.map((i) => ({
+        id: i.id,
+        producto: i.productoNombre ?? i.textoLibre ?? '',
+        estado: i.estado,
+        comidas: i.comidas,
+      })),
+      lista.comidas,
+    );
   }
 
   /**

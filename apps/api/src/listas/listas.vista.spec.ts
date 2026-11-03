@@ -38,6 +38,7 @@ const lista = (items: ItemDeLista[], extra: Partial<ListaCompleta> = {}): ListaC
   fechaFin: '2026-11-07',
   excesoAlAprobar: null,
   items,
+  comidas: [],
   ...extra,
 });
 
@@ -148,6 +149,18 @@ describe('vistaLista (CU-07.1, HU-28)', () => {
   it('un ítem sin nombre ni texto queda con nombre vacío', () => {
     const [i] = vistaLista(lista([item({ productoNombre: null, textoLibre: null })])).items;
     expect(i!.producto.nombre).toBe('');
+  });
+
+  it('HU-43 trae las comidas del menú para calcular el avance sin conexión', () => {
+    const comidas = [
+      {
+        menuDetalleId: 'd1',
+        fecha: '2026-11-04',
+        tiempo: 'ALMUERZO' as const,
+        platillo: { id: 'p1', nombre: 'Pepián de pollo' },
+      },
+    ];
+    expect(vistaLista(lista([item()], { comidas })).comidas).toEqual(comidas);
   });
 
   it('CA-28.6 el encabezado trae el exceso con que se aprobó y cuenta los cubiertos', () => {

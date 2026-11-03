@@ -11,6 +11,7 @@ const completa = (version = 1) => ({
   fechaFin: '2026-11-07',
   excesoAlAprobar: null,
   items: [],
+  comidas: [],
 });
 
 const cambio = (n: number) => ({
@@ -41,6 +42,64 @@ describe('ListasService (HU-28, HU-30)', () => {
   it('una lista de otro hogar o inexistente es 404', async () => {
     repo.cargar.mockResolvedValue(undefined);
     expect((await problema(servicio.obtener('h1', 'lx'))).getStatus()).toBe(404);
+  });
+
+  describe('avance (CU-07.6)', () => {
+    it('cuenta los ingredientes cubiertos de cada comida y el avance general', async () => {
+      repo.cargar.mockResolvedValue({
+        ...completa(),
+        items: [
+          {
+            id: 'i1',
+            productoNombre: 'Pollo',
+            textoLibre: null,
+            estado: 'COMPRADO',
+            comidas: ['d1'],
+          },
+          {
+            id: 'i2',
+            productoNombre: 'Tomate',
+            textoLibre: null,
+            estado: 'PENDIENTE',
+            comidas: ['d1'],
+          },
+          {
+            id: 'i3',
+            productoNombre: null,
+            textoLibre: 'Tortillas',
+            estado: 'YA_LO_TENGO',
+            comidas: [],
+          },
+          { id: 'i4', productoNombre: null, textoLibre: null, estado: 'PENDIENTE', comidas: [] },
+        ],
+        comidas: [
+          {
+            menuDetalleId: 'd1',
+            fecha: '2026-11-04',
+            tiempo: 'ALMUERZO',
+            platillo: { id: 'p1', nombre: 'Pepián de pollo' },
+          },
+        ],
+      });
+
+      const avance = await servicio.avance('h1', 'l1');
+
+      expect(avance.general).toEqual({ cubiertos: 2, total: 4, porcentaje: 50 });
+      expect(avance.comidas).toEqual([
+        expect.objectContaining({
+          menuDetalleId: 'd1',
+          cubiertos: 1,
+          total: 2,
+          listaParaPreparar: false,
+          pendientes: [{ itemId: 'i2', producto: 'Tomate' }],
+        }),
+      ]);
+    });
+
+    it('una lista de otro hogar o inexistente es 404', async () => {
+      repo.cargar.mockResolvedValue(undefined);
+      expect((await problema(servicio.avance('h1', 'lx'))).getStatus()).toBe(404);
+    });
   });
 
   describe('sincronizar (CU-07.3)', () => {

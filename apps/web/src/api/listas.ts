@@ -1,5 +1,5 @@
 /** Endpoints de la lista de compras (M07 · HU-28 y HU-30, api-contrato §2.7). */
-import type { CambioLista } from '@menu/shared';
+import type { CambioLista, ComidaDelMenu } from '@menu/shared';
 import type { ClienteHttp } from './cliente';
 
 export interface CantidadConUnidad {
@@ -36,6 +36,8 @@ export interface ListaCompras {
   comprados: number;
   sinConversion: number;
   items: ItemLista[];
+  /** Comidas del menú; con `items[].comidas` dan el avance por comida (HU-43). Puede faltar en copias antiguas. */
+  comidas?: ComidaDelMenu[];
 }
 
 /** Qué pasó con un cambio del lote (api-contrato §2.7). */

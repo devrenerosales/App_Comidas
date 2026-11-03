@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) |
+| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) · HU-43 Avance de compra por comida (S4) |
 | Versión de la app | Sprint 4 (rama `feature/HU-28-consolidar-lista`) |
-| Estado del capítulo | Parcial: lista consolidada, marcar, quitar y agregar, y uso sin conexión; faltan despensa, avance, precio real y compartir, y las capturas |
+| Estado del capítulo | Parcial: lista consolidada, marcar, quitar y agregar, y uso sin conexión, y avance por comida; faltan despensa, precio real y compartir, y las capturas |
 
 > **Capturas:** los recuadros `[Captura …]` marcan dónde irá la imagen de la pantalla real (teléfono 390 × 844, carpeta `docs/05-manual-usuario/img/`).
 
@@ -70,3 +70,24 @@ La lista funciona aunque no tengas señal, siempre que la hayas abierto antes co
 **Si un cambio no se puede aplicar** (por ejemplo, el producto ya no existe), la app lo descarta y te avisa, y el resto se aplica.
 
 > **Importante:** la app todavía no se puede abrir del todo sin conexión. Abre la lista con internet antes de salir de casa y no cierres la pestaña; si la cierras sin señal, la copia guardada se vuelve a mostrar pero la app puede no cargar.
+
+## 7.6 Ver el avance de la compra por comida
+
+Arriba de la lista hay dos botones: **Productos** (la lista de siempre) y **Por comida**. En **Por comida** ves cómo va la compra de cada comida de la semana:
+
+- **Avance general:** una barra y el texto "18 de 31 productos (58 %)": cuántos productos de la lista ya compraste o ya tienes.
+- **Cada comida:** "Pepián de pollo · miércoles almuerzo · 4 de 6" significa que 4 de sus 6 ingredientes ya están comprados o marcados "Ya lo tengo".
+- **Lista para preparar:** cuando una comida llega a "6 de 6" aparece la marca **Lista para preparar**.
+- **Qué falta:** toca una comida y verás sus ingredientes pendientes, con los botones **Comprado** y **Ya lo tengo** para marcarlos desde ahí.
+
+Un producto que se usa en varias comidas (por ejemplo, la cebolla) se marca una sola vez y cuenta en todas. Si desmarcas un ingrediente, la comida vuelve a "n−1 de n" y pierde la marca de lista.
+
+Algunos casos:
+
+- Un producto que agregaste a mano (por ejemplo, "Tortillas") no pertenece a ninguna comida: cuenta solo en el avance general.
+- Si el platillo de una comida todavía no tiene ingredientes, aparece **Sin ingredientes registrados** y nunca se marca como lista.
+- Si quitas un producto de la lista, deja de contar en las comidas y en el avance general.
+
+El avance también se actualiza sin conexión: lo calcula tu teléfono con los cambios que vas haciendo (ver 7.5).
+
+[Captura 7.6: pestaña Por comida con el avance general y las comidas]
