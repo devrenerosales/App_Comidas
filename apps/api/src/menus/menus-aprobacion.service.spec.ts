@@ -1,4 +1,5 @@
 import type { MenuSemanal, MenuTiempo } from '@menu/db';
+import type { UnidadConId } from '@menu/shared';
 import { Problema } from '../comun/problema';
 import { MenusAprobacionService } from './menus-aprobacion.service';
 import type { DetalleConPlatillo, MenuCompleto, MenusRepositorio } from './menus.repositorio';
@@ -57,7 +58,7 @@ async function problema(promesa: Promise<unknown>): Promise<Problema> {
 }
 
 describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
-  const repo = { cargar: jest.fn(), aprobar: jest.fn() };
+  const repo = { cargar: jest.fn(), aprobar: jest.fn(), ingredientesParaLista: jest.fn() };
   const servicio = new MenusAprobacionService(repo as unknown as MenusRepositorio, () => AHORA);
   const datos = () => repo.aprobar.mock.calls[0]![3] as Record<string, unknown>;
 
@@ -65,12 +66,18 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
     jest.resetAllMocks();
     repo.cargar.mockResolvedValue(completo());
     repo.aprobar.mockResolvedValue({ id: 'l1', version: 1 });
+    repo.ingredientesParaLista.mockResolvedValue(new Map());
   });
 
   it('aprueba el Borrador con usuario, fecha y exceso 0 si todo está dentro (CA-25.1)', async () => {
     const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
     expect(repo.aprobar).toHaveBeenCalledWith('h1', 'm1', 4, expect.any(Object));
-    expect(datos()).toEqual({ usuarioId: 'u1', aprobadoEn: AHORA, excesoAlAprobar: '0.00' });
+    expect(datos()).toEqual({
+      usuarioId: 'u1',
+      aprobadoEn: AHORA,
+      excesoAlAprobar: '0.00',
+      items: [],
+    });
     expect(respuesta.excede).toBeNull();
     expect(respuesta.lista).toEqual({
       id: 'l1',
@@ -78,6 +85,7 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
       totalItems: 0,
       itemsMenu: 0,
       itemsDespensa: 0,
+      sinConversion: 0,
       url: '/api/v1/listas/l1',
     });
   });
@@ -93,6 +101,106 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
     const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
     expect(datos().excesoAlAprobar).toBe('19.55');
     expect(respuesta.excede).toEqual({ monto: '19.55', texto: 'Excede por Q19.55' });
+  });
+
+  describe('consolidación de la lista (CU-07.1, HU-28)', () => {
+    const LB = { id: 'u-lb', codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+    const CDTA = {
+      id: 'u-cdta',
+      codigo: 'cucharadita',
+      magnitud: 'VOLUMEN' as const,
+      factorBase: 5,
+    };
+    const G = { id: 'u-g', codigo: 'g', magnitud: 'MASA' as const, factorBase: 1 };
+    const ingrediente = (
+      productoId: string,
+      cantidad: number,
+      unidad: UnidadConId,
+      presentacion: { cantidad: number; unidad: UnidadConId },
+    ) => ({ productoId, cantidad, porcionesBase: 4, unidad, presentacion, equivalencia: null });
+
+    it('CA-28.1 suma el mismo producto de dos platillos con la Σ congelada del menú', async () => {
+      repo.cargar.mockResolvedValue(completo({}, { sumaFactoresPorcion: '6.00' }));
+      repo.ingredientesParaLista.mockResolvedValue(
+        new Map([
+          [
+            'p-a',
+            {
+              porcionesBase: 4,
+              ingredientes: [ingrediente('pollo', 2, LB, { cantidad: 1, unidad: LB })],
+            },
+          ],
+          [
+            'p-b',
+            {
+              porcionesBase: 4,
+              ingredientes: [ingrediente('pollo', 2.5, LB, { cantidad: 1, unidad: LB })],
+            },
+          ],
+        ]),
+      );
+
+      const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+
+      expect(repo.ingredientesParaLista).toHaveBeenCalledWith(['p-a', 'p-b']);
+      const items = datos().items as Record<string, unknown>[];
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        productoId: 'pollo',
+        cantidadRequerida: 6.75,
+        cantidadComprar: 7,
+        sinConversion: false,
+        origenes: [
+          { menuDetalleId: 'a', cantidadRequerida: 3 },
+          { menuDetalleId: 'b', cantidadRequerida: 3.75 },
+        ],
+      });
+      expect(respuesta.lista).toMatchObject({ totalItems: 1, itemsMenu: 1, sinConversion: 0 });
+    });
+
+    it('CA-28.3 un ingrediente sin conversión se agrega marcado y el resto sale normal', async () => {
+      repo.cargar.mockResolvedValue(completo({}, { sumaFactoresPorcion: '4.00' }));
+      repo.ingredientesParaLista.mockResolvedValue(
+        new Map([
+          [
+            'p-a',
+            {
+              porcionesBase: 4,
+              ingredientes: [
+                ingrediente('oregano', 1, CDTA, { cantidad: 10, unidad: G }),
+                ingrediente('pollo', 2, LB, { cantidad: 1, unidad: LB }),
+              ],
+            },
+          ],
+        ]),
+      );
+
+      const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+
+      const items = datos().items as { productoId: string; sinConversion: boolean }[];
+      expect(items.map((i) => [i.productoId, i.sinConversion])).toEqual([
+        ['oregano', true],
+        ['pollo', false],
+      ]);
+      expect(respuesta.lista).toMatchObject({ totalItems: 2, sinConversion: 1 });
+    });
+
+    it('si el menú no tiene Σ de factores no escala (cantidades en 0) y no falla', async () => {
+      repo.cargar.mockResolvedValue(completo({}, { sumaFactoresPorcion: null }));
+      repo.ingredientesParaLista.mockResolvedValue(
+        new Map([
+          [
+            'p-a',
+            {
+              porcionesBase: 4,
+              ingredientes: [ingrediente('pollo', 2, LB, { cantidad: 1, unidad: LB })],
+            },
+          ],
+        ]),
+      );
+      await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+      expect((datos().items as { cantidadComprar: number }[])[0]!.cantidadComprar).toBe(1);
+    });
   });
 
   it('un menú de otro hogar o inexistente es 404', async () => {

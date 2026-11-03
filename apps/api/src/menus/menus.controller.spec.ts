@@ -11,6 +11,7 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
     obtenerPorSemana: jest.fn().mockResolvedValue('semana'),
     obtener: jest.fn().mockResolvedValue('menu'),
     costos: jest.fn().mockResolvedValue('costos'),
+    listaDelMenu: jest.fn().mockResolvedValue('l1'),
     editar: jest.fn().mockResolvedValue('editado'),
     mover: jest.fn().mockResolvedValue('movido'),
     fijar: jest.fn().mockResolvedValue('fijado'),
@@ -46,6 +47,13 @@ describe('MenusController (HU-19, HU-22, HU-23, HU-24, HU-25)', () => {
     await expect(controlador.obtener('h1', 'm1')).resolves.toBe('menu');
     await expect(controlador.porSemana('h1', '2026-11-03')).resolves.toBe('semana');
     expect(edicion.obtenerPorSemana).toHaveBeenCalledWith('h1', '2026-11-03');
+  });
+
+  it('CU-07.1 redirige a la lista del menú aprobado (303)', async () => {
+    const redirect = jest.fn();
+    await controlador.lista('h1', 'm1', { redirect } as never);
+    expect(edicion.listaDelMenu).toHaveBeenCalledWith('h1', 'm1');
+    expect(redirect).toHaveBeenCalledWith(303, '/api/v1/listas/l1');
   });
 
   it('CU-06.3 lee los costos del menú', async () => {

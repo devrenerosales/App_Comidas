@@ -74,6 +74,15 @@ export class MenusEdicionService {
     return costosDelMenu(await this.obtener(hogarId, menuId));
   }
 
+  /** CU-07.1 E2: la lista solo existe cuando el menú está aprobado. */
+  async listaDelMenu(hogarId: string, menuId: string): Promise<string> {
+    const menu = await this.obtener(hogarId, menuId);
+    if (menu.estado !== 'APROBADO' || !menu.listaId) {
+      throw new Problema(409, 'MENU_NO_APROBADO', 'Aprueba el menú para generar la lista');
+    }
+    return menu.listaId;
+  }
+
   /** CU-06.1 paso 1: el menú cuya semana contiene la fecha, sea cual sea su estado. */
   async obtenerPorSemana(hogarId: string, fecha: string): Promise<VistaMenu> {
     const completo = await this.repo.cargarPorFecha(hogarId, fecha);

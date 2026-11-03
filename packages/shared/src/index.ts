@@ -12,3 +12,4 @@ export * from './motivo';
 export * from './ajuste';
 export * from './plan';
 export * from './costos';
+export * from './lista';
