@@ -244,3 +244,34 @@ describe('HU-27 Gasto real desde la lista', () => {
     expect(screen.queryByRole('button', { name: 'Registrar gasto real' })).not.toBeInTheDocument();
   });
 });
+
+describe('HU-29 Despensa desde la lista', () => {
+  it('CA-29.1 y CA-29.2 avisa el origen despensa de los productos que la traen', async () => {
+    montar({
+      lista: lista([
+        item({ id: 'i1', origen: 'MENU' }),
+        item({
+          id: 'i2',
+          producto: { id: 'arroz', nombre: 'Arroz' },
+          origen: 'DESPENSA',
+          cantidadRequerida: null,
+        }),
+        item({ id: 'i3', producto: { id: 'aceite', nombre: 'Aceite' }, origen: 'MENU_Y_DESPENSA' }),
+      ]),
+    });
+    const filas = within(await productos()).getAllByRole('listitem');
+    expect(filas[0]).not.toHaveTextContent('Despensa');
+    expect(filas[1]).toHaveTextContent('Arroz');
+    expect(filas[1]).toHaveTextContent('Despensa');
+    expect(filas[2]).toHaveTextContent('Menú + Despensa');
+  });
+
+  it('ofrece configurar la despensa', async () => {
+    montar({});
+    await productos();
+    expect(screen.getByRole('link', { name: 'Configurar la despensa' })).toHaveAttribute(
+      'href',
+      '/despensa',
+    );
+  });
+});
