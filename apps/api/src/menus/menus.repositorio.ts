@@ -4,6 +4,7 @@ import {
   alias,
   and,
   asc,
+  despensaItem,
   eq,
   inArray,
   isNotNull,
@@ -32,8 +33,9 @@ import {
   aCentavos,
   deCentavos,
   type IngredienteCosto,
+  type FrecuenciaDespensa,
   type IngredienteDeComida,
-  type ItemConsolidado,
+  type ItemDeLista,
   type MagnitudUnidad,
   type ProteinaPrincipal,
   type TiempoComida,
@@ -85,6 +87,15 @@ export interface MenuCompleto {
   gastoSugerido?: string | null;
 }
 
+/** Producto de despensa del hogar con lo necesario para saber si toca (CU-07.2). */
+export interface DespensaDelHogar {
+  id: string;
+  productoId: string;
+  cantidad: string;
+  frecuencia: FrecuenciaDespensa;
+  ultimaInclusionSemana: string | null;
+}
+
 /** Lo que fija el registro del gasto real (CU-06.4 paso 4). */
 export interface DatosGasto {
   usuarioId: string;
@@ -99,8 +110,12 @@ export interface DatosAprobacion {
   aprobadoEn: Date;
   /** Suma de los excesos por tiempo, en texto con 2 decimales ("0.00" si está dentro). */
   excesoAlAprobar: string;
-  /** Ítems consolidados de la lista de compras (CU-07.1, HU-28). */
-  items: ItemConsolidado[];
+  /** `fecha_inicio` de la semana de la lista, que queda como última inclusión de la despensa. */
+  fechaSemana: string;
+  /** Ítems de la lista de compras: ingredientes del menú y despensa que toca (CU-07.1 y CU-07.2). */
+  items: ItemDeLista[];
+  /** Ids de los productos de despensa incluidos, cuya última inclusión avanza a esta semana. */
+  despensaIncluida: string[];
 }
 
 export interface ListaCreada {
@@ -203,6 +218,29 @@ export class MenusRepositorio {
       .where(and(eq(menuSemanal.hogarId, hogarId), eq(menuSemanal.fechaInicio, fechaInicio)))
       .limit(1);
     return fila;
+  }
+
+  /** Despensa activa del hogar con productos activos, para decidir qué toca (CU-07.2 paso 2). */
+  async despensaDelHogar(hogarId: string): Promise<DespensaDelHogar[]> {
+    const filas = await this.db
+      .select({
+        id: despensaItem.id,
+        productoId: despensaItem.productoId,
+        cantidad: despensaItem.cantidad,
+        frecuencia: despensaItem.frecuencia,
+        ultimaInclusionSemana: despensaItem.ultimaInclusionSemana,
+      })
+      .from(despensaItem)
+      .innerJoin(producto, eq(producto.id, despensaItem.productoId))
+      .where(
+        and(
+          eq(despensaItem.hogarId, hogarId),
+          eq(despensaItem.activo, true),
+          eq(producto.activo, true),
+        ),
+      )
+      .orderBy(asc(despensaItem.createdAt), asc(despensaItem.id));
+    return filas as DespensaDelHogar[];
   }
 
   /** Suma de los precios reales de los ítems comprados; null si ninguno tiene precio. */
@@ -694,6 +732,18 @@ export class MenusRepositorio {
         .values({ hogarId, menuId, generadaEn: datos.aprobadoEn })
         .returning({ id: listaCompras.id, version: listaCompras.version });
       await this.insertarItems(tx, lista!.id, datos.items, datos.aprobadoEn);
+      if (datos.despensaIncluida.length > 0) {
+        // CU-07.2 paso 5: la semana de la lista queda como última inclusión (DM-18).
+        await tx
+          .update(despensaItem)
+          .set({ ultimaInclusionSemana: datos.fechaSemana, ultimaInclusionListaId: lista!.id })
+          .where(
+            and(
+              eq(despensaItem.hogarId, hogarId),
+              inArray(despensaItem.id, datos.despensaIncluida),
+            ),
+          );
+      }
       return lista as ListaCreada;
     });
   }
@@ -726,7 +776,7 @@ export class MenusRepositorio {
   private async insertarItems(
     tx: Pick<Db, 'insert'>,
     listaId: string,
-    items: ItemConsolidado[],
+    items: ItemDeLista[],
     creadoEn: Date,
   ): Promise<void> {
     if (items.length === 0) return;
@@ -736,7 +786,7 @@ export class MenusRepositorio {
         id: i.id,
         listaId,
         productoId: i.productoId,
-        origen: 'MENU' as const,
+        origen: i.origen,
         cantidadRequerida: i.cantidadRequerida === null ? null : String(i.cantidadRequerida),
         unidadRequeridaId: i.unidadRequeridaId,
         cantidadComprar: String(i.cantidadComprar),
@@ -744,8 +794,10 @@ export class MenusRepositorio {
         modificadoEnDispositivo: creadoEn,
       })),
     );
+    const conOrigenes = filas.filter((i) => i.origenes.length > 0);
+    if (conOrigenes.length === 0) return;
     await tx.insert(listaItemOrigen).values(
-      filas.flatMap((i) =>
+      conOrigenes.flatMap((i) =>
         i.origenes.map((o) => ({
           listaItemId: i.id,
           menuDetalleId: o.menuDetalleId,

@@ -112,3 +112,23 @@ Las reglas del precio: mayor que Q0.00, con hasta 2 decimales y hasta Q99,999.99
 **Sin conexión.** Puedes anotar el precio en el supermercado sin señal: viaja junto con la marca de comprado como un solo cambio pendiente y se envía una sola vez al reconectar (ver 7.5).
 
 [Captura 7.7: producto comprado con el formulario de precio y el promedio de compra]
+
+## 7.8 Configurar tu despensa
+
+La despensa son los productos que compras cada cierto tiempo, como arroz, aceite o azúcar. Una vez que los registras, la lista de cada semana los incluye sola cuando les toca, para que no se te olviden.
+
+Entra desde **Lista**, con el enlace **Configurar la despensa**.
+
+**Agregar un producto.**
+
+1. En **Agregar a la despensa**, escribe al menos dos letras en **Buscar producto** y elige el producto de la lista.
+2. Escribe la **cantidad** en presentaciones (2 bolsas, 1 botella) y elige la **frecuencia**: *semanal* (cada semana), *quincenal* (cada 2 semanas) o *mensual* (cada 4 semanas). Si quieres, agrega una nota.
+3. Toca **Agregar a la despensa**. Si la cantidad es 0 o menos, la app dice "La cantidad debe ser mayor que 0" y no guarda nada. Un producto que ya está en la despensa no se puede agregar de nuevo: edítalo.
+
+**Cuándo toca.** Debajo de cada producto verás "Toca en la próxima lista" o "Vuelve a tocar la semana del 08/11 al 14/11". Un producto nuevo toca en la primera lista que se genere. Después se cuenta desde la última semana en que se incluyó.
+
+**Qué pasa al aprobar el menú.** Al aprobar el menú de una semana, los productos que tocan se agregan a la lista con el origen **Despensa**. Si el producto también lo necesita un platillo (por ejemplo, el aceite para el pescado frito), no aparece dos veces: la lista suma las cantidades en una sola línea. Cada vez que se incluye un producto, la app anota esa semana, así que aprobar de nuevo no lo repite.
+
+**Cambiar o quitar.** Toca **Editar** para cambiar la cantidad, la frecuencia o la nota, y **Quitar** para sacar el producto de la despensa. Las listas que ya se generaron no cambian; los cambios cuentan desde la próxima.
+
+[Captura 7.8: pantalla Despensa con sus productos y cuándo tocan]

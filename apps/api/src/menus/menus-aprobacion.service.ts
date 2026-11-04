@@ -4,8 +4,10 @@ import {
   aCentavos,
   consolidarLista,
   deCentavos,
+  despensaToca,
+  fusionarDespensa,
   nombreDiaSemana,
-  type ItemConsolidado,
+  type ItemDeLista,
 } from '@menu/shared';
 import { Problema } from '../comun/problema';
 import type { AprobarMenuDto } from './dto/menus.dto';
@@ -56,12 +58,14 @@ export class MenusAprobacionService {
     this.exigirSinVacios(completo);
     if (completo.menu.version !== dto.version) throw this.desactualizado();
 
-    const items = await this.consolidar(completo);
+    const { items, despensaIncluida } = await this.consolidar(hogarId, completo);
     const lista = await this.repo.aprobar(hogarId, menuId, dto.version, {
       usuarioId,
       aprobadoEn: this.reloj(),
       excesoAlAprobar: this.exceso(completo),
+      fechaSemana: completo.menu.fechaInicio,
       items,
+      despensaIncluida,
     });
     if (!lista) {
       // Otro miembro lo cambió entre la lectura y la escritura: se informa con lo más reciente.
@@ -73,13 +77,12 @@ export class MenusAprobacionService {
     return {
       menu,
       excede: menu.excede,
-      // La despensa de la semana llega con HU-29.
       lista: {
         id: lista.id,
         version: lista.version,
         totalItems: items.length,
-        itemsMenu: items.length,
-        itemsDespensa: 0,
+        itemsMenu: items.filter((i) => i.origen !== 'DESPENSA').length,
+        itemsDespensa: items.filter((i) => i.origen !== 'MENU').length,
         sinConversion: items.filter((i) => i.sinConversion).length,
         url: `/api/v1/listas/${lista.id}`,
       },
@@ -89,8 +92,12 @@ export class MenusAprobacionService {
   /**
    * CU-07.1: ingredientes de cada comida escalados con la Σ de factores congelada del menú (D-04),
    * convertidos a la unidad de compra y sumados por producto. Un platillo sin ingredientes no aporta.
+   * CU-07.2: se suman los productos de despensa que tocan en la semana del menú.
    */
-  private async consolidar({ menu, detalles }: MenuCompleto): Promise<ItemConsolidado[]> {
+  private async consolidar(
+    hogarId: string,
+    { menu, detalles }: MenuCompleto,
+  ): Promise<{ items: ItemDeLista[]; despensaIncluida: string[] }> {
     const ids = [...new Set(detalles.flatMap((d) => (d.platilloId ? [d.platilloId] : [])))];
     const platillos = await this.repo.ingredientesParaLista(ids);
     const ingredientes = detalles.flatMap((d) =>
@@ -99,7 +106,16 @@ export class MenusAprobacionService {
         menuDetalleId: d.id,
       })),
     );
-    return consolidarLista(ingredientes, menu.sumaFactoresPorcion ?? 0);
+    const queTocan = (await this.repo.despensaDelHogar(hogarId)).filter((d) =>
+      despensaToca(d.ultimaInclusionSemana, menu.fechaInicio, d.frecuencia),
+    );
+    return {
+      items: fusionarDespensa(
+        consolidarLista(ingredientes, menu.sumaFactoresPorcion ?? 0),
+        queTocan,
+      ),
+      despensaIncluida: queTocan.map((d) => d.id),
+    };
   }
 
   /** E3: si ya está aprobado se informa quién y cuándo; el histórico no se aprueba. */

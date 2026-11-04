@@ -58,7 +58,12 @@ async function problema(promesa: Promise<unknown>): Promise<Problema> {
 }
 
 describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
-  const repo = { cargar: jest.fn(), aprobar: jest.fn(), ingredientesParaLista: jest.fn() };
+  const repo = {
+    cargar: jest.fn(),
+    aprobar: jest.fn(),
+    ingredientesParaLista: jest.fn(),
+    despensaDelHogar: jest.fn(),
+  };
   const servicio = new MenusAprobacionService(repo as unknown as MenusRepositorio, () => AHORA);
   const datos = () => repo.aprobar.mock.calls[0]![3] as Record<string, unknown>;
 
@@ -67,6 +72,7 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
     repo.cargar.mockResolvedValue(completo());
     repo.aprobar.mockResolvedValue({ id: 'l1', version: 1 });
     repo.ingredientesParaLista.mockResolvedValue(new Map());
+    repo.despensaDelHogar.mockResolvedValue([]);
   });
 
   it('aprueba el Borrador con usuario, fecha y exceso 0 si todo está dentro (CA-25.1)', async () => {
@@ -76,7 +82,9 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
       usuarioId: 'u1',
       aprobadoEn: AHORA,
       excesoAlAprobar: '0.00',
+      fechaSemana: '2026-11-01',
       items: [],
+      despensaIncluida: [],
     });
     expect(respuesta.excede).toBeNull();
     expect(respuesta.lista).toEqual({
@@ -200,6 +208,101 @@ describe('MenusAprobacionService (CU-06.2, HU-25)', () => {
       );
       await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
       expect((datos().items as { cantidadComprar: number }[])[0]!.cantidadComprar).toBe(1);
+    });
+  });
+
+  describe('despensa de la semana (CU-07.2, HU-29)', () => {
+    const LB = { id: 'u-lb', codigo: 'lb', magnitud: 'MASA' as const, factorBase: 453.592 };
+    const conPollo = () =>
+      repo.ingredientesParaLista.mockResolvedValue(
+        new Map([
+          [
+            'p-a',
+            {
+              porcionesBase: 4,
+              ingredientes: [
+                {
+                  productoId: 'pollo',
+                  cantidad: 2,
+                  porcionesBase: 4,
+                  unidad: LB,
+                  presentacion: { cantidad: 1, unidad: LB },
+                  equivalencia: null,
+                },
+              ],
+            },
+          ],
+        ]),
+      );
+    const despensa = (
+      id: string,
+      productoId: string,
+      frecuencia: string,
+      ultima: string | null,
+      cantidad = '1.000',
+    ) => ({ id, productoId, cantidad, frecuencia, ultimaInclusionSemana: ultima });
+
+    it('CA-29.1 solo agrega lo que toca y avanza su última inclusión a la semana del menú', async () => {
+      repo.cargar.mockResolvedValue(completo({}, { fechaInicio: '2026-10-25' }));
+      repo.despensaDelHogar.mockResolvedValue([
+        despensa('d-arroz', 'arroz', 'SEMANAL', '2026-10-18', '2.000'),
+        despensa('d-aceite', 'aceite', 'QUINCENAL', '2026-10-11'),
+        despensa('d-azucar', 'azucar', 'MENSUAL', '2026-10-04'),
+      ]);
+
+      const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+
+      const items = datos().items as {
+        productoId: string;
+        cantidadComprar: number;
+        origen: string;
+      }[];
+      expect(items.map((i) => [i.productoId, i.cantidadComprar, i.origen])).toEqual([
+        ['arroz', 2, 'DESPENSA'],
+        ['aceite', 1, 'DESPENSA'],
+      ]);
+      expect(datos().despensaIncluida).toEqual(['d-arroz', 'd-aceite']);
+      expect(datos().fechaSemana).toBe('2026-10-25');
+      expect(respuesta.lista).toMatchObject({ totalItems: 2, itemsMenu: 0, itemsDespensa: 2 });
+    });
+
+    it('CA-29.2 el producto del menú y de la despensa queda en una línea "Menú + Despensa"', async () => {
+      conPollo();
+      repo.despensaDelHogar.mockResolvedValue([despensa('d-pollo', 'pollo', 'SEMANAL', null)]);
+
+      const respuesta = await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+
+      const items = datos().items as {
+        productoId: string;
+        cantidadComprar: number;
+        origen: string;
+      }[];
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        productoId: 'pollo',
+        cantidadComprar: 2,
+        origen: 'MENU_Y_DESPENSA',
+      });
+      expect(respuesta.lista).toMatchObject({ totalItems: 1, itemsMenu: 1, itemsDespensa: 1 });
+    });
+
+    it('CA-29.3 un producto sin inclusión previa toca en la primera lista', async () => {
+      repo.despensaDelHogar.mockResolvedValue([
+        despensa('d-frijol', 'frijol', 'SEMANAL', null, '2.000'),
+      ]);
+      await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+      expect((datos().items as { productoId: string }[]).map((i) => i.productoId)).toEqual([
+        'frijol',
+      ]);
+    });
+
+    it('una semana ya incluida no vuelve a tocar y sin despensa no se avanza nada', async () => {
+      repo.despensaDelHogar.mockResolvedValue([
+        despensa('d-arroz', 'arroz', 'SEMANAL', '2026-11-01'),
+      ]);
+      await servicio.aprobar('h1', 'u1', 'm1', { version: 4 });
+      expect(datos().items).toEqual([]);
+      expect(datos().despensaIncluida).toEqual([]);
     });
   });
 

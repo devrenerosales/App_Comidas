@@ -16,6 +16,7 @@ import { RedisModule } from './redis/redis.module';
 import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
+import { DespensaModule } from './despensa/despensa.module';
 import { ListasModule } from './listas/listas.module';
 import { MenusModule } from './menus/menus.module';
 import { CalificacionesModule } from './calificaciones/calificaciones.module';
@@ -61,6 +62,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     CalificacionesModule,
     MenusModule,
     ListasModule,
+    DespensaModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemaFiltro }],
 })

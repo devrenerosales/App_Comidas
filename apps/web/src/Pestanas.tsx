@@ -1,6 +1,7 @@
 import { IonIcon, IonLabel, IonRouterOutlet, IonTabBar, IonTabButton, IonTabs } from '@ionic/react';
 import { Redirect, Route } from 'react-router-dom';
 import Comensales from './pages/Comensales';
+import Despensa from './pages/Despensa';
 import Configuracion from './pages/Configuracion';
 import ConfiguracionTiempos from './pages/ConfiguracionTiempos';
 import ConfiguracionSemana from './pages/ConfiguracionSemana';
@@ -30,6 +31,7 @@ export function Pestanas() {
         <Route exact path="/historial/importar/:id([0-9a-f-]{36})" component={ImportarHistorial} />
         <Route exact path="/semana" component={Semana} />
         <Route exact path="/lista" component={Lista} />
+        <Route exact path="/despensa" component={Despensa} />
         <Route exact path="/platillos" component={Platillos} />
         <Route exact path="/platillos/nuevo" component={PlatilloDetalle} />
         <Route exact path="/platillos/productos" component={Productos} />

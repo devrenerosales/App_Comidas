@@ -62,6 +62,12 @@ function SelectorVistaLista({
 const cambiosPendientes = (n: number) =>
   `${n} ${n === 1 ? 'cambio pendiente' : 'cambios pendientes'}`;
 
+/** Origen que se avisa en la fila: lo que trae la despensa (CU-07.2). */
+const ORIGEN_DESPENSA: Partial<Record<ItemLista['origen'], string>> = {
+  DESPENSA: 'Despensa',
+  MENU_Y_DESPENSA: 'Menú + Despensa',
+};
+
 interface FilaProps {
   item: ItemLista;
   editable: boolean;
@@ -189,6 +195,9 @@ function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
       )}
       {referencia && <small className="mf-menu-costo">{referencia}</small>}
       {item.sinConversion && <small className="mf-dia-marca">Sin conversión</small>}
+      {ORIGEN_DESPENSA[item.origen] && (
+        <small className="mf-dia-marca">{ORIGEN_DESPENSA[item.origen]}</small>
+      )}
       {item.estado === 'YA_LO_TENGO' && <small className="mf-dia-marca">Ya lo tengo</small>}
       {item.estado === 'COMPRADO' && item.precioReal && (
         <small className="mf-dia-marca">Pagado Q{item.precioReal}</small>
@@ -457,6 +466,11 @@ export default function Lista() {
             )}
           </section>
         )}
+        <p>
+          <Link className="mf-enlace" to="/despensa">
+            Configurar la despensa
+          </Link>
+        </p>
         {lista && menu?.estado === 'APROBADO' && (
           <GastoReal
             menu={menu}
