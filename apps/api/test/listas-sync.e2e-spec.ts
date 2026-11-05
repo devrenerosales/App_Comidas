@@ -19,8 +19,9 @@ import {
   platillo,
   platilloIngrediente,
   platilloTiempo,
-  precioResumen,
+  precio,
   producto,
+  productoSupermercado,
   supermercado,
   syncCambio,
   unidad,
@@ -675,15 +676,26 @@ describeConBd('HU-30 y HU-43 Editar la lista y su avance por comida (integració
       .select({ id: producto.id })
       .from(producto)
       .where(eq(producto.nombre, 'Azúcar'));
-    await bd.db.insert(precioResumen).values({
-      productoId: azucar!.id,
+    // La mediana de mercado la calcula la API al abrir la lista (HU-31): se siembra un precio real.
+    const [lb] = await bd.db.select({ id: unidad.id }).from(unidad).where(eq(unidad.codigo, 'lb'));
+    const [vinculo] = await bd.db
+      .insert(productoSupermercado)
+      .values({
+        productoId: azucar!.id,
+        supermercadoId: tienda!.id,
+        nombreTienda: 'Azúcar',
+        presentacionCantidad: '5',
+        presentacionUnidadId: lb!.id,
+        factor: '1',
+      })
+      .returning();
+    await bd.db.insert(precio).values({
+      productoSupermercadoId: vinculo!.id,
+      origen: 'MANUAL',
       hogarId,
-      precioMediana: '27.50',
-      precioMinimo: '26.00',
-      supermercadoMinimoId: tienda!.id,
-      fechaPrecioMinimo: '2026-10-20',
-      cantidadPrecios: 3,
-      fechaPrecioMasAntiguo: '2026-10-10',
+      precio: '27.50',
+      precioNormalizado: '27.50',
+      fechaPrecio: new Date().toISOString().slice(0, 10),
     });
 
     const res = await sync(token, listaId, [

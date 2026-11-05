@@ -3,6 +3,7 @@ import {
   alias,
   and,
   asc,
+  categoria,
   eq,
   inArray,
   listaCompras,
@@ -15,6 +16,7 @@ import {
   producto,
   productoEquivalencia,
   sql,
+  supermercado,
   syncCambio,
   unidad,
   type Db,
@@ -23,6 +25,7 @@ import {
   precioNormalizado,
   resolverCambio,
   type CambioLista,
+  type CompraSugerida,
   type ComidaDelMenu,
   type TiempoComida,
   type MagnitudUnidad,
@@ -64,6 +67,10 @@ export interface ItemDeLista {
   promedioCompra: PromedioDeCompra | null;
   /** Mediana de mercado del producto para el hogar, como referencia junto al promedio. */
   medianaMercado: string | null;
+  /** Categoría del producto (HU-31); null en los ítems de texto libre. */
+  categoria: string | null;
+  /** Supermercado y precio de la compra sugerida (HU-31); null si el producto no tiene precio. */
+  compra: CompraSugerida | null;
   /** Comidas (detalles del menú) que originan el ítem. */
   comidas: string[];
 }
@@ -122,6 +129,7 @@ export class ListasRepositorio {
         productoId: listaItem.productoId,
         textoLibre: listaItem.textoLibre,
         productoNombre: producto.nombre,
+        categoriaNombre: categoria.nombre,
         origen: listaItem.origen,
         cantidadRequerida: listaItem.cantidadRequerida,
         requeridaId: requerida.id,
@@ -144,6 +152,7 @@ export class ListasRepositorio {
       })
       .from(listaItem)
       .leftJoin(producto, eq(producto.id, listaItem.productoId))
+      .leftJoin(categoria, eq(categoria.id, producto.categoriaId))
       .leftJoin(requerida, eq(requerida.id, listaItem.unidadRequeridaId))
       .leftJoin(presentacion, eq(presentacion.id, producto.presentacionUnidadId))
       .leftJoin(
@@ -177,14 +186,32 @@ export class ListasRepositorio {
     const productoIds = [...new Set(filas.flatMap((f) => (f.productoId ? [f.productoId] : [])))];
     const promedios = await promediosDeCompra(this.db, hogarId, productoIds, hoy);
     const medianas = new Map<string, string>();
+    const compras = new Map<string, CompraSugerida>();
     if (productoIds.length > 0) {
       const resumenes = await this.db
-        .select({ productoId: precioResumen.productoId, mediana: precioResumen.precioMediana })
+        .select({
+          productoId: precioResumen.productoId,
+          mediana: precioResumen.precioMediana,
+          minimo: precioResumen.precioMinimo,
+          fecha: precioResumen.fechaPrecioMinimo,
+          desactualizado: precioResumen.desactualizado,
+          supermercadoId: supermercado.id,
+          supermercado: supermercado.nombre,
+        })
         .from(precioResumen)
+        .innerJoin(supermercado, eq(supermercado.id, precioResumen.supermercadoMinimoId))
         .where(
           and(eq(precioResumen.hogarId, hogarId), inArray(precioResumen.productoId, productoIds)),
         );
-      for (const r of resumenes) medianas.set(r.productoId, r.mediana);
+      for (const r of resumenes) {
+        medianas.set(r.productoId, r.mediana);
+        compras.set(r.productoId, {
+          supermercado: { id: r.supermercadoId, nombre: r.supermercado },
+          precio: r.minimo,
+          fecha: r.fecha,
+          desactualizado: r.desactualizado,
+        });
+      }
     }
 
     const filasComidas = await this.db
@@ -242,9 +269,27 @@ export class ListasRepositorio {
         precioNormalizado: f.precioNormalizado,
         promedioCompra: f.productoId ? (promedios.get(f.productoId) ?? null) : null,
         medianaMercado: f.productoId ? (medianas.get(f.productoId) ?? null) : null,
+        categoria: f.categoriaNombre,
+        compra: f.productoId ? (compras.get(f.productoId) ?? null) : null,
         comidas: comidas.get(f.id) ?? [],
       })),
     };
+  }
+
+  /** Productos del catálogo que tiene la lista vigente (para refrescar sus precios, HU-31). */
+  async productosDeLista(hogarId: string, listaId: string): Promise<string[]> {
+    const filas = await this.db
+      .selectDistinct({ productoId: listaItem.productoId })
+      .from(listaItem)
+      .innerJoin(listaCompras, eq(listaCompras.id, listaItem.listaId))
+      .where(
+        and(
+          eq(listaItem.listaId, listaId),
+          eq(listaCompras.hogarId, hogarId),
+          eq(listaItem.eliminado, false),
+        ),
+      );
+    return filas.flatMap((f) => (f.productoId ? [f.productoId] : []));
   }
 
   /**

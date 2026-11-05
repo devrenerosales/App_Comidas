@@ -284,3 +284,109 @@ describe('HU-32 Compartir desde la lista', () => {
     expect(screen.getByLabelText('Incluir comprados')).not.toBeChecked();
   });
 });
+
+describe('HU-31 Lista por supermercado', () => {
+  const compra = (nombre: string, precio: string, extra: Record<string, unknown> = {}) => ({
+    supermercado: { id: nombre.toLowerCase(), nombre },
+    precio,
+    fecha: '2026-10-24',
+    desactualizado: false,
+    ...extra,
+  });
+  const verPorSupermercado = async (user: ReturnType<typeof userEvent.setup>) => {
+    await productos();
+    await user.click(screen.getByRole('button', { name: 'Por supermercado' }));
+    return screen.findByLabelText('Lista por supermercado');
+  };
+
+  it('CA-31.1 agrupa por supermercado y categoría con subtotales y total', async () => {
+    const { user } = montar({
+      lista: lista([
+        item({
+          id: 'a',
+          producto: { id: 'a', nombre: 'Arroz blanco 2 lb' },
+          cantidadComprar: '2',
+          categoria: 'Granos',
+          compra: compra('Walmart', '12.50'),
+        }),
+        item({
+          id: 'p',
+          producto: { id: 'p', nombre: 'Pollo en piezas' },
+          cantidadComprar: '7',
+          categoria: 'Carnes',
+          compra: compra('Paiz', '21.90'),
+        }),
+        item({
+          id: 't',
+          producto: { id: 't', nombre: 'Tomate' },
+          cantidadComprar: '2',
+          categoria: 'Verduras',
+          compra: compra('Paiz', '6.25'),
+        }),
+      ]),
+    });
+    const vista = await verPorSupermercado(user);
+
+    const paiz = within(vista).getByRole('region', { name: 'Paiz' });
+    expect(within(paiz).getByRole('heading', { level: 3 })).toHaveTextContent(
+      'Paiz · Subtotal Q165.80',
+    );
+    expect(within(paiz).getByRole('heading', { name: 'Carnes' })).toBeInTheDocument();
+    expect(within(paiz).getByRole('heading', { name: 'Verduras' })).toBeInTheDocument();
+    expect(within(paiz).getByText('Q153.30')).toBeInTheDocument();
+    expect(within(paiz).getByText('Q12.50')).toBeInTheDocument();
+    const walmart = within(vista).getByRole('region', { name: 'Walmart' });
+    expect(within(walmart).getByRole('heading', { level: 3 })).toHaveTextContent(
+      'Walmart · Subtotal Q25.00',
+    );
+    expect(within(vista).getByText('Total estimado: Q190.80')).toBeInTheDocument();
+  });
+
+  it('CA-31.2 un precio no vigente lleva la advertencia con su fecha', async () => {
+    const { user } = montar({
+      lista: lista([
+        item({
+          producto: { id: 'a', nombre: 'Aceite 1 L' },
+          cantidadComprar: '1',
+          categoria: 'Abarrotes',
+          compra: compra('Walmart', '24.95', { fecha: '2026-10-03', desactualizado: true }),
+        }),
+      ]),
+    });
+    const vista = await verPorSupermercado(user);
+    const walmart = within(vista).getByRole('region', { name: 'Walmart' });
+    expect(walmart).toHaveTextContent('Aceite 1 L');
+    expect(within(walmart).getByText('Precio del 03/10/2026')).toBeInTheDocument();
+  });
+
+  it('CA-31.4 lo que no tiene precio va a "Sin precio" y no suma', async () => {
+    const { user } = montar({
+      lista: lista([
+        item({
+          id: 'x',
+          producto: { id: null, nombre: 'Tortillas' },
+          presentacion: null,
+          cantidadComprar: '1',
+          origen: 'MANUAL',
+        }),
+      ]),
+    });
+    const vista = await verPorSupermercado(user);
+    const sin = within(vista).getByRole('region', { name: 'Sin precio' });
+    expect(within(sin).getByRole('heading', { level: 3 })).toHaveTextContent(/^Sin precio$/);
+    expect(sin).toHaveTextContent('Tortillas');
+    expect(within(vista).getByText('Total estimado: Q0.00')).toBeInTheDocument();
+  });
+
+  it('se puede marcar comprado desde la vista por supermercado y volver a Productos', async () => {
+    const { user } = montar({
+      lista: lista([item({ categoria: 'Carnes', compra: compra('Paiz', '21.90') })]),
+    });
+    const vista = await verPorSupermercado(user);
+    expect(
+      within(vista).getByRole('checkbox', { name: 'Marcar Pollo en piezas como comprado' }),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Productos' }));
+    expect(await productos()).toBeVisible();
+  });
+});

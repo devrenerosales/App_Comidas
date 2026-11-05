@@ -1,5 +1,5 @@
 /** Endpoints de la lista de compras (M07 · HU-28 y HU-30, api-contrato §2.7). */
-import type { CambioLista, ComidaDelMenu } from '@menu/shared';
+import type { CambioLista, ComidaDelMenu, CompraSugerida } from '@menu/shared';
 import type { ClienteHttp } from './cliente';
 
 export interface CantidadConUnidad {
@@ -29,6 +29,10 @@ export interface ItemLista {
   promedioCompra?: { precio: string; compras: number } | null;
   /** Mediana de mercado del producto, como referencia junto al promedio. */
   medianaMercado?: string | null;
+  /** HU-31: categoría del producto; null en texto libre. Puede faltar en copias antiguas. */
+  categoria?: string | null;
+  /** HU-31: supermercado del precio mínimo y su precio; null sin precio. */
+  compra?: CompraSugerida | null;
   comidas: string[];
 }
 

@@ -31,6 +31,8 @@ const item = (extra: Partial<ItemDeLista> = {}): ItemDeLista => ({
   precioNormalizado: null,
   promedioCompra: null,
   medianaMercado: null,
+  categoria: 'Carnes',
+  compra: null,
   comidas: ['d1', 'd2'],
   ...extra,
 });
@@ -75,6 +77,8 @@ describe('vistaLista (CU-07.1, HU-28)', () => {
       precioNormalizado: null,
       promedioCompra: null,
       medianaMercado: null,
+      categoria: 'Carnes',
+      compra: null,
       comidas: ['d1', 'd2'],
     });
   });
@@ -193,6 +197,17 @@ describe('vistaLista (CU-07.1, HU-28)', () => {
       promedioCompra: { precio: '27.20', compras: 3 },
       medianaMercado: '27.50',
     });
+  });
+
+  it('HU-31 lleva la categoría y la compra sugerida del producto', () => {
+    const compra = {
+      supermercado: { id: 's1', nombre: 'Paiz' },
+      precio: '21.90',
+      fecha: '2026-10-24',
+      desactualizado: false,
+    };
+    const [i] = vistaLista(lista([item({ compra })])).items;
+    expect(i).toMatchObject({ categoria: 'Carnes', compra });
   });
 
   it('CA-44.3 el gasto sugerido suma solo los precios reales de los ítems comprados', () => {

@@ -88,6 +88,29 @@ export class ResumenPreciosService {
     );
   }
 
+  /**
+   * Recalcula solo los productos dados con una lectura de precios del hogar (la lista de compras
+   * los refresca al abrirse, porque la vigencia de 14 días cambia con los días, HU-31).
+   */
+  async recalcularProductos(hogarId: string, productoIds: readonly string[]): Promise<void> {
+    if (productoIds.length === 0) return;
+    const [filas, preferidos] = await Promise.all([
+      this.repo.precios(hogarId),
+      this.repo.preferidos(hogarId),
+    ]);
+    const ahora = this.reloj();
+    const hoy = fechaLocal(ahora);
+    for (const productoId of new Set(productoIds)) {
+      const resumen = resumenPrecios(
+        aPrecios(filas.filter((f) => f.productoId === productoId)),
+        hoy,
+        preferidos,
+      );
+      if (resumen) await this.repo.guardar(hogarId, productoId, resumen, ahora);
+      else await this.repo.eliminar(hogarId, productoId);
+    }
+  }
+
   /** El resumen al día; 404 `SIN_PRECIO` si el producto no tiene ningún precio (E1). */
   async obtener(hogarId: string, productoId: string): Promise<VistaResumenPrecio> {
     if (!(await this.productos.producto(productoId))) {

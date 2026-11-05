@@ -1,8 +1,10 @@
 /**
  * Texto para compartir la lista de compras (M07 · CU-07.5, HU-32): función pura que usa la app,
  * también sin conexión (RNF-04). El texto lleva los productos pendientes con su cantidad; los
- * precios no se incluyen.
+ * precios no se incluyen. Si los ítems traen su compra sugerida, el texto sigue la agrupación de
+ * la vista "Por supermercado" (HU-31): un bloque por supermercado y, al final, "Sin precio".
  */
+import { agruparPorSupermercado, GRUPO_SIN_PRECIO, type CompraSugerida } from './lista-agrupada';
 
 /** Lo que el texto necesita de un ítem vigente de la lista. */
 export interface ItemParaTexto {
@@ -11,6 +13,9 @@ export interface ItemParaTexto {
   cantidadComprar: string;
   presentacion: { cantidad: string; unidad: string; unidadCompra: string; texto: string } | null;
   estado: 'PENDIENTE' | 'COMPRADO' | 'YA_LO_TENGO';
+  /** Categoría y supermercado sugerido (HU-31); sin ellos el texto es una lista plana. */
+  categoria?: string | null;
+  compra?: CompraSugerida | null;
 }
 
 export interface TextoDeLista {
@@ -45,6 +50,13 @@ export function textoDeLista(
   const incluidos = items.filter((i) => incluirComprados || i.estado === 'PENDIENTE');
   if (incluidos.length === 0) return { texto: '', productos: 0 };
   const encabezado = `Lista de compras ${diaMes(semana.desde)}–${diaMes(semana.hasta)}`;
-  const lineas = incluidos.map((i) => `${i.producto.nombre} — ${cantidadDeCompra(i)}`);
-  return { texto: [encabezado, ...lineas].join('\n'), productos: incluidos.length };
+  const linea = (i: ItemParaTexto) => `${i.producto.nombre} — ${cantidadDeCompra(i)}`;
+  if (!incluidos.some((i) => i.compra)) {
+    return { texto: [encabezado, ...incluidos.map(linea)].join('\n'), productos: incluidos.length };
+  }
+  const bloques = agruparPorSupermercado(incluidos).grupos.map((g) => {
+    const lineas = g.categorias.flatMap((c) => c.items.map((a) => linea(a.item)));
+    return [g.supermercado?.nombre ?? GRUPO_SIN_PRECIO, ...lineas].join('\n');
+  });
+  return { texto: [encabezado, ...bloques].join('\n\n'), productos: incluidos.length };
 }

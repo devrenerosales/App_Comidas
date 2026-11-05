@@ -6,6 +6,7 @@ import {
   type CambioLista,
 } from '@menu/shared';
 import { Problema } from '../comun/problema';
+import { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { SincronizarListaDto } from './dto/listas.dto';
 import { RELOJ_LISTAS } from './listas.constants';
 import { ListasRepositorio, type ResultadoSync } from './listas.repositorio';
@@ -25,13 +26,26 @@ const noEncontrada = () => new Problema(404, 'NO_ENCONTRADO', 'La lista no exist
 export class ListasService {
   constructor(
     private readonly repo: ListasRepositorio,
+    private readonly precios: ResumenPreciosService,
     @Inject(RELOJ_LISTAS) private readonly reloj: () => Date,
   ) {}
 
   async obtener(hogarId: string, listaId: string): Promise<VistaLista> {
-    const lista = await this.repo.cargar(hogarId, listaId, this.reloj());
+    const lista = await this.cargarAlDia(hogarId, listaId);
     if (!lista) throw noEncontrada();
     return vistaLista(lista);
+  }
+
+  /**
+   * La lista con la compra sugerida al día (HU-31): antes de leerla se recalculan los resúmenes
+   * de sus productos, porque un precio deja de ser vigente con el paso de los días (RN-08).
+   */
+  private async cargarAlDia(hogarId: string, listaId: string) {
+    await this.precios.recalcularProductos(
+      hogarId,
+      await this.repo.productosDeLista(hogarId, listaId),
+    );
+    return this.repo.cargar(hogarId, listaId, this.reloj());
   }
 
   /** CU-07.6: avance de la compra por comida y general (RN-13). */
@@ -74,7 +88,7 @@ export class ListasService {
       dto.cambios as CambioLista[],
     );
     if (!aplicado) throw noEncontrada();
-    const lista = await this.repo.cargar(hogarId, listaId, this.reloj());
+    const lista = await this.cargarAlDia(hogarId, listaId);
     if (!lista) throw noEncontrada();
     return { version: lista.version, resultados: aplicado.resultados, lista: vistaLista(lista) };
   }
