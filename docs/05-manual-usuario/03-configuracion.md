@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-05 Tiempos de comida parametrizables · HU-06 Presupuesto y distribución · HU-07 Recálculo con vista previa (S1) · HU-08 Semana (S1, pendiente) · HU-09 Supermercados y marcas (S5) · HU-10 Restricciones y gustos (S3) |
+| Historias | HU-05 Tiempos de comida parametrizables · HU-06 Presupuesto y distribución · HU-07 Recálculo con vista previa (S1) · HU-08 Semana (S1, pendiente) · HU-09 Supermercados y marcas (S5, escrito) · HU-10 Restricciones y gustos (S3) |
 | Versión de la app | Sprint 1 (rama `feature/HU-05-07-configuracion`) |
-| Estado del capítulo | Parcial: secciones 3.1 a 3.8 listas salvo 3.7 (HU-09, Sprint 5); faltan las capturas |
+| Estado del capítulo | Secciones 3.1 a 3.8 listas; faltan las capturas |
 
 En **Configuración → Tiempos y presupuesto** decides qué comidas planifica la app (solo almuerzo, dos tiempos o los tres), cuánto gastas a la semana y cómo se reparte ese dinero entre las comidas. Todo cambio aplica a los **menús futuros**: los menús que ya aprobaste no cambian.
 
@@ -112,9 +112,32 @@ La fecha de planificación es la siguiente ocurrencia del día elegido, posterio
 de Guatemala. La hora se conserva. El envío de recordatorios estará disponible con el módulo
 de notificaciones (HU-41); guardar esta configuración todavía no envía una notificación.
 
-## 3.7 Supermercados y marcas preferidas — próximamente (HU-09, Sprint 5)
+## 3.7 Supermercados y marcas preferidas
 
-Se completará cuando se implemente HU-09.
+Indica en qué supermercados compras y qué marca prefieres de cada producto. Cualquier miembro del hogar puede cambiarlo. En **Configuración** toca **Supermercados y marcas**.
+
+### Elegir los supermercados
+
+1. En **Dónde compras** verás los supermercados (La Torre, Paiz, Super Fresh y Walmart). Si nunca lo has configurado, todos aparecen marcados.
+2. Marca los que usas y desmarca los que no.
+3. Toca **Guardar supermercados**. Verás "Supermercados guardados."
+
+La compra sugerida buscará el precio más bajo solo entre los supermercados marcados. El costo estimado del menú sigue usando todos los supermercados, para que no cambie según tus preferencias.
+
+Debes dejar **al menos un supermercado** marcado. Si desmarcas todos y tocas **Guardar supermercados**, la app te dice "Debes tener al menos un supermercado preferido" y no cambia nada.
+
+### Elegir la marca de un producto
+
+1. En **Marca preferida**, escribe al menos 2 letras en **Buscar producto** (por ejemplo "ace") y toca **Elegir Aceite**.
+2. Verás las marcas disponibles, cada una con los supermercados donde se vende, su presentación y el último precio: "Walmart · 1 l · Q24.90".
+3. Elige la marca (por ejemplo **Ideal**) y toca **Guardar marca**.
+4. Para volver a aceptar cualquier marca, elige **Cualquier marca** y guarda, o toca **Quitar marca de …** en la lista **Marcas elegidas**.
+
+Si el último precio tiene más de 14 días, la app lo avisa: "Q24.90 · Precio del 01/10/2026". Si todavía no hay ningún precio, dice "Sin precio registrado".
+
+Si el producto no tiene marcas vinculadas, la app dice "Sin marcas vinculadas": primero hay que vincular el producto con los de cada supermercado.
+
+[Captura 3.7: pantalla Supermercados y marcas]
 
 ## 3.7b Pesos del motor
 

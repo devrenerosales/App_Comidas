@@ -16,6 +16,7 @@ import { RedisModule } from './redis/redis.module';
 import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
+import { SupermercadosModule } from './supermercados/supermercados.module';
 import { DespensaModule } from './despensa/despensa.module';
 import { ListasModule } from './listas/listas.module';
 import { MenusModule } from './menus/menus.module';
@@ -59,6 +60,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     HistorialModule,
     ImportacionesModule,
     PreferenciasModule,
+    SupermercadosModule,
     CalificacionesModule,
     MenusModule,
     ListasModule,

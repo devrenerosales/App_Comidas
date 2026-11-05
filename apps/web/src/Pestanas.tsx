@@ -7,6 +7,7 @@ import ConfiguracionTiempos from './pages/ConfiguracionTiempos';
 import ConfiguracionSemana from './pages/ConfiguracionSemana';
 import ConfiguracionPesos from './pages/ConfiguracionPesos';
 import ConfiguracionGustos from './pages/ConfiguracionGustos';
+import ConfiguracionSupermercados from './pages/ConfiguracionSupermercados';
 import HogarUsuarios from './pages/HogarUsuarios';
 import Inicio from './pages/Inicio';
 import Historial from './pages/Historial';
@@ -43,6 +44,7 @@ export function Pestanas() {
         <Route exact path="/configuracion/semana" component={ConfiguracionSemana} />
         <Route exact path="/configuracion/pesos" component={ConfiguracionPesos} />
         <Route exact path="/configuracion/gustos" component={ConfiguracionGustos} />
+        <Route exact path="/configuracion/supermercados" component={ConfiguracionSupermercados} />
         <Route exact path="/">
           <Redirect to="/inicio" />
         </Route>

@@ -50,6 +50,15 @@ export default function Configuracion() {
           </section>
         )}
         {hogar && (
+          <section aria-labelledby="titulo-supermercados">
+            <h2 id="titulo-supermercados">Supermercados y marcas</h2>
+            <p>En qué supermercados compras y qué marca prefieres de cada producto.</p>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/supermercados">
+              Supermercados y marcas
+            </Link>
+          </section>
+        )}
+        {hogar && (
           <section aria-labelledby="titulo-pesos">
             <h2 id="titulo-pesos">Pesos del motor</h2>
             <p>Qué tanto pesan preferencia, novedad, ahorro y afinidad al sugerir el menú.</p>
