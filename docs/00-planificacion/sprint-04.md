@@ -4,7 +4,7 @@
 |---|---|
 | Fechas planificadas | 2026-12-07 → 2026-12-18 |
 | Objetivo | Convertir el menú aprobado en una lista de compras que se pueda usar, marcar y compartir, y registrar lo que realmente se gasta |
-| Estado | Historias implementadas (pendiente la validación manual del PO). HU-28 implementada el 2026-11-03. HU-30 implementada el 2026-11-03. HU-43 implementada el 2026-11-03. HU-44 implementada el 2026-11-03. HU-27 implementada el 2026-11-03. HU-29 implementada el 2026-11-04. HU-32 implementada el 2026-11-05 |
+| Estado | Cerrado: historias implementadas y validadas por el PO (2026-11-05). HU-28 implementada el 2026-11-03. HU-30 implementada el 2026-11-03. HU-43 implementada el 2026-11-03. HU-44 implementada el 2026-11-03. HU-27 implementada el 2026-11-03. HU-29 implementada el 2026-11-04. HU-32 implementada el 2026-11-05 |
 
 ## Historias
 
