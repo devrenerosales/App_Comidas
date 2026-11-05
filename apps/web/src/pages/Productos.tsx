@@ -187,6 +187,15 @@ export default function Productos() {
                     {!p.activo && ' · Inactivo'}
                   </span>
                 </span>
+                {p.activo && (
+                  <Link
+                    className="mf-boton mf-boton--secundario"
+                    to={`/platillos/productos/${p.id}/supermercados`}
+                    aria-label={`Supermercados de ${p.nombre}`}
+                  >
+                    Supermercados
+                  </Link>
+                )}
                 {esAdminSistema && (
                   <button
                     type="button"

@@ -17,6 +17,7 @@ import { HistorialModule } from './historial/historial.module';
 import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
 import { SupermercadosModule } from './supermercados/supermercados.module';
+import { VinculosModule } from './vinculos/vinculos.module';
 import { DespensaModule } from './despensa/despensa.module';
 import { ListasModule } from './listas/listas.module';
 import { MenusModule } from './menus/menus.module';
@@ -61,6 +62,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     ImportacionesModule,
     PreferenciasModule,
     SupermercadosModule,
+    VinculosModule,
     CalificacionesModule,
     MenusModule,
     ListasModule,
