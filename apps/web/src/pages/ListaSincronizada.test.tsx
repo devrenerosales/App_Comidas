@@ -431,7 +431,9 @@ describe('HU-30 Editar y marcar la lista', () => {
   it('un menú que no está aprobado (histórico) solo se consulta: sin casillas ni formulario', async () => {
     montar({ menu: menu({ estado: 'HISTORICO' }) });
     await productos();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('checkbox', { name: /Marcar .* como comprado/ }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Quitar/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('form', { name: 'Agregar producto' })).not.toBeInTheDocument();
   });

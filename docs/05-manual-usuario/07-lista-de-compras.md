@@ -132,3 +132,22 @@ Entra desde **Lista**, con el enlace **Configurar la despensa**.
 **Cambiar o quitar.** Toca **Editar** para cambiar la cantidad, la frecuencia o la nota, y **Quitar** para sacar el producto de la despensa. Las listas que ya se generaron no cambian; los cambios cuentan desde la próxima.
 
 [Captura 7.8: pantalla Despensa con sus productos y cuándo tocan]
+
+## 7.9 Compartir la lista
+
+Para que otra persona de la familia haga la compra, comparte la lista por WhatsApp u otra app. En **Lista**, arriba de los productos, toca **Compartir**.
+
+1. La app arma un mensaje que empieza con "Lista de compras 25/10–31/10" y sigue con los productos **pendientes**, uno por línea y con su cantidad: "Pollo en piezas — 7 lb".
+2. Se abre el menú de compartir de tu teléfono o navegador. Elige WhatsApp (u otra app) y envía.
+
+**Incluir comprados.** Si marcas la casilla **Incluir comprados**, el mensaje lleva todos los productos de la lista, también los que ya compraste o que ya tenías. Sin la casilla, solo van los que faltan.
+
+**Si no hay pendientes.** Cuando ya compraste todo, la app dice "No hay productos pendientes". Marca **Incluir comprados** para compartir la lista completa.
+
+**Si tu navegador no puede compartir.** La app copia el mensaje y te avisa "Lista copiada"; pégalo en el chat que quieras. Si ni siquiera puede copiarlo, te muestra el texto para que lo selecciones y lo copies.
+
+**Sin conexión.** Compartir funciona sin señal, porque el mensaje se arma con la lista que ya está en tu teléfono. Lo que sí necesita internet es que la otra app envíe el mensaje.
+
+Los precios que anotaste nunca van en el mensaje, y compartir no cambia la lista.
+
+[Captura 7.9: botón Compartir y mensaje en WhatsApp]

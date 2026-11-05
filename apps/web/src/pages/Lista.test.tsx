@@ -275,3 +275,12 @@ describe('HU-29 Despensa desde la lista', () => {
     );
   });
 });
+
+describe('HU-32 Compartir desde la lista', () => {
+  it('ofrece compartir la lista con la opción de incluir comprados', async () => {
+    montar({});
+    await productos();
+    expect(screen.getByRole('button', { name: 'Compartir' })).toBeVisible();
+    expect(screen.getByLabelText('Incluir comprados')).not.toBeChecked();
+  });
+});

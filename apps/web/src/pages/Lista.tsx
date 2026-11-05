@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { cantidadValida, validarPrecio } from '@menu/shared';
+import { cantidadDeCompra, cantidadValida, validarPrecio } from '@menu/shared';
 import { Link } from 'react-router-dom';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
@@ -8,6 +8,7 @@ import type { ItemLista } from '../api/listas';
 import type { MenuGenerado } from '../api/menus';
 import { Cargando } from '../auth/Cargando';
 import { AvanceComidas } from './AvanceComidas';
+import { CompartirLista } from './CompartirLista';
 import { GastoReal } from './GastoReal';
 import { PaginaBase } from './PaginaBase';
 import { etiquetaSemana, sumarDiasFecha } from './fechas';
@@ -19,14 +20,6 @@ import './semana.css';
 /** Semanas que se ofrecen a partir de la que sigue al último menú aprobado: las ya aprobadas y las próximas. */
 const SEMANAS_ANTERIORES = 8;
 const SEMANAS_SIGUIENTES = 4;
-
-/** "7 lb" cuando se compra por libra, "3 × bolsa 2 lb" cuando la presentación trae más contenido. */
-function textoCompra(i: ItemLista): string {
-  const p = i.presentacion;
-  if (!p) return i.cantidadComprar;
-  if (p.cantidad === '1' && p.unidadCompra === p.unidad) return `${i.cantidadComprar} ${p.unidad}`;
-  return `${i.cantidadComprar} × ${p.texto}`;
-}
 
 type VistaLista = 'PRODUCTOS' | 'POR_COMIDA';
 
@@ -186,7 +179,7 @@ function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
         )}{' '}
         <strong className={cubierto ? 'mf-tachado' : undefined}>{nombre}</strong>
       </label>
-      <span className={cubierto ? 'mf-tachado' : undefined}>Comprar: {textoCompra(item)}</span>
+      <span className={cubierto ? 'mf-tachado' : undefined}>Comprar: {cantidadDeCompra(item)}</span>
       {requerida && (
         <small className="mf-menu-costo">
           Requerido: {requerida.cantidad} {requerida.unidad}
@@ -437,6 +430,7 @@ export default function Lista() {
                 Hay productos sin conversión de unidades: revisa cuánto comprar de ellos.
               </p>
             )}
+            <CompartirLista lista={lista} />
             <SelectorVistaLista vista={vista} alCambiar={setVista} />
             {vista === 'POR_COMIDA' ? (
               <AvanceComidas lista={lista} editable={editable} alMarcar={sincronizada.marcar} />
