@@ -19,6 +19,7 @@ import { PlatillosRepositorio } from '../catalogo/platillos.repositorio';
 import { ConfiguracionService } from '../configuracion/configuracion.service';
 import { DIAS_SEMANA, sumarDias } from '../configuracion/semanas';
 import { PreferenciasRepositorio } from '../preferencias/preferencias.repositorio';
+import { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { GenerarMenuDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
 import { construirCandidatos, costosPorPlatillo, ultimaFechaHistorial } from './menus.motor';
@@ -110,6 +111,7 @@ export class MenusService {
     private readonly configuracion: ConfiguracionService,
     private readonly platillos: PlatillosRepositorio,
     private readonly preferencias: PreferenciasRepositorio,
+    private readonly resumenPrecios: ResumenPreciosService,
     @Inject(RELOJ_MENUS) private readonly reloj: () => Date,
   ) {}
 
@@ -177,6 +179,8 @@ export class MenusService {
       ahorro: Number(config.pesos.ahorro),
       afinidad: Number(config.pesos.afinidad),
     };
+    // La vigencia de 14 días depende de hoy: se refrescan las medianas antes de costear (RN-08).
+    await this.resumenPrecios.recalcularHogar(hogarId);
     const costos = costosPorPlatillo(
       [...new Set(aplicables.map((p) => p.id))],
       await this.repo.ingredientesParaCosto(hogarId, [...new Set(aplicables.map((p) => p.id))]),

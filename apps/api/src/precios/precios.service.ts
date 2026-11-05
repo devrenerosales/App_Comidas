@@ -7,6 +7,7 @@ import { VinculosService } from '../vinculos/vinculos.service';
 import type { VistaVinculo } from '../vinculos/vinculos.tipos';
 import type { CrearPrecioDto } from './dto/precios.dto';
 import { RELOJ_PRECIOS } from './precios.constants';
+import { ResumenPreciosService } from './resumen-precios.service';
 import { PreciosRepositorio } from './precios.repositorio';
 
 export interface PrecioRegistrado {
@@ -28,6 +29,7 @@ export class PreciosService {
     private readonly repo: PreciosRepositorio,
     private readonly vinculosRepo: VinculosRepositorio,
     private readonly vinculos: VinculosService,
+    private readonly resumen: ResumenPreciosService,
     @Inject(RELOJ_PRECIOS) private readonly reloj: () => Date,
   ) {}
 
@@ -62,6 +64,7 @@ export class PreciosService {
       precioNormalizado: normalizado,
       fechaPrecio: validaFecha.fecha,
     });
+    await this.resumen.recalcularProducto(hogarId, vinculo.productoId);
     return {
       id,
       precio: validoPrecio.precio,

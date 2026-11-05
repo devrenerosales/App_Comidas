@@ -4,7 +4,9 @@ import { MemoryRouter, Route } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiCatalogo, Producto, Unidad } from '../api/catalogo';
 import { ContextoApiCatalogo } from '../api/contexto-catalogo';
+import { ContextoApiPrecios } from '../api/contexto-precios';
 import { ContextoApiVinculos } from '../api/contexto-vinculos';
+import type { ApiPrecios, ResumenPrecio } from '../api/precios';
 import { ProblemaApi } from '../api/problema';
 import type { ApiVinculos, SupermercadoCatalogo, Vinculo } from '../api/vinculos';
 import VinculosProducto from './VinculosProducto';
@@ -48,6 +50,18 @@ const SUPER_FRESH: SupermercadoCatalogo = {
   dominio: null,
 };
 
+const RESUMEN: ResumenPrecio = {
+  productoId: 'p1',
+  precioMediana: '13.00',
+  precioMinimo: '12.50',
+  supermercadoMinimo: { id: 's1', nombre: 'Walmart' },
+  fechaPrecioMinimo: '2026-10-24',
+  cantidadPrecios: 3,
+  desactualizado: false,
+  fechaPrecioMasAntiguo: '2026-10-20',
+  calculadoEn: '2026-10-24T18:00:00.000Z',
+};
+
 const vinculo = (extra: Partial<Vinculo> = {}): Vinculo => ({
   id: 'v1',
   productoId: 'p1',
@@ -64,7 +78,12 @@ const vinculo = (extra: Partial<Vinculo> = {}): Vinculo => ({
 });
 
 function abrir(
-  opciones: { vinculos?: Vinculo[]; producto?: Producto } = {},
+  opciones: {
+    vinculos?: Vinculo[];
+    producto?: Producto;
+    /** `undefined` = sin precio; 'error' = el resumen no se pudo leer. */
+    resumen?: ResumenPrecio | 'error' | null;
+  } = {},
   extra: Partial<Record<keyof ApiVinculos, unknown>> = {},
 ) {
   const api = {
@@ -74,6 +93,12 @@ function abrir(
     actualizar: vi.fn().mockResolvedValue(vinculo()),
     ...extra,
   };
+  const precios = {
+    resumen:
+      opciones.resumen === 'error'
+        ? vi.fn().mockRejectedValue(new Error('caído'))
+        : vi.fn().mockResolvedValue(opciones.resumen ?? null),
+  };
   const catalogo = {
     obtenerProducto: vi.fn().mockResolvedValue(opciones.producto ?? ARROZ),
     listarUnidades: vi.fn().mockResolvedValue([LB, LITRO]),
@@ -82,9 +107,11 @@ function abrir(
     <MemoryRouter initialEntries={['/platillos/productos/p1/supermercados']}>
       <ContextoApiCatalogo.Provider value={catalogo as unknown as ApiCatalogo}>
         <ContextoApiVinculos.Provider value={api as unknown as ApiVinculos}>
-          <Route path="/platillos/productos/:id/supermercados">
-            <VinculosProducto />
-          </Route>
+          <ContextoApiPrecios.Provider value={precios as unknown as ApiPrecios}>
+            <Route path="/platillos/productos/:id/supermercados">
+              <VinculosProducto />
+            </Route>
+          </ContextoApiPrecios.Provider>
         </ContextoApiVinculos.Provider>
       </ContextoApiCatalogo.Provider>
     </MemoryRouter>,
@@ -95,6 +122,7 @@ function abrir(
       actualizar: ReturnType<typeof vi.fn>;
     },
     catalogo,
+    precios,
     user: userEvent.setup(),
   };
 }
@@ -327,6 +355,49 @@ describe('HU-35 Vínculos de un producto', () => {
     });
   });
 
+  describe('HU-36 resumen de precios del producto', () => {
+    it('sin precios dice "Sin precio"', async () => {
+      abrir({ resumen: null });
+      const resumen = await screen.findByRole('region', { name: 'Resumen de precios' });
+      expect(resumen).toHaveTextContent('Sin precio');
+    });
+
+    it('muestra el costo estimado (mediana) y la compra sugerida (mínimo)', async () => {
+      abrir({ resumen: RESUMEN });
+      const resumen = await screen.findByRole('region', { name: 'Resumen de precios' });
+      expect(resumen).toHaveTextContent('Costo estimado: Q13.00 (mediana de 3 supermercados)');
+      expect(resumen).toHaveTextContent('Compra sugerida: Q12.50 en Walmart (24/10/2026)');
+      expect(screen.queryByText(/Desactualizado/)).not.toBeInTheDocument();
+    });
+
+    it('un resumen desactualizado lo avisa con la fecha más antigua', async () => {
+      abrir({ resumen: { ...RESUMEN, desactualizado: true, cantidadPrecios: 1 } });
+      expect(
+        await screen.findByText(/Desactualizado: ningún precio es de los últimos 14 días/),
+      ).toBeVisible();
+      expect(screen.getByText(/el más antiguo es del 20\/10\/2026/)).toBeVisible();
+      expect(screen.getByText(/mediana de 1 supermercado\)/)).toBeVisible();
+    });
+
+    it('si el resumen no se puede leer, la pantalla sigue y no lo muestra', async () => {
+      abrir({ resumen: 'error' });
+      await screen.findByRole('heading', { name: 'Vincular supermercado' });
+      expect(screen.queryByRole('region', { name: 'Resumen de precios' })).not.toBeInTheDocument();
+    });
+
+    it('al vincular se vuelve a leer el resumen', async () => {
+      const { precios, user } = abrir({ resumen: null });
+      await llenar(user);
+      expect(precios.resumen).toHaveBeenCalledTimes(1);
+      precios.resumen.mockResolvedValue(RESUMEN);
+
+      await user.click(screen.getByRole('button', { name: 'Vincular' }));
+
+      expect(await screen.findByText(/Costo estimado: Q13\.00/)).toBeVisible();
+      expect(precios.resumen).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it('si no carga, ofrece reintentar', async () => {
     const obtenerProducto = vi
       .fn()
@@ -344,9 +415,13 @@ describe('HU-35 Vínculos de un producto', () => {
       <MemoryRouter initialEntries={['/platillos/productos/p1/supermercados']}>
         <ContextoApiCatalogo.Provider value={catalogo as unknown as ApiCatalogo}>
           <ContextoApiVinculos.Provider value={api as unknown as ApiVinculos}>
-            <Route path="/platillos/productos/:id/supermercados">
-              <VinculosProducto />
-            </Route>
+            <ContextoApiPrecios.Provider
+              value={{ resumen: vi.fn().mockResolvedValue(null) } as unknown as ApiPrecios}
+            >
+              <Route path="/platillos/productos/:id/supermercados">
+                <VinculosProducto />
+              </Route>
+            </ContextoApiPrecios.Provider>
           </ContextoApiVinculos.Provider>
         </ContextoApiCatalogo.Provider>
       </MemoryRouter>,

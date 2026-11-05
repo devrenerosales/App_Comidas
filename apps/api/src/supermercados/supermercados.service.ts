@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { normalizarNombreCatalogo } from '@menu/shared';
 import { Problema } from '../comun/problema';
+import { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { GuardarMarcaDto, GuardarSupermercadosDto } from './dto/supermercados.dto';
 import {
   SupermercadosRepositorio,
@@ -21,7 +22,10 @@ const sinCeros = (decimal: string): string =>
 /** M02 · CU-02.5 — supermercados y marcas preferidas del hogar (HU-09). */
 @Injectable()
 export class SupermercadosService {
-  constructor(private readonly repo: SupermercadosRepositorio) {}
+  constructor(
+    private readonly repo: SupermercadosRepositorio,
+    private readonly resumen: ResumenPreciosService,
+  ) {}
 
   /**
    * Supermercados activos con su preferencia. Un hogar que todavía no decidió tiene todos como
@@ -59,6 +63,8 @@ export class SupermercadosService {
       hogarId,
       filas.map((f) => ({ id: f.id, preferido: preferidos.has(f.id) })),
     );
+    // El mínimo sugerido depende de cuáles son los preferidos (HU-09, CU-09.2).
+    await this.resumen.recalcularHogar(hogarId);
     return this.supermercados(hogarId);
   }
 

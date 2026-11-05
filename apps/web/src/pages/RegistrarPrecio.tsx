@@ -11,10 +11,11 @@ import type { Producto, Unidad } from '../api/catalogo';
 import { useApiCatalogo } from '../api/contexto-catalogo';
 import { useApiPrecios } from '../api/contexto-precios';
 import { useApiVinculos } from '../api/contexto-vinculos';
-import type { DatosPrecio } from '../api/precios';
+import type { DatosPrecio, ResumenPrecio as DatosResumen } from '../api/precios';
 import type { SupermercadoCatalogo, Vinculo } from '../api/vinculos';
 import { Cargando } from '../auth/Cargando';
 import { PaginaBase } from './PaginaBase';
+import { ResumenPrecio } from './ResumenPrecio';
 import { hoyEnDispositivo } from './precios';
 import { fechaCompleta } from './supermercados';
 import './acceso.css';
@@ -33,6 +34,8 @@ export default function RegistrarPrecio() {
   const [unidades, setUnidades] = useState<Unidad[]>([]);
   const [supermercados, setSupermercados] = useState<SupermercadoCatalogo[]>([]);
   const [vinculos, setVinculos] = useState<Vinculo[]>([]);
+  /** `undefined` = todavía no se sabe o no se pudo leer; `null` = sin precio. */
+  const [resumen, setResumen] = useState<DatosResumen | null | undefined>(undefined);
   const [cargado, setCargado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intento, setIntento] = useState(0);
@@ -65,6 +68,10 @@ export default function RegistrarPrecio() {
         setUnidadId(p.presentacion.unidad.id);
         setSupermercadoId((actual) => actual || (s[0]?.id ?? ''));
         setCargado(true);
+        apiPrecios
+          .resumen(productoId)
+          .then((r) => activo && setResumen(r))
+          .catch(() => activo && setResumen(undefined));
       })
       .catch((e: unknown) => {
         if (activo) setError(mensajeDeError(e));
@@ -72,7 +79,7 @@ export default function RegistrarPrecio() {
     return () => {
       activo = false;
     };
-  }, [catalogo, apiVinculos, productoId, intento]);
+  }, [catalogo, apiVinculos, apiPrecios, productoId, intento]);
 
   const elegido = supermercados.find((s) => s.id === supermercadoId);
   const vinculo = vinculos.find((v) => v.activo && v.supermercado.id === supermercadoId);
@@ -114,6 +121,7 @@ export default function RegistrarPrecio() {
       const r = await apiPrecios.registrar(datos);
       setPrecio('');
       setVinculos(await apiVinculos.listar(productoId));
+      setResumen(await apiPrecios.resumen(productoId).catch(() => undefined));
       setMensaje(
         `Precio guardado: Q${r.precio} en ${r.vinculo.supermercado.nombre} (${fechaCompleta(r.fechaPrecio)}).` +
           (r.vinculoCreado ? ' Se creó el vínculo con este supermercado.' : ''),
@@ -155,6 +163,7 @@ export default function RegistrarPrecio() {
               Presentación de compra: <strong>{producto.etiqueta}</strong>. Anota lo que viste o
               pagaste en la tienda; el precio queda en tu hogar.
             </p>
+            {resumen !== undefined && <ResumenPrecio resumen={resumen} />}
             {mensaje && <p role="status">{mensaje}</p>}
             {errores.length > 0 && (
               <div className="mf-alerta" role="alert">

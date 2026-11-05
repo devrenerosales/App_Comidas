@@ -6,7 +6,7 @@ import type { ApiCatalogo, Producto, Unidad } from '../api/catalogo';
 import { ContextoApiCatalogo } from '../api/contexto-catalogo';
 import { ContextoApiPrecios } from '../api/contexto-precios';
 import { ContextoApiVinculos } from '../api/contexto-vinculos';
-import type { ApiPrecios, PrecioRegistrado } from '../api/precios';
+import type { ApiPrecios, PrecioRegistrado, ResumenPrecio } from '../api/precios';
 import { ProblemaApi } from '../api/problema';
 import type { ApiVinculos, SupermercadoCatalogo, Vinculo } from '../api/vinculos';
 import RegistrarPrecio from './RegistrarPrecio';
@@ -72,6 +72,18 @@ const vinculo = (extra: Partial<Vinculo> = {}): Vinculo => ({
   ...extra,
 });
 
+const RESUMEN: ResumenPrecio = {
+  productoId: 'p1',
+  precioMediana: '22.20',
+  precioMinimo: '20.75',
+  supermercadoMinimo: { id: 's2', nombre: 'Super Fresh' },
+  fechaPrecioMinimo: '2026-10-24',
+  cantidadPrecios: 4,
+  desactualizado: false,
+  fechaPrecioMasAntiguo: '2026-10-20',
+  calculadoEn: '2026-10-24T18:00:00.000Z',
+};
+
 const registrado = (extra: Partial<PrecioRegistrado> = {}): PrecioRegistrado => ({
   id: 'pr1',
   precio: '20.75',
@@ -84,10 +96,18 @@ const registrado = (extra: Partial<PrecioRegistrado> = {}): PrecioRegistrado => 
 });
 
 function abrir(
-  opciones: { vinculos?: Vinculo[]; supermercados?: SupermercadoCatalogo[] } = {},
+  opciones: {
+    vinculos?: Vinculo[];
+    supermercados?: SupermercadoCatalogo[];
+    resumen?: ResumenPrecio | null;
+  } = {},
   extra: Partial<Record<keyof ApiPrecios, unknown>> = {},
 ) {
-  const precios = { registrar: vi.fn().mockResolvedValue(registrado()), ...extra };
+  const precios = {
+    registrar: vi.fn().mockResolvedValue(registrado()),
+    resumen: vi.fn().mockResolvedValue(opciones.resumen ?? null),
+    ...extra,
+  };
   const vinculos = {
     supermercados: vi
       .fn()
@@ -112,7 +132,10 @@ function abrir(
     </MemoryRouter>,
   );
   return {
-    precios: precios as typeof precios & { registrar: ReturnType<typeof vi.fn> },
+    precios: precios as typeof precios & {
+      registrar: ReturnType<typeof vi.fn>;
+      resumen: ReturnType<typeof vi.fn>;
+    },
     vinculos,
     user: userEvent.setup(),
   };
@@ -278,6 +301,42 @@ describe('HU-34 Registrar precio manual', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('no es convertible a libras');
   });
 
+  describe('HU-36 resumen de precios', () => {
+    it('muestra el resumen del producto al abrir', async () => {
+      abrir({ resumen: RESUMEN });
+      const resumen = await screen.findByRole('region', { name: 'Resumen de precios' });
+      expect(resumen).toHaveTextContent('Costo estimado: Q22.20 (mediana de 4 supermercados)');
+      expect(resumen).toHaveTextContent('Compra sugerida: Q20.75 en Super Fresh (24/10/2026)');
+    });
+
+    it('CA-34.1 al guardar el precio, el resumen se actualiza', async () => {
+      const { precios, user } = abrir({ resumen: null });
+      await formulario();
+      expect(screen.getByRole('region', { name: 'Resumen de precios' })).toHaveTextContent(
+        'Sin precio',
+      );
+      precios.resumen.mockResolvedValue(RESUMEN);
+
+      await user.type(screen.getByLabelText('Precio (Q)'), '20.75');
+      await user.click(guardar());
+
+      await screen.findByText(/Precio guardado/);
+      expect(screen.getByRole('region', { name: 'Resumen de precios' })).toHaveTextContent(
+        'Compra sugerida: Q20.75 en Super Fresh',
+      );
+      expect(precios.resumen).toHaveBeenCalledTimes(2);
+    });
+
+    it('si el resumen no se puede leer, el formulario sigue funcionando', async () => {
+      const { user } = abrir({}, { resumen: vi.fn().mockRejectedValue(new Error('caído')) });
+      await formulario();
+      expect(screen.queryByRole('region', { name: 'Resumen de precios' })).not.toBeInTheDocument();
+      await user.type(screen.getByLabelText('Precio (Q)'), '5');
+      await user.click(guardar());
+      expect(await screen.findByRole('status')).toHaveTextContent('Precio guardado');
+    });
+  });
+
   it('si no carga, ofrece reintentar', async () => {
     const obtenerProducto = vi
       .fn()
@@ -304,7 +363,14 @@ describe('HU-34 Registrar precio manual', () => {
               } as unknown as ApiVinculos
             }
           >
-            <ContextoApiPrecios.Provider value={{ registrar: vi.fn() } as unknown as ApiPrecios}>
+            <ContextoApiPrecios.Provider
+              value={
+                {
+                  registrar: vi.fn(),
+                  resumen: vi.fn().mockResolvedValue(null),
+                } as unknown as ApiPrecios
+              }
+            >
               <Route path="/platillos/productos/:id/precio">
                 <RegistrarPrecio />
               </Route>

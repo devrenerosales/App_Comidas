@@ -1,5 +1,6 @@
 /** Endpoints de precios (M08 · HU-34, api-contrato §2.8). */
 import type { ClienteHttp } from './cliente';
+import { ProblemaApi } from './problema';
 import type { Vinculo } from './vinculos';
 
 /**
@@ -26,8 +27,31 @@ export interface PrecioRegistrado {
   vinculoCreado: boolean;
 }
 
+/** GET /productos/{id}/resumen-precio (HU-36): mediana para el costo y mínimo para la compra. */
+export interface ResumenPrecio {
+  productoId: string;
+  precioMediana: string;
+  precioMinimo: string;
+  supermercadoMinimo: { id: string; nombre: string };
+  fechaPrecioMinimo: string;
+  cantidadPrecios: number;
+  /** Ningún precio de los últimos 14 días: se usaron los últimos conocidos. */
+  desactualizado: boolean;
+  fechaPrecioMasAntiguo: string;
+  calculadoEn: string;
+}
+
 export function crearApiPrecios(cliente: Pick<ClienteHttp, 'peticion'>) {
   return {
+    /** `null` si el producto no tiene ningún precio ("Sin precio", E1). */
+    resumen: async (productoId: string): Promise<ResumenPrecio | null> => {
+      try {
+        return await cliente.peticion<ResumenPrecio>(`/productos/${productoId}/resumen-precio`);
+      } catch (e) {
+        if (e instanceof ProblemaApi && e.codigo === 'SIN_PRECIO') return null;
+        throw e;
+      }
+    },
     registrar: (datos: DatosPrecio) =>
       cliente.peticion<PrecioRegistrado>('/precios', { metodo: 'POST', cuerpo: datos }),
   };

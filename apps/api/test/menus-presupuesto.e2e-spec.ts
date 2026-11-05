@@ -12,6 +12,7 @@ import request from 'supertest';
 import {
   and,
   configuracion,
+  corrida,
   eq,
   listaCompras,
   listaItem,
@@ -21,8 +22,10 @@ import {
   platillo,
   platilloIngrediente,
   platilloTiempo,
+  precio,
   precioResumen,
   producto,
+  productoSupermercado,
   supermercado,
   tiempoComidaConfig,
   unidad,
@@ -133,15 +136,30 @@ describeConBd('HU-21 Ajustar al presupuesto (integración)', () => {
       .from(unidad)
       .where(eq(unidad.codigo, 'lb'));
     const [tienda] = await bd.db.select({ id: supermercado.id }).from(supermercado).limit(1);
-    await bd.db.insert(precioResumen).values({
-      productoId: pechuga!.id,
-      hogarId,
-      precioMediana: PRECIO_LIBRA.toFixed(2),
-      precioMinimo: '9.00',
-      supermercadoMinimoId: tienda!.id,
-      fechaPrecioMinimo: '2026-10-30',
-      cantidadPrecios: 3,
-      fechaPrecioMasAntiguo: '2026-10-20',
+    // Un precio real de la pechuga: el resumen (mediana y mínimo) lo calcula la API al generar el
+    // menú (HU-36), igual que en producción.
+    const [vinculo] = await bd.db
+      .insert(productoSupermercado)
+      .values({
+        productoId: pechuga!.id,
+        supermercadoId: tienda!.id,
+        nombreTienda: 'Pechuga de pollo',
+        presentacionCantidad: '1',
+        presentacionUnidadId: libra!.id,
+        factor: '1',
+      })
+      .returning();
+    const [carrera] = await bd.db
+      .insert(corrida)
+      .values({ programadaPara: new Date() })
+      .returning();
+    await bd.db.insert(precio).values({
+      productoSupermercadoId: vinculo!.id,
+      origen: 'AUTOMATICO',
+      corridaId: carrera!.id,
+      precio: PRECIO_LIBRA.toFixed(2),
+      precioNormalizado: PRECIO_LIBRA.toFixed(2),
+      fechaPrecio: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
     });
     const filas = Array.from({ length: 25 }, (_, i) => {
       const nombre = `Almuerzo ${String(i + 1).padStart(3, '0')}`;
@@ -401,6 +419,10 @@ describeConBd('HU-21 Ajustar al presupuesto (integración)', () => {
    * a Q20 la libra en las últimas semanas (RN-12).
    */
   const conPromedioDeCompra = async (hogarId: string) => {
+    // El precio de mercado tiene más de 14 días: el resumen que calcula la API sale desactualizado.
+    await bd.db
+      .update(precio)
+      .set({ fechaPrecio: new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10) });
     await bd.db
       .update(precioResumen)
       .set({ desactualizado: true })
