@@ -125,6 +125,27 @@ describe('ResumenPreciosService (HU-36)', () => {
     });
   });
 
+  describe('recalcularProductos (HU-31)', () => {
+    it('recalcula solo los productos pedidos con una lectura y borra el que ya no tiene precios', async () => {
+      repo.precios.mockResolvedValue([
+        fila('p1', 'Walmart', '12.50'),
+        fila('p2', 'Walmart', '6.50'),
+        fila('p3', 'Walmart', '9.00'),
+      ]);
+      await servicio.recalcularProductos('h1', ['p1', 'p1', 'p4']);
+      expect(repo.precios).toHaveBeenCalledTimes(1);
+      expect(repo.precios).toHaveBeenCalledWith('h1');
+      expect(repo.guardar).toHaveBeenCalledTimes(1);
+      expect(repo.guardar.mock.calls[0]![1]).toBe('p1');
+      expect(repo.eliminar).toHaveBeenCalledWith('h1', 'p4');
+    });
+
+    it('sin productos no lee nada', async () => {
+      await servicio.recalcularProductos('h1', []);
+      expect(repo.precios).not.toHaveBeenCalled();
+    });
+  });
+
   describe('obtener', () => {
     it('devuelve el resumen al día con el supermercado del mínimo', async () => {
       repo.precios.mockResolvedValue([fila('p1', 'Walmart', '12.50'), fila('p1', 'Paiz', '13.00')]);

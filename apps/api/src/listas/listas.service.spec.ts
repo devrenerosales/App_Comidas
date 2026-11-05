@@ -1,4 +1,5 @@
 import { Problema } from '../comun/problema';
+import type { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { SincronizarListaDto } from './dto/listas.dto';
 import type { ListasRepositorio } from './listas.repositorio';
 import { ListasService } from './listas.service';
@@ -28,11 +29,30 @@ async function problema(promesa: Promise<unknown>): Promise<Problema> {
 }
 
 describe('ListasService (HU-28, HU-30)', () => {
-  const repo = { cargar: jest.fn(), aplicarSync: jest.fn() };
+  const repo = { cargar: jest.fn(), aplicarSync: jest.fn(), productosDeLista: jest.fn() };
+  const precios = { recalcularProductos: jest.fn() };
   const HOY = new Date('2026-10-25T12:00:00.000Z');
-  const servicio = new ListasService(repo as unknown as ListasRepositorio, () => HOY);
+  const servicio = new ListasService(
+    repo as unknown as ListasRepositorio,
+    precios as unknown as ResumenPreciosService,
+    () => HOY,
+  );
 
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    repo.productosDeLista.mockResolvedValue([]);
+  });
+
+  it('HU-31 refresca los precios de los productos de la lista antes de leerla', async () => {
+    repo.productosDeLista.mockResolvedValue(['p1', 'p2']);
+    repo.cargar.mockResolvedValue(completa());
+    await servicio.obtener('h1', 'l1');
+    expect(repo.productosDeLista).toHaveBeenCalledWith('h1', 'l1');
+    expect(precios.recalcularProductos).toHaveBeenCalledWith('h1', ['p1', 'p2']);
+    expect(precios.recalcularProductos.mock.invocationCallOrder[0]).toBeLessThan(
+      repo.cargar.mock.invocationCallOrder[0]!,
+    );
+  });
 
   it('devuelve la lista del hogar', async () => {
     repo.cargar.mockResolvedValue(completa());

@@ -17,6 +17,7 @@ export * from './plan';
 export * from './costos';
 export * from './lista';
 export * from './lista-sync';
+export * from './lista-agrupada';
 export * from './lista-texto';
 export * from './avance';
 export * from './despensa';

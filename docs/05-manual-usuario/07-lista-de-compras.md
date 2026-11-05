@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) · HU-43 Avance de compra por comida (S4) · HU-44 Precio real y promedio de compra (S4) |
+| Historias | HU-28 Consolidar ingredientes del menú aprobado (S4) · HU-30 Editar y marcar la lista (S4) · HU-43 Avance de compra por comida (S4) · HU-44 Precio real y promedio de compra (S4) · HU-31 Agrupar la lista por supermercado y categoría (S5) |
 | Versión de la app | Sprint 4 (rama `feature/HU-28-consolidar-lista`) |
 | Estado del capítulo | Parcial: lista consolidada, marcar, quitar y agregar, y uso sin conexión, avance por comida y precio real; faltan despensa y compartir, y las capturas |
 
@@ -133,11 +133,30 @@ Entra desde **Lista**, con el enlace **Configurar la despensa**.
 
 [Captura 7.8: pantalla Despensa con sus productos y cuándo tocan]
 
-## 7.9 Compartir la lista
+## 7.9 Ver la lista por supermercado
+
+Para saber qué comprar en cada tienda, en **Lista** toca **Por supermercado** (arriba de los productos, junto a **Productos** y **Por comida**).
+
+1. Cada producto aparece en el supermercado donde está **más barato**. Solo se comparan los supermercados que marcaste como preferidos (ver 3.7); si dos cuestan lo mismo, gana el preferido y, si siguen empatados, el primero por orden alfabético.
+2. Dentro de cada supermercado los productos van por **categoría** (Carnes, Verduras, Granos…).
+3. Cada producto muestra cuánto costará (cantidad a comprar × precio) y el título del supermercado muestra su **subtotal**. Abajo ves el **Total estimado** de toda la lista.
+
+Por ejemplo, con Arroz a Q12.50 en Walmart y Pollo (7 lb) a Q21.90 en Paiz, Walmart lleva el arroz y Paiz el pollo con Q153.30, y el total suma ambos.
+
+**Precio viejo.** Si el último precio que conoce la app tiene más de 14 días, el producto aparece igual en su supermercado con el aviso "Precio del 03/10/2026". Ese precio sí suma al subtotal; registra uno nuevo para actualizarlo (8.1).
+
+**Sin precio.** Los productos que no tienen ningún precio, y los que agregaste a mano, van al grupo **Sin precio**, al final, y no suman al total.
+
+Desde esta vista también puedes marcar productos como comprados, igual que en **Productos**. Es solo otra forma de verlos: no cambia la lista. Sin conexión funciona con la última lista que descargaste.
+
+[Captura 7.9: vista Por supermercado]
+
+## 7.10 Compartir la lista
 
 Para que otra persona de la familia haga la compra, comparte la lista por WhatsApp u otra app. En **Lista**, arriba de los productos, toca **Compartir**.
 
 1. La app arma un mensaje que empieza con "Lista de compras 25/10–31/10" y sigue con los productos **pendientes**, uno por línea y con su cantidad: "Pollo en piezas — 7 lb".
+   Si ya hay precios, el mensaje sigue la vista **Por supermercado** (7.9): un bloque por supermercado con sus productos y, al final, **Sin precio**.
 2. Se abre el menú de compartir de tu teléfono o navegador. Elige WhatsApp (u otra app) y envía.
 
 **Incluir comprados.** Si marcas la casilla **Incluir comprados**, el mensaje lleva todos los productos de la lista, también los que ya compraste o que ya tenías. Sin la casilla, solo van los que faltan.
@@ -150,4 +169,4 @@ Para que otra persona de la familia haga la compra, comparte la lista por WhatsA
 
 Los precios que anotaste nunca van en el mensaje, y compartir no cambia la lista.
 
-[Captura 7.9: botón Compartir y mensaje en WhatsApp]
+[Captura 7.10: botón Compartir y mensaje en WhatsApp]

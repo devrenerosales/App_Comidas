@@ -1,5 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { cantidadDeCompra, cantidadValida, validarPrecio } from '@menu/shared';
+import {
+  agruparPorSupermercado,
+  cantidadDeCompra,
+  cantidadValida,
+  GRUPO_SIN_PRECIO,
+  validarPrecio,
+  type ItemAgrupado,
+} from '@menu/shared';
 import { Link } from 'react-router-dom';
 import { ProblemaApi, mensajeDeError } from '../api';
 import { useApiConfiguracion } from '../api/contexto-configuracion';
@@ -21,7 +28,7 @@ import './semana.css';
 const SEMANAS_ANTERIORES = 8;
 const SEMANAS_SIGUIENTES = 4;
 
-type VistaLista = 'PRODUCTOS' | 'POR_COMIDA';
+type VistaLista = 'PRODUCTOS' | 'POR_SUPERMERCADO' | 'POR_COMIDA';
 
 /** Alterna entre ver los productos de la lista o el avance por comida (HU-43). */
 function SelectorVistaLista({
@@ -33,6 +40,7 @@ function SelectorVistaLista({
 }) {
   const opciones: [VistaLista, string][] = [
     ['PRODUCTOS', 'Productos'],
+    ['POR_SUPERMERCADO', 'Por supermercado'],
     ['POR_COMIDA', 'Por comida'],
   ];
   return (
@@ -67,6 +75,8 @@ interface FilaProps {
   alMarcar: ListaSincronizada['marcar'];
   alQuitar: ListaSincronizada['quitar'];
   alPrecio: ListaSincronizada['registrarPrecio'];
+  /** HU-31: costo y advertencia del precio sugerido, en la vista por supermercado. */
+  costo?: Pick<ItemAgrupado<ItemLista>, 'costo' | 'advertencia'>;
 }
 
 /** "Promedio de compra Q27.20 (3 compras) · Mediana Q27.50" (RN-12), solo con lo que se conoce. */
@@ -156,7 +166,7 @@ function FormularioPrecio({
   );
 }
 
-function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
+function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio, costo }: FilaProps) {
   const [anotandoPrecio, setAnotandoPrecio] = useState(false);
   const requerida = item.cantidadRequerida;
   const cubierto = item.estado !== 'PENDIENTE';
@@ -187,6 +197,8 @@ function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
         </small>
       )}
       {referencia && <small className="mf-menu-costo">{referencia}</small>}
+      {costo?.costo && <small className="mf-menu-costo">Q{costo.costo}</small>}
+      {costo?.advertencia && <small className="mf-dia-marca">{costo.advertencia}</small>}
       {item.sinConversion && <small className="mf-dia-marca">Sin conversión</small>}
       {ORIGEN_DESPENSA[item.origen] && (
         <small className="mf-dia-marca">{ORIGEN_DESPENSA[item.origen]}</small>
@@ -236,6 +248,60 @@ function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio }: FilaProps) {
         />
       )}
     </li>
+  );
+}
+
+/** Vista "Por supermercado" (CU-07.4, HU-31): dónde comprar cada producto, por categoría y con subtotales. */
+function ListaPorSupermercado({
+  lista,
+  editable,
+  sincronizada,
+}: {
+  lista: { items: ItemLista[] };
+  editable: boolean;
+  sincronizada: ListaSincronizada;
+}) {
+  const { grupos, total } = agruparPorSupermercado(lista.items);
+  if (grupos.length === 0) return <p>No hay productos que comprar.</p>;
+  return (
+    <div aria-label="Lista por supermercado">
+      {grupos.map((g) => {
+        const nombre = g.supermercado?.nombre ?? GRUPO_SIN_PRECIO;
+        return (
+          <section key={g.supermercado?.id ?? 'sin-precio'} aria-label={nombre}>
+            <h3>
+              {nombre}
+              {g.subtotal !== null && <small> · Subtotal Q{g.subtotal}</small>}
+            </h3>
+            {g.categorias.map((c) => (
+              <div key={c.categoria}>
+                <h4>{c.categoria}</h4>
+                <ul className="mf-lista" aria-label={`${nombre}, ${c.categoria}`}>
+                  {c.items.map((a) => (
+                    <FilaItem
+                      key={a.item.id}
+                      item={a.item}
+                      costo={a}
+                      editable={editable}
+                      alMarcar={sincronizada.marcar}
+                      alQuitar={sincronizada.quitar}
+                      alPrecio={sincronizada.registrarPrecio}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </section>
+        );
+      })}
+      <p>
+        <strong>Total estimado: Q{total}</strong>
+      </p>
+      <p className="mf-texto-suave">
+        Cada producto va al supermercado donde está más barato entre tus preferidos. Lo que no tiene
+        precio no suma al total.
+      </p>
+    </div>
   );
 }
 
@@ -434,6 +500,8 @@ export default function Lista() {
             <SelectorVistaLista vista={vista} alCambiar={setVista} />
             {vista === 'POR_COMIDA' ? (
               <AvanceComidas lista={lista} editable={editable} alMarcar={sincronizada.marcar} />
+            ) : vista === 'POR_SUPERMERCADO' ? (
+              <ListaPorSupermercado lista={lista} editable={editable} sincronizada={sincronizada} />
             ) : (
               <>
                 {lista.items.length === 0 ? (

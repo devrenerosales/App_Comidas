@@ -3,6 +3,7 @@ import {
   enPresentacion,
   formatearCantidad,
   redondear,
+  type CompraSugerida,
   type ComidaDelMenu,
 } from '@menu/shared';
 import type { ItemDeLista, ListaCompleta } from './listas.repositorio';
@@ -36,6 +37,10 @@ export interface ItemVista {
   promedioCompra: { precio: string; compras: number } | null;
   /** Mediana de mercado del producto, junto al promedio de compra. */
   medianaMercado: string | null;
+  /** HU-31: categoría del producto, para agrupar la lista. */
+  categoria: string | null;
+  /** HU-31: supermercado de la compra sugerida y su precio por presentación; null sin precio. */
+  compra: CompraSugerida | null;
   /** Comidas (detalles del menú) que originan el ítem. */
   comidas: string[];
 }
@@ -117,6 +122,8 @@ function itemVista(i: ItemDeLista): ItemVista {
       ? { precio: i.promedioCompra.promedio.toFixed(2), compras: i.promedioCompra.compras }
       : null,
     medianaMercado: i.medianaMercado,
+    categoria: i.categoria,
+    compra: i.compra,
     comidas: i.comidas,
   };
 }
