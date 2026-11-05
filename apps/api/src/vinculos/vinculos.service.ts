@@ -211,7 +211,8 @@ export class VinculosService {
     return producto;
   }
 
-  private async vistaDe(hogarId: string, id: string): Promise<VistaVinculo> {
+  /** Un vínculo con su último precio visible para el hogar. */
+  async vistaDe(hogarId: string, id: string): Promise<VistaVinculo> {
     const fila = await this.repo.vinculo(id);
     return (await this.vistas(hogarId, [fila!]))[0]!;
   }
