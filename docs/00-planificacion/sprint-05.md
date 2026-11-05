@@ -4,7 +4,7 @@
 |---|---|
 | Fechas planificadas | 2027-01-04 → 2027-01-15 |
 | Objetivo | Tener precios por supermercado y usarlos: elegir dónde y qué marca comprar, registrar precios, ver el mínimo y agrupar la lista |
-| Estado | En curso. HU-09 implementada el 2026-11-05 (pendiente la validación manual del PO) |
+| Estado | En curso. HU-09 implementada y validada por el PO el 2026-11-05. HU-35 implementada el 2026-11-05 (pendiente la validación manual del PO) |
 
 ## Historias
 
@@ -27,7 +27,7 @@ El PO aprobó empezar por HU-09 (2026-11-05). HU-31 necesita precios y un precio
 dependencias entre HU-34, HU-35 y HU-36 se revisan al llegar a cada una:
 
 1. **HU-09:** supermercados y marcas preferidas (listo).
-2. **HU-35 y HU-34:** vincular productos con cada supermercado y registrar precios; sin ellos no hay marcas que elegir ni precios que comparar.
+2. **HU-35** (listo) **y HU-34:** vincular productos con cada supermercado y registrar precios; sin ellos no hay marcas que elegir ni precios que comparar.
 3. **HU-36:** mediana para el costo y mínimo entre supermercados preferidos.
 4. **HU-31:** lista agrupada por supermercado y categoría; el texto de compartir (HU-32) debe seguir esa agrupación.
 5. **HU-37, HU-33 y HU-38:** histórico, precios automáticos y último precio válido. HU-33 queda sujeta a la revisión de los términos de uso de cada sitio (PA-02, R-03, D-07).

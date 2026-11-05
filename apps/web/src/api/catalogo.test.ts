@@ -17,6 +17,7 @@ describe('API del catálogo (HU-11..13)', () => {
       [api.listarCategorias(), '/categorias'],
       [api.listarProductos({ q: 'pollo', activo: 'true' }), '/productos?q=pollo&activo=true'],
       [api.listarProductos(), '/productos'],
+      [api.obtenerProducto('p1'), '/productos/p1'],
       [api.crearProducto({} as never), '/productos', { metodo: 'POST', cuerpo: {} }],
       [api.inactivarProducto('p1'), '/productos/p1/inactivar', { metodo: 'POST' }],
       [api.reactivarProducto('p1'), '/productos/p1/reactivar', { metodo: 'POST' }],

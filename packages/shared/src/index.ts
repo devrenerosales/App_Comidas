@@ -5,6 +5,7 @@ export * from './hogar';
 export * from './comensales';
 export * from './configuracion';
 export * from './catalogo';
+export * from './vinculos';
 export * from './historial';
 export * from './puntaje';
 export * from './motor';
