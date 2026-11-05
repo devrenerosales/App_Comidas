@@ -279,6 +279,14 @@ export default function VinculosProducto() {
               venderlo en otra presentación; la app lo ajusta para comparar precios.
             </p>
             {mensaje && <p role="status">{mensaje}</p>}
+            <p>
+              <Link
+                className="mf-boton mf-boton--secundario"
+                to={`/platillos/productos/${productoId}/precio`}
+              >
+                Registrar precio
+              </Link>
+            </p>
 
             <h2>Vínculos</h2>
             {vinculos.length === 0 ? (

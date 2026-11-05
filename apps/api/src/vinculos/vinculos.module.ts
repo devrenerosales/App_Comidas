@@ -10,6 +10,6 @@ import { VinculosService } from './vinculos.service';
   imports: [AuthModule, HogarModule],
   controllers: [VinculosController],
   providers: [VinculosRepositorio, VinculosService],
-  exports: [VinculosRepositorio],
+  exports: [VinculosRepositorio, VinculosService],
 })
 export class VinculosModule {}

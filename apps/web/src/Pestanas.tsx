@@ -17,6 +17,7 @@ import Lista from './pages/Lista';
 import PlatilloDetalle from './pages/PlatilloDetalle';
 import Platillos from './pages/Platillos';
 import Productos from './pages/Productos';
+import RegistrarPrecio from './pages/RegistrarPrecio';
 import VinculosProducto from './pages/VinculosProducto';
 import Semana from './pages/Semana';
 import { PESTANAS } from './tabs';
@@ -41,6 +42,11 @@ export function Pestanas() {
           exact
           path="/platillos/productos/:id([0-9a-f-]{36})/supermercados"
           component={VinculosProducto}
+        />
+        <Route
+          exact
+          path="/platillos/productos/:id([0-9a-f-]{36})/precio"
+          component={RegistrarPrecio}
         />
         <Route exact path="/platillos/:id([0-9a-f-]{36})" component={PlatilloDetalle} />
         <Route exact path="/configuracion" component={Configuracion} />
