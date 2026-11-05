@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) |
+| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) · HU-36 Costo con mediana y precio mínimo (S5) |
 | Versión de la app | Sprint 5 (rama `feature/HU-34-registrar-precios`) |
-| Estado del capítulo | Parcial: registrar un precio a mano; faltan el ticket con foto, el precio mínimo y la mediana, el histórico y las capturas |
+| Estado del capítulo | Parcial: registrar un precio a mano, costo estimado y compra sugerida; faltan el ticket con foto, el histórico y las capturas |
 
 > **Capturas:** los recuadros `[Captura …]` marcan dónde irá la imagen de la pantalla real (teléfono 390 × 844, carpeta `docs/05-manual-usuario/img/`).
 
@@ -33,6 +33,23 @@ Si algo no es válido, la app no guarda nada y te dice qué corregir.
 
 [Captura 8.1: pantalla Registrar precio]
 
-## 8.2 Escanear un ticket — próximamente (HU-34, segunda parte)
+## 8.2 Costo estimado y compra sugerida
+
+Con los precios de cada supermercado la app calcula dos números por producto. Los ves arriba de **Supermercados** y de **Registrar precio**, en el recuadro **Resumen de precios**.
+
+- **Costo estimado:** la **mediana** de los precios de todos los supermercados. Es el número que usa el menú para calcular cuánto cuesta cada platillo; es estable aunque un supermercado ponga un precio muy alto o muy bajo.
+- **Compra sugerida:** el precio **más bajo** y el supermercado donde está. Solo se busca entre los supermercados que marcaste como preferidos (ver 3.7). Si dos cuestan lo mismo, gana el preferido, y si siguen empatados, el primero por orden alfabético.
+
+Por ejemplo, con Arroz a Q12.50 en Walmart, Q13.00 en Paiz y Q14.25 en La Torre, el costo estimado es Q13.00 y la compra sugerida es Q12.50 en Walmart. Con cuatro precios (Q20.75, Q21.50, Q22.90 y Q23.40) la mediana es el promedio de los dos del medio, Q22.20.
+
+**Solo cuentan los precios recientes.** Un precio vale hasta 14 días; de cada supermercado se toma el más reciente. Si ningún precio es de los últimos 14 días, la app usa los últimos que conoce y te avisa: "Desactualizado: ningún precio es de los últimos 14 días; el más antiguo es del …". Registra un precio nuevo para actualizarlo.
+
+**Sin precio.** Si el producto todavía no tiene ningún precio, el recuadro dice "Sin precio".
+
+El resumen se actualiza solo cuando registras un precio, cuando cambias tus supermercados preferidos y cuando pides que la app sugiera el menú de la semana.
+
+[Captura 8.2: recuadro Resumen de precios]
+
+## 8.3 Escanear un ticket — próximamente (HU-34, segunda parte)
 
 Se completará cuando se implemente la lectura de tickets con foto.

@@ -2,6 +2,7 @@ import type { MenuSemanal } from '@menu/db';
 import { Problema } from '../comun/problema';
 import type { PlatillosRepositorio } from '../catalogo/platillos.repositorio';
 import type { ConfiguracionService } from '../configuracion/configuracion.service';
+import type { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { PreferenciasRepositorio } from '../preferencias/preferencias.repositorio';
 import {
   MenuDuplicadoError,
@@ -93,11 +94,13 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
   const configuracion = { obtener: jest.fn() };
   const platillos = { sumaFactores: jest.fn() };
   const preferencias = { platillosExcluidosParaMotor: jest.fn() };
+  const resumenPrecios = { recalcularHogar: jest.fn() };
   const servicio = new MenusService(
     repo as unknown as MenusRepositorio,
     configuracion as unknown as ConfiguracionService,
     platillos as unknown as PlatillosRepositorio,
     preferencias as unknown as PreferenciasRepositorio,
+    resumenPrecios as unknown as ResumenPreciosService,
     () => AHORA,
   );
   const generar = (extra: { semana?: string; regenerar?: boolean } = {}) =>
@@ -107,6 +110,7 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
     jest.resetAllMocks();
     configuracion.obtener.mockResolvedValue(config());
     repo.menuDeSemana.mockResolvedValue(undefined);
+    resumenPrecios.recalcularHogar.mockResolvedValue(undefined);
     repo.platillosActivos.mockResolvedValue(activos(25));
     repo.preparaciones.mockResolvedValue([]);
     repo.fijados.mockResolvedValue([]);
@@ -167,6 +171,14 @@ describe('MenusService.generar (CU-05.1, HU-19)', () => {
     expect(detalles[0].puntaje).toMatch(/^\d\.\d{4}$/);
     expect(new Set(detalles.map((d: { platilloId: string }) => d.platilloId)).size).toBe(7);
     expect(repo.regenerar).not.toHaveBeenCalled();
+  });
+
+  it('HU-36 refresca las medianas del hogar antes de costear', async () => {
+    await generar();
+    expect(resumenPrecios.recalcularHogar).toHaveBeenCalledWith('h1');
+    expect(resumenPrecios.recalcularHogar.mock.invocationCallOrder[0]).toBeLessThan(
+      repo.ingredientesParaCosto.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('un espacio sin sugerencia se guarda vacío y sin costo incompleto', async () => {

@@ -3,6 +3,7 @@ import type { VinculosRepositorio } from '../vinculos/vinculos.repositorio';
 import type { VinculosService } from '../vinculos/vinculos.service';
 import type { CrearPrecioDto } from './dto/precios.dto';
 import type { PreciosRepositorio } from './precios.repositorio';
+import type { ResumenPreciosService } from './resumen-precios.service';
 import { PreciosService } from './precios.service';
 
 async function problema(promesa: Promise<unknown>): Promise<Problema> {
@@ -17,7 +18,7 @@ async function problema(promesa: Promise<unknown>): Promise<Problema> {
 
 /** 25/10/2026, mediodía en Guatemala. */
 const AHORA = new Date('2026-10-25T18:00:00Z');
-const VINCULO = { id: 'v1', activo: true, factor: '1.000000' };
+const VINCULO = { id: 'v1', productoId: 'p1', activo: true, factor: '1.000000' };
 
 const dto = (extra: Partial<CrearPrecioDto> = {}): CrearPrecioDto => ({
   productoSupermercadoId: 'v1',
@@ -34,10 +35,12 @@ describe('PreciosService (HU-34)', () => {
     vinculoActivo: jest.fn(),
   };
   const vinculos = { crear: jest.fn(), vistaDe: jest.fn() };
+  const resumen = { recalcularProducto: jest.fn() };
   const servicio = new PreciosService(
     repo as unknown as PreciosRepositorio,
     vinculosRepo as unknown as VinculosRepositorio,
     vinculos as unknown as VinculosService,
+    resumen as unknown as ResumenPreciosService,
     () => AHORA,
   );
 
@@ -63,6 +66,7 @@ describe('PreciosService (HU-34)', () => {
         precioNormalizado: '20.75',
         fechaPrecio: '2026-10-24',
       });
+      expect(resumen.recalcularProducto).toHaveBeenCalledWith('h1', 'p1');
       expect(r).toMatchObject({
         id: 'pr1',
         precio: '20.75',

@@ -4,11 +4,14 @@ import { factorVinculo, formatearCantidad, mensajeUnidadNoConvertible } from '@m
 import { mensajeDeError } from '../api';
 import type { Producto, Unidad } from '../api/catalogo';
 import { useApiCatalogo } from '../api/contexto-catalogo';
+import { useApiPrecios } from '../api/contexto-precios';
 import { useApiVinculos } from '../api/contexto-vinculos';
+import type { ResumenPrecio as DatosResumen } from '../api/precios';
 import { ProblemaApi } from '../api/problema';
 import type { DatosVinculo, SupermercadoCatalogo, Vinculo } from '../api/vinculos';
 import { Cargando } from '../auth/Cargando';
 import { PaginaBase } from './PaginaBase';
+import { ResumenPrecio } from './ResumenPrecio';
 import { fechaCompleta } from './supermercados';
 import './acceso.css';
 import './catalogo.css';
@@ -112,10 +115,13 @@ export default function VinculosProducto() {
   const { id: productoId = '' } = useParams<{ id: string }>();
   const catalogo = useApiCatalogo();
   const api = useApiVinculos();
+  const apiPrecios = useApiPrecios();
   const [producto, setProducto] = useState<Producto | null>(null);
   const [unidades, setUnidades] = useState<Unidad[]>([]);
   const [supermercados, setSupermercados] = useState<SupermercadoCatalogo[]>([]);
   const [vinculos, setVinculos] = useState<Vinculo[] | null>(null);
+  /** `undefined` = todavía no se sabe o no se pudo leer; `null` = sin precio. */
+  const [resumen, setResumen] = useState<DatosResumen | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
@@ -134,9 +140,18 @@ export default function VinculosProducto() {
   );
   const [editando, setEditando] = useState<string | null>(null);
 
+  const cargarResumen = useCallback(
+    () =>
+      apiPrecios
+        .resumen(productoId)
+        .then(setResumen)
+        .catch(() => setResumen(undefined)),
+    [apiPrecios, productoId],
+  );
+
   const cargarVinculos = useCallback(
-    () => api.listar(productoId).then(setVinculos),
-    [api, productoId],
+    () => api.listar(productoId).then(setVinculos).then(cargarResumen),
+    [api, productoId, cargarResumen],
   );
 
   useEffect(() => {
@@ -156,6 +171,7 @@ export default function VinculosProducto() {
         setVinculos(v);
         setUnidadId(p.presentacion.unidad.id);
         setSupermercadoId((actual) => actual || (s[0]?.id ?? ''));
+        void cargarResumen();
       })
       .catch((e: unknown) => {
         if (activo) setError(mensajeDeError(e));
@@ -163,7 +179,7 @@ export default function VinculosProducto() {
     return () => {
       activo = false;
     };
-  }, [catalogo, api, productoId, intento]);
+  }, [catalogo, api, productoId, intento, cargarResumen]);
 
   const elegido = supermercados.find((s) => s.id === supermercadoId);
   const unidadElegida = unidades.find((u) => u.id === unidadId);
@@ -278,6 +294,7 @@ export default function VinculosProducto() {
               Presentación de compra: <strong>{producto.etiqueta}</strong>. Cada supermercado puede
               venderlo en otra presentación; la app lo ajusta para comparar precios.
             </p>
+            {resumen !== undefined && <ResumenPrecio resumen={resumen} />}
             {mensaje && <p role="status">{mensaje}</p>}
             <p>
               <Link

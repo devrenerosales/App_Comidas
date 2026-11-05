@@ -1,4 +1,5 @@
 import { Problema } from '../comun/problema';
+import type { ResumenPreciosService } from '../precios/resumen-precios.service';
 import type { SupermercadosRepositorio } from './supermercados.repositorio';
 import { SupermercadosService } from './supermercados.service';
 
@@ -29,7 +30,11 @@ describe('SupermercadosService (HU-09)', () => {
     precios: jest.fn(),
     guardarMarca: jest.fn(),
   };
-  const servicio = new SupermercadosService(repo as unknown as SupermercadosRepositorio);
+  const resumen = { recalcularHogar: jest.fn() };
+  const servicio = new SupermercadosService(
+    repo as unknown as SupermercadosRepositorio,
+    resumen as unknown as ResumenPreciosService,
+  );
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -87,6 +92,7 @@ describe('SupermercadosService (HU-09)', () => {
 
     it('guarda todos los supermercados activos con su preferencia', async () => {
       await servicio.guardarSupermercados(HOGAR, { preferidos: [B, B] });
+      expect(resumen.recalcularHogar).toHaveBeenCalledWith(HOGAR);
       expect(repo.guardarSupermercados).toHaveBeenCalledWith(HOGAR, [
         { id: A, preferido: false },
         { id: B, preferido: true },
