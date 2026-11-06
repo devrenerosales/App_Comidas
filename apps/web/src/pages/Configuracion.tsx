@@ -58,6 +58,15 @@ export default function Configuracion() {
             </Link>
           </section>
         )}
+        {hogar?.rol === 'ADMIN' && (
+          <section aria-labelledby="titulo-avisos">
+            <h2 id="titulo-avisos">Avisos de precios</h2>
+            <p>Sitios bloqueados y productos que no se pudieron actualizar solos.</p>
+            <Link className="mf-boton mf-boton--secundario" to="/configuracion/avisos">
+              Avisos de precios
+            </Link>
+          </section>
+        )}
         {hogar && (
           <section aria-labelledby="titulo-pesos">
             <h2 id="titulo-pesos">Pesos del motor</h2>

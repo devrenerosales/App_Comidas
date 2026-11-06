@@ -356,7 +356,7 @@ describe('HU-31 Lista por supermercado', () => {
     const vista = await verPorSupermercado(user);
     const walmart = within(vista).getByRole('region', { name: 'Walmart' });
     expect(walmart).toHaveTextContent('Aceite 1 L');
-    expect(within(walmart).getByText('Precio del 03/10/2026')).toBeInTheDocument();
+    expect(within(walmart).getByText('Precio del 03/10/2026 · Desactualizado')).toBeInTheDocument();
   });
 
   it('CA-31.4 lo que no tiene precio va a "Sin precio" y no suma', async () => {

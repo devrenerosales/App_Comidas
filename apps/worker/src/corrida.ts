@@ -40,7 +40,8 @@ export interface TotalesSitio {
   detenidoPorEstructura: boolean;
 }
 
-export interface AvisoBloqueo {
+export interface AvisoCorrida {
+  tipo: 'SITIO_BLOQUEADO' | 'CORRIDA_PARCIAL' | 'CORRIDA_FALLIDA';
   titulo: string;
   mensaje: string;
   datos: Record<string, unknown>;
@@ -87,8 +88,8 @@ export interface RepositorioCorridas {
     totales: { consultados: number; actualizados: number; fallidos: number },
     ahora: Date,
   ): Promise<void>;
-  /** Aviso dentro de la app para los administradores de todos los hogares (CU-09.1 3a). */
-  avisarBloqueo(corridaId: string, aviso: AvisoBloqueo): Promise<void>;
+  /** Aviso dentro de la app para los administradores de todos los hogares (CU-09.1 3a, CU-09.3 5). */
+  avisar(corridaId: string, aviso: AvisoCorrida): Promise<void>;
 }
 
 export interface Limitador {
@@ -165,7 +166,8 @@ async function consultarSitio(
       deps.reloj(),
     );
     await repo.registrarError(idSitio, null, tipo, motivo, 1);
-    await repo.avisarBloqueo(corridaId, {
+    await repo.avisar(corridaId, {
+      tipo: 'SITIO_BLOQUEADO',
       titulo: `${sitio.nombre} bloqueado`,
       mensaje: `${sitio.nombre} bloqueado: registra precios manualmente`,
       datos: { supermercado: sitio.codigo, motivo },
@@ -220,8 +222,6 @@ async function consultarSitio(
         error = null;
       } catch (e) {
         error = e instanceof ErrorExtraccion ? e : new ErrorExtraccion('OTRO', mensajeDe(e));
-        // Un precio inválido no mejora al repetir la consulta: no se reintenta.
-        if (error.tipo === 'PRECIO_INVALIDO') break;
       }
     }
     if (precio !== null) {
@@ -251,6 +251,16 @@ async function consultarSitio(
       : ok === 0
         ? 'FALLIDA'
         : 'PARCIAL';
+  // CU-09.3 paso 5: el administrador ve el sitio y cuántos productos quedaron sin actualizar.
+  if (estado !== 'COMPLETADA') {
+    const sinActualizar = vinculos.length - ok;
+    await repo.avisar(corridaId, {
+      tipo: ok > 0 ? 'CORRIDA_PARCIAL' : 'CORRIDA_FALLIDA',
+      titulo: sitio.nombre,
+      mensaje: `${sitio.nombre}: ${sinActualizar} ${sinActualizar === 1 ? 'producto sin actualizar' : 'productos sin actualizar'}`,
+      datos: { supermercado: sitio.codigo, sinActualizar, estado },
+    });
+  }
   return cerrado(estado, ok, fallidos, detenido, idSitio);
 }
 
