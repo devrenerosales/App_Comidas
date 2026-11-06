@@ -77,9 +77,10 @@ describe('migraciones y semilla (sin base de datos)', () => {
     );
   });
 
-  it('la semilla trae los 4 supermercados con la extracción apagada (D-07)', () => {
+  it('la semilla trae los 5 supermercados con la extracción apagada (D-07)', () => {
     expect(SUPERMERCADOS_SEMILLA.map((s) => s.codigo).sort()).toEqual([
       'LA_TORRE',
+      'MERCADO',
       'PAIZ',
       'SUPER_FRESH',
       'WALMART',

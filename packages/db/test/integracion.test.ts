@@ -88,7 +88,7 @@ describe.skipIf(!URL_PRUEBAS)('PostgreSQL real: migraciones, semilla y reglas', 
       .where(eq(supermercado.codigo, 'WALMART'));
     const r = await sembrar(base.db, { adminSistemaCorreo: 'nadie@ejemplo.com' });
     expect(r.adminSistemaMarcado).toBe(false);
-    expect(await contar('SELECT count(*) AS n FROM supermercado')).toBe(4);
+    expect(await contar('SELECT count(*) AS n FROM supermercado')).toBe(5);
     expect(await contar('SELECT count(*) AS n FROM unidad')).toBe(12);
     expect(await contar('SELECT count(*) AS n FROM categoria')).toBe(9);
     // La semilla no pisa el permiso que decidió el administrador del sistema (D-07).
@@ -230,7 +230,7 @@ describe.skipIf(!URL_PRUEBAS)('PostgreSQL real: migraciones, semilla y reglas', 
     expect(await contar('SELECT count(*) AS n FROM usuario')).toBe(0);
     expect(await contar('SELECT count(*) AS n FROM unidad')).toBe(12);
     expect(await contar('SELECT count(*) AS n FROM categoria')).toBe(9);
-    expect(await contar('SELECT count(*) AS n FROM supermercado')).toBe(4);
+    expect(await contar('SELECT count(*) AS n FROM supermercado')).toBe(5);
     expect(await contar('SELECT count(*) AS n FROM producto')).toBe(PRODUCTOS_SEMILLA.length);
     await truncarTablas(base.db, { conservarSemilla: false });
     expect(await contar('SELECT count(*) AS n FROM unidad')).toBe(0);

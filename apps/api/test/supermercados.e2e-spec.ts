@@ -121,11 +121,12 @@ describeConBd('HU-09 Supermercados y marcas (integración)', () => {
   });
 
   describe('supermercados preferidos', () => {
-    it('sin decisión previa, los cuatro supermercados salen como preferidos', async () => {
+    it('sin decisión previa, los cinco supermercados salen como preferidos', async () => {
       const { token } = await hogarDe('Rene');
       const res = await supermercados(token).expect(200);
       expect(res.body.map((s: { nombre: string }) => s.nombre)).toEqual([
         'La Torre',
+        'Mercado',
         'Paiz',
         'Super Fresh',
         'Walmart',

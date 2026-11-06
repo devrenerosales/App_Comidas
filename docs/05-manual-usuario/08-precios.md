@@ -10,7 +10,7 @@
 
 ## 8.1 Registrar un precio a mano
 
-Anota el precio que viste o pagaste en una tienda, sobre todo en las que la app no consulta sola, como Super Fresh. Cualquier miembro puede hacerlo. El precio queda en **tu hogar**: otros hogares no lo ven.
+Anota el precio que viste o pagaste en una tienda, sobre todo en las que la app no consulta sola, como Super Fresh o el Mercado. Cualquier miembro puede hacerlo. El precio queda en **tu hogar**: otros hogares no lo ven.
 
 1. En **Productos**, toca **Supermercados** junto al producto y luego **Registrar precio**.
 2. Elige el **Supermercado**. La app te dice sobre qué presentación se registra: «Pollo PZ LB» (2 lb).
@@ -20,7 +20,7 @@ Anota el precio que viste o pagaste en una tienda, sobre todo en las que la app 
 
 Si la presentación de la tienda no es la de tu producto, la app ajusta el precio para poder compararlo: si Paiz vende la bolsa de 5 lb a Q31.25 y tu producto es de 2 lb, verás "Equivale a Q12.50 por tu presentación".
 
-**Si el producto todavía no está vinculado con ese supermercado.** En Super Fresh o La Torre la app te pide la **cantidad** y la **unidad** de la presentación en que se vende y crea el vínculo junto con el precio. En Walmart y Paiz, que se consultan automáticamente, primero hay que crear el vínculo con la URL o el SKU del producto; la app te muestra el enlace **Crear el vínculo** (ver 4.6b).
+**Si el producto todavía no está vinculado con ese supermercado.** En Super Fresh, el Mercado o La Torre la app te pide la **cantidad** y la **unidad** de la presentación en que se vende y crea el vínculo junto con el precio. En Walmart y Paiz, que se consultan automáticamente, primero hay que crear el vínculo con la URL o el SKU del producto; la app te muestra el enlace **Crear el vínculo** (ver 4.6b).
 
 | Mensaje | Qué hacer |
 |---|---|
