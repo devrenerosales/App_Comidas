@@ -37,12 +37,15 @@ export type CabeceraHistorica = Pick<
   'id' | 'fechaInicio' | 'fechaFin' | 'estado' | 'origen' | 'gastoReal' | 'notas' | 'version'
 >;
 export interface FilaComidaHistorica {
+  id: string;
   menuId: string;
   fecha: string;
   tiempo: TiempoComida;
   platilloId: string | null;
   nombre: string | null;
   notas?: string | null;
+  /** Calificación de 1 a 5 de esta comida (RF-14); null si no se ha calificado. */
+  calificacion: number | null;
 }
 export function valoresHistoricos(datos: CapturarSemanaDto, usuarioId: string, ahora: Date) {
   const gasto = datos.gastoReal == null ? null : deCentavos(aCentavos(datos.gastoReal)!);

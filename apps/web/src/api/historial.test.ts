@@ -17,4 +17,12 @@ describe('API de historial HU-15', () => {
       cuerpo: datos,
     });
   });
+  it('califica una comida con PUT /menus/{menuId}/detalles/{detalleId}/calificacion (HU-14)', async () => {
+    const cliente = { peticion: vi.fn().mockResolvedValue({}) };
+    await crearApiHistorial(cliente).calificar('m 1', 'd/1', 4);
+    expect(cliente.peticion).toHaveBeenLastCalledWith('/menus/m%201/detalles/d%2F1/calificacion', {
+      metodo: 'PUT',
+      cuerpo: { valor: 4 },
+    });
+  });
 });

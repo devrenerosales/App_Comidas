@@ -17,6 +17,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@menu/db": "workspace:^",
     "@menu/shared": "workspace:*",
     "bullmq": "5.21.2",
     "ioredis": "5.4.1",

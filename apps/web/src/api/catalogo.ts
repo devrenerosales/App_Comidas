@@ -132,6 +132,7 @@ export function crearApiCatalogo(cliente: Pick<ClienteHttp, 'peticion'>) {
     listarCategorias: () => cliente.peticion<Categoria[]>('/categorias'),
     listarProductos: (filtros: FiltrosProductos = {}) =>
       cliente.peticion<Pagina<Producto>>(`/productos${consulta(filtros)}`),
+    obtenerProducto: (productoId: string) => cliente.peticion<Producto>(`/productos/${productoId}`),
     crearProducto: (datos: DatosProducto) =>
       cliente.peticion<Producto>('/productos', { metodo: 'POST', cuerpo: datos }),
     inactivarProducto: (productoId: string) =>

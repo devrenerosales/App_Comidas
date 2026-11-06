@@ -1,0 +1,174 @@
+/** Endpoints del menú semanal (M05 · HU-19, M06 · HU-24 y HU-25, api-contrato §2.5, §3.1 y §3.2). */
+import type { ProteinaPrincipal, TiempoComida } from '@menu/shared';
+import type { ClienteHttp } from './cliente';
+
+export interface DetalleMenu {
+  id: string;
+  fecha: string;
+  tiempo: TiempoComida;
+  platillo: { id: string; nombre: string; proteinaPrincipal: ProteinaPrincipal } | null;
+  fijado: boolean;
+  origen: string;
+  puntaje: string | null;
+  costoEstimado: string | null;
+  costoIncompleto: boolean;
+  reglasAplicadas: string[];
+}
+
+export interface TiempoMenu {
+  tiempo: TiempoComida;
+  porcentaje: string;
+  presupuesto: string;
+  costoEstimado: string | null;
+  exceso: string;
+  estado: 'DENTRO_DEL_PRESUPUESTO' | 'EXCEDE' | 'COSTO_INCOMPLETO';
+  /** Solo en la respuesta de generar y solo si el tiempo sigue excedido. */
+  alternativas?: AlternativasDelDia[];
+}
+
+export interface AvisoMenu {
+  codigo: string;
+  fecha: string;
+  tiempo: TiempoComida;
+  mensaje: string;
+}
+
+/** Advertencia RN-02 o RN-03 de un cambio manual, que el usuario puede confirmar (CU-06.1 3a). */
+export interface AdvertenciaPlan {
+  codigo: 'RN02_PROTEINA_CONSECUTIVA' | 'RN03_PLATILLO_REPETIDO';
+  fecha: string;
+  tiempo: TiempoComida;
+  mensaje: string;
+}
+
+/** Platillos más baratos para un día cuando el tiempo sigue excedido (CU-05.3 E1). */
+export interface AlternativasDelDia {
+  fecha: string;
+  platillos: { id: string; nombre: string; costo: string }[];
+}
+
+/** Una diferencia entre el gasto y una referencia: gasto − referencia (positiva = se gastó más). */
+export interface Diferencia {
+  monto: string;
+  /** Frase lista para mostrar, p. ej. "Q9.25 más que lo estimado". */
+  texto: string;
+}
+
+/** Gasto real de la semana con su comparación (HU-27, api-contrato §3.3). */
+export interface GastoRegistrado {
+  gastoReal: string;
+  nota: string | null;
+  diferenciaVsEstimado: Diferencia | null;
+  diferenciaVsPresupuesto: Diferencia | null;
+  registradoPor: { id: string; nombre: string } | null;
+  registradoEn: string | null;
+}
+
+/** Respuesta de `POST /menus/generar` y de las lecturas y cambios del menú. */
+export interface MenuGenerado {
+  id: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: 'BORRADOR' | 'APROBADO' | 'HISTORICO';
+  version: number;
+  presupuestoSemanal: string | null;
+  costoEstimado: string | null;
+  costoIncompleto: boolean;
+  excede: { monto: string; texto: string } | null;
+  aprobadoPor: { id: string; nombre: string } | null;
+  aprobadoEn: string | null;
+  /** Lista de compras de la semana; solo existe cuando el menú está aprobado. */
+  listaId: string | null;
+  /** Gasto real registrado; null mientras no haya. */
+  gasto?: GastoRegistrado | null;
+  /** Suma de los precios reales anotados en la lista, para prellenar el gasto. */
+  gastoSugerido?: string | null;
+  tiempos: TiempoMenu[];
+  detalles: DetalleMenu[];
+  avisos: AvisoMenu[];
+}
+
+export interface DatosGenerarMenu {
+  semana: string;
+  regenerar?: boolean;
+}
+
+export interface DatosEditarEspacio {
+  platilloId: string;
+  confirmar?: boolean;
+}
+
+export interface DatosMoverEspacio {
+  origenDetalleId: string;
+  destinoDetalleId: string;
+  confirmar?: boolean;
+}
+
+/** Respuesta de `GET /menus/{menuId}/detalles/{detalleId}/motivo` (HU-22). */
+export interface MotivoSugerencia {
+  detalleId: string;
+  platillo: { id: string; nombre: string };
+  origen: 'MOTOR' | 'REEMPLAZO_PRESUPUESTO' | 'ALTERNATIVA' | 'USUARIO' | 'HISTORICO';
+  puntaje: string | null;
+  factores: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  pesos: { preferencia: string; novedad: string; ahorro: string; afinidad: string } | null;
+  costo: { estimado: string | null; incompleto: boolean };
+  reglasAplicadas: string[];
+  resumen: string;
+}
+
+/** Respuesta de `POST /menus/{id}/aprobar` (api-contrato §3.2). */
+export interface RespuestaAprobacion {
+  menu: MenuGenerado;
+  excede: { monto: string; texto: string } | null;
+  lista: { id: string; version: number; totalItems: number; url: string };
+}
+
+const id = (valor: string) => encodeURIComponent(valor);
+
+export function crearApiMenus(cliente: Pick<ClienteHttp, 'peticion'>) {
+  return {
+    /** El menú cuya semana contiene la fecha; 404 `SIN_MENU` si todavía no hay. */
+    obtenerPorSemana: (fecha: string) =>
+      cliente.peticion<MenuGenerado>(`/menus/semana/${id(fecha)}`),
+    editar: (menuId: string, detalleId: string, datos: DatosEditarEspacio) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}`, {
+        metodo: 'PATCH',
+        cuerpo: datos,
+      }),
+    mover: (menuId: string, datos: DatosMoverEspacio) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/mover`, {
+        metodo: 'POST',
+        cuerpo: datos,
+      }),
+    fijar: (menuId: string, detalleId: string, fijado: boolean) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/fijado`, {
+        metodo: 'PUT',
+        cuerpo: { fijado },
+      }),
+    /** Cambia solo ese espacio por el mejor candidato que no se haya ofrecido (HU-23). */
+    alternativa: (menuId: string, detalleId: string) =>
+      cliente.peticion<MenuGenerado>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/alternativa`, {
+        metodo: 'POST',
+      }),
+    /** Por qué se sugirió el platillo de un espacio: factores, pesos usados, costo y reglas. */
+    motivo: (menuId: string, detalleId: string) =>
+      cliente.peticion<MotivoSugerencia>(`/menus/${id(menuId)}/detalles/${id(detalleId)}/motivo`),
+    /** Aprueba el Borrador (también con exceso, D-03) y crea la lista de compras de la semana. */
+    aprobar: (menuId: string, version: number) =>
+      cliente.peticion<RespuestaAprobacion>(`/menus/${id(menuId)}/aprobar`, {
+        metodo: 'POST',
+        cuerpo: { version },
+      }),
+    /** Registra o corrige el gasto real de la semana de un menú aprobado (HU-27). */
+    registrarGasto: (menuId: string, monto: string, nota?: string) =>
+      cliente.peticion<GastoRegistrado>(`/menus/${id(menuId)}/gasto-real`, {
+        metodo: 'PUT',
+        cuerpo: nota ? { monto, nota } : { monto },
+      }),
+    generar: (datos: DatosGenerarMenu) =>
+      cliente.peticion<MenuGenerado>('/menus/generar', { metodo: 'POST', cuerpo: datos }),
+  };
+}
+
+export type ApiMenus = ReturnType<typeof crearApiMenus>;

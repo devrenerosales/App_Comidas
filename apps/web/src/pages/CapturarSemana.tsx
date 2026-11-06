@@ -17,17 +17,11 @@ import { CampoTexto } from './CampoTexto';
 import { PaginaBase } from './PaginaBase';
 import './acceso.css';
 import './hogar.css';
+import { hoyGuatemala } from './fechas';
 import './historial.css';
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const TIEMPOS = { DESAYUNO: 'Desayuno', ALMUERZO: 'Almuerzo', CENA: 'Cena' };
-const hoyGuatemala = () =>
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Guatemala',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
 type Eleccion = Pick<ResumenPlatillo, 'id' | 'nombre'>;
 
 export default function CapturarSemana() {

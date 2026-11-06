@@ -11,7 +11,18 @@ export interface SemanaHistorica {
   gastoReal: string | null;
   notas: string | null;
   version: number;
-  detalles: (Omit<DetalleHistorico, 'notas'> & { nombre: string | null; notas?: string | null })[];
+  detalles: (Omit<DetalleHistorico, 'notas'> & {
+    id: string;
+    nombre: string | null;
+    notas?: string | null;
+    /** Calificación de 1 a 5 de la comida (HU-14); null si no se ha calificado. */
+    calificacion: number | null;
+  })[];
+}
+/** PUT /menus/{menuId}/detalles/{detalleId}/calificacion. */
+export interface RespuestaCalificacion {
+  valor: number;
+  platillo: { id: string; calificacionPromedio: string | null; calificacionConteo: number };
 }
 export interface DatosCapturarSemana {
   fechaInicio: string;
@@ -25,6 +36,11 @@ export function crearApiHistorial(cliente: Pick<ClienteHttp, 'peticion'>) {
   return {
     listar: (filtros: { desde?: string; hasta?: string; pagina?: number } = {}) =>
       cliente.peticion<Pagina<SemanaHistorica>>(`/historial/semanas${consulta(filtros)}`),
+    calificar: (menuId: string, detalleId: string, valor: number) =>
+      cliente.peticion<RespuestaCalificacion>(
+        `/menus/${encodeURIComponent(menuId)}/detalles/${encodeURIComponent(detalleId)}/calificacion`,
+        { metodo: 'PUT', cuerpo: { valor } },
+      ),
     capturar: (datos: DatosCapturarSemana) =>
       cliente.peticion<Omit<SemanaHistorica, 'detalles'>>('/historial/semanas', {
         metodo: 'POST',

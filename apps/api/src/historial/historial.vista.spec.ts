@@ -69,7 +69,14 @@ describe('Respuesta y persistencia del historial', () => {
     expect(cabeceraHistorica(fila)).toEqual(semana);
   });
   it('agrupa por semana y ordena por fecha y desayuno, almuerzo, cena', () => {
-    const comida = { menuId: 's1', fecha: '2025-04-06', platilloId: 'p1', nombre: 'Pepián' };
+    const comida = {
+      id: 'd1',
+      menuId: 's1',
+      fecha: '2025-04-06',
+      platilloId: 'p1',
+      nombre: 'Pepián',
+      calificacion: null,
+    };
     const detalles: FilaComidaHistorica[] = [
       { ...comida, tiempo: 'CENA' },
       { ...comida, tiempo: 'DESAYUNO' },
@@ -92,6 +99,7 @@ describe('Respuesta y persistencia del historial', () => {
     expect(resultado.datos[1]!.detalles).toHaveLength(1);
     expect(resultado.datos[1]!.detalles[0]!.nombre).toBeNull();
     expect(resultado.datos[0]!.detalles[0]).not.toHaveProperty('menuId');
+    expect(resultado.datos[0]!.detalles[0]).toMatchObject({ id: 'd1', calificacion: null });
     expect(resultado.paginacion).toEqual({ pagina: 2, tamano: 2, total: 3, totalPaginas: 2 });
     expect(paginaHistorial([], [], { pagina: 1, tamano: 20 }, 0).datos).toEqual([]);
   });

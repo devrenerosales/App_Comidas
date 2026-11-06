@@ -102,7 +102,17 @@ El enlace sirve una sola vez. Si venció o ya se usó, la pantalla ofrece **Soli
 
 Si no solicitaste el correo, puedes ignorarlo: solicitar un enlace no cambia la contraseña ni cierra tus sesiones.
 
-## 1.6 Tu seguridad
+## 1.6 Tu pantalla de Inicio
+
+Al entrar, **Inicio** te muestra cómo va la semana:
+
+- **Gasto actual:** lo que registraste como gasto real frente al presupuesto semanal, con una barra de avance. Si todavía no lo registras, muestra el costo estimado del menú y un enlace para registrarlo.
+- **Comidas al día de hoy:** cuántas de las comidas planificadas de la semana ya pasaron (por ejemplo "12 de 21") y su costo estimado. La app no sabe qué comieron en realidad: cuenta lo que planificaste hasta hoy.
+- **Historial de presupuesto:** las últimas 8 semanas aprobadas, con presupuesto, gasto y si quedaste "Dentro del presupuesto" o "Excede por Q__". Las semanas sin gasto registrado dicen "Sin gasto registrado".
+
+Si la semana todavía no tiene menú aprobado, Inicio te lo dice y te lleva a **Semana**.
+
+## 1.7 Tu seguridad
 
 - Tu contraseña se guarda cifrada (argon2id): nadie, ni el administrador, puede leerla.
 - La conexión siempre es segura (HTTPS).

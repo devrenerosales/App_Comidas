@@ -1,5 +1,3 @@
-import type { Sitio } from './sitios.js';
-
 export interface Reloj {
   ahora(): number;
   dormir(ms: number): Promise<void>;
@@ -16,7 +14,7 @@ export const relojReal: Reloj = {
  * no se bloquean entre sí. Las llamadas concurrentes al mismo sitio se encolan.
  */
 export class LimitadorPorSitio {
-  private readonly proximoTurno = new Map<Sitio, number>();
+  private readonly proximoTurno = new Map<string, number>();
 
   constructor(
     readonly intervaloMs = 1000,
@@ -28,7 +26,7 @@ export class LimitadorPorSitio {
   }
 
   /** Reserva el siguiente turno del sitio y espera hasta que llegue. Devuelve la espera en ms. */
-  async esperarTurno(sitio: Sitio): Promise<number> {
+  async esperarTurno(sitio: string): Promise<number> {
     const ahora = this.reloj.ahora();
     const turno = Math.max(ahora, this.proximoTurno.get(sitio) ?? 0);
     this.proximoTurno.set(sitio, turno + this.intervaloMs);

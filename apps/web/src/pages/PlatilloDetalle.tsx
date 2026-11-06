@@ -184,6 +184,14 @@ export default function PlatilloDetalle() {
         <form noValidate onSubmit={guardar} aria-label="Datos del platillo" className="mf-tarjeta">
           {platillo && (
             <p className="mf-chips" style={{ marginBottom: 12 }}>
+              {platillo.calificacionPromedio !== null && (
+                <span
+                  className="mf-chip"
+                  aria-label={`Calificación promedio ${platillo.calificacionPromedio}`}
+                >
+                  ★ {platillo.calificacionPromedio}
+                </span>
+              )}
               {platillo.incompleto && (
                 <span className="mf-chip mf-chip--incompleto">{MENSAJES_CATALOGO.incompleto}</span>
               )}

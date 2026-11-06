@@ -232,6 +232,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@menu/db':
+        specifier: workspace:^
+        version: link:../../packages/db
       '@menu/shared':
         specifier: workspace:*
         version: link:../../packages/shared

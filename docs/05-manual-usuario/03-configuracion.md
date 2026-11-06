@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-05 Tiempos de comida parametrizables · HU-06 Presupuesto y distribución · HU-07 Recálculo con vista previa (S1) · HU-08 Semana (S1, pendiente) · HU-09 Supermercados y marcas (S5) · HU-10 Restricciones y gustos (S3) |
+| Historias | HU-05 Tiempos de comida parametrizables · HU-06 Presupuesto y distribución · HU-07 Recálculo con vista previa (S1) · HU-08 Semana (S1, pendiente) · HU-09 Supermercados y marcas (S5, escrito) · HU-10 Restricciones y gustos (S3) |
 | Versión de la app | Sprint 1 (rama `feature/HU-05-07-configuracion`) |
-| Estado del capítulo | Parcial: secciones 3.1 a 3.5 listas; 3.6 a 3.8 se completan en sprints posteriores; faltan las capturas |
+| Estado del capítulo | Secciones 3.1 a 3.8 listas; faltan las capturas |
 
 En **Configuración → Tiempos y presupuesto** decides qué comidas planifica la app (solo almuerzo, dos tiempos o los tres), cuánto gastas a la semana y cómo se reparte ese dinero entre las comidas. Todo cambio aplica a los **menús futuros**: los menús que ya aprobaste no cambian.
 
@@ -112,10 +112,65 @@ La fecha de planificación es la siguiente ocurrencia del día elegido, posterio
 de Guatemala. La hora se conserva. El envío de recordatorios estará disponible con el módulo
 de notificaciones (HU-41); guardar esta configuración todavía no envía una notificación.
 
-## 3.7 Supermercados y marcas preferidas — próximamente (HU-09, Sprint 5)
+## 3.7 Supermercados y marcas preferidas
 
-Se completará cuando se implemente HU-09.
+Indica en qué supermercados compras y qué marca prefieres de cada producto. Cualquier miembro del hogar puede cambiarlo. En **Configuración** toca **Supermercados y marcas**.
 
-## 3.8 Restricciones y platillos favoritos — próximamente (HU-10, Sprint 3)
+### Elegir los supermercados
 
-Se completará cuando se implemente HU-10.
+1. En **Dónde compras** verás los supermercados (La Torre, Mercado, Paiz, Super Fresh y Walmart). Si nunca lo has configurado, todos aparecen marcados.
+2. Marca los que usas y desmarca los que no.
+3. Toca **Guardar supermercados**. Verás "Supermercados guardados."
+
+La compra sugerida buscará el precio más bajo solo entre los supermercados marcados. El costo estimado del menú sigue usando todos los supermercados, para que no cambie según tus preferencias.
+
+Debes dejar **al menos un supermercado** marcado. Si desmarcas todos y tocas **Guardar supermercados**, la app te dice "Debes tener al menos un supermercado preferido" y no cambia nada.
+
+### Elegir la marca de un producto
+
+1. En **Marca preferida**, escribe al menos 2 letras en **Buscar producto** (por ejemplo "ace") y toca **Elegir Aceite**.
+2. Verás las marcas disponibles, cada una con los supermercados donde se vende, su presentación y el último precio: "Walmart · 1 l · Q24.90".
+3. Elige la marca (por ejemplo **Ideal**) y toca **Guardar marca**.
+4. Para volver a aceptar cualquier marca, elige **Cualquier marca** y guarda, o toca **Quitar marca de …** en la lista **Marcas elegidas**.
+
+Si el último precio tiene más de 14 días, la app lo avisa: "Q24.90 · Precio del 01/10/2026". Si todavía no hay ningún precio, dice "Sin precio registrado".
+
+Si el producto no tiene marcas vinculadas, la app dice "Sin marcas vinculadas": primero hay que vincular el producto con los de cada supermercado.
+
+[Captura 3.7: pantalla Supermercados y marcas]
+
+## 3.7b Pesos del motor
+
+El motor puntúa cada platillo con cuatro factores: **Preferencia** (calificaciones y favoritos),
+**Novedad** (cuánto hace que no se prepara), **Ahorro** (qué tan barato es frente al presupuesto por
+comida) y **Afinidad** (cuánto se ha preparado en las últimas 16 semanas). Los pesos indican cuánto
+cuenta cada uno. Por defecto son 0.40, 0.25, 0.20 y 0.15.
+
+1. Abre **Configuración → Pesos del motor**.
+2. Cambia los pesos. La **Suma** se actualiza mientras escribes y debe ser 1.00.
+3. Si no suma 1.00 verás, por ejemplo, "Los pesos deben sumar 1.00 (suma actual 1.10)" y **Guardar**
+   queda deshabilitado.
+4. Toca **Guardar**. Los pesos se aplican al próximo menú que se sugiera; los menús ya generados
+   conservan los pesos con que se crearon.
+5. **Restaurar valores por defecto** vuelve a 0.40 / 0.25 / 0.20 / 0.15 sin guardar hasta que toques **Guardar**.
+
+Los miembros pueden ver los pesos, pero solo el administrador puede cambiarlos.
+
+## 3.8 Restricciones y platillos favoritos
+
+Aquí registras los **ingredientes que no comen** y los **platillos favoritos** del hogar. Son del hogar
+(no de cada persona) y los puede cambiar cualquier miembro.
+
+1. Abre **Configuración → Restricciones y gustos**.
+2. En **Buscar ingrediente** escribe al menos 2 letras y toca **Excluir …** en el resultado. Verás, por
+   ejemplo, "1 platillo dejará de sugerirse: Chile relleno": son los platillos que llevan ese ingrediente.
+3. En **Buscar platillo** escribe al menos 2 letras y toca **Marcar favorito …**. El motor les da la
+   máxima preferencia al armar el menú.
+4. Para quitar algo, toca **Quitar …** junto al ingrediente o platillo.
+5. Toca **Guardar**. Los cambios se aplican al próximo menú que se sugiera.
+
+Si marcas como favorito un platillo con un ingrediente excluido verás "Chile relleno contiene un
+ingrediente excluido: Chile pimiento". Puedes guardarlo, pero no se sugerirá mientras la exclusión
+exista; la exclusión pesa más que el favorito. Al quitar la exclusión, el platillo vuelve a poder
+sugerirse. Solo se pueden agregar ingredientes y platillos activos. Si asignas a mano un platillo
+excluido al editar un menú, la app te lo permite.

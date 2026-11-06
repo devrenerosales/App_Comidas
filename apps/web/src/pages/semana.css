@@ -1,0 +1,183 @@
+/* Menú semanal (HU-19): tabla día × tiempo que se desplaza en pantallas angostas. */
+.mf-menu-tabla {
+  overflow-x: auto;
+}
+
+.mf-menu-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mf-menu-tabla th,
+.mf-menu-tabla td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--mf-borde);
+  text-align: left;
+  vertical-align: top;
+}
+
+.mf-menu-tabla th[scope='row'] {
+  white-space: nowrap;
+}
+
+.mf-menu-vacio {
+  color: var(--mf-advertencia);
+  font-weight: 600;
+}
+
+.mf-menu-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.mf-menu-acciones .mf-enlace {
+  min-height: 44px;
+}
+
+.mf-menu-tabla td[draggable='true'] {
+  cursor: grab;
+}
+
+/* RN-11 / D-03: el exceso de presupuesto se indica en rojo y no bloquea la aprobación. */
+.mf-exceso {
+  color: var(--mf-error, #b3261e);
+  font-weight: 600;
+}
+
+/* Costo frente al presupuesto (HU-26): verde si cumple, rojo si excede. */
+.mf-costo-ok {
+  color: var(--mf-exito, #1b6b3a);
+  font-weight: 600;
+}
+
+.mf-menu-costo {
+  display: block;
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+.mf-barra {
+  display: block;
+  width: 100%;
+  height: 12px;
+  accent-color: var(--mf-exito, #1b6b3a);
+}
+
+.mf-barra--excede {
+  accent-color: var(--mf-error, #b3261e);
+}
+
+/* Motivo de la sugerencia (HU-22): una fila por factor con su barra. */
+.mf-factores {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.mf-factores li {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.mf-factores meter {
+  width: 100%;
+  height: 14px;
+}
+
+/* Selector Tabla / Calendario del menú. */
+.mf-selector-vista {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* Vista de calendario: una tarjeta por día, en columnas que se acomodan al ancho disponible. */
+.mf-calendario {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.mf-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--mf-borde);
+  border-radius: 12px;
+}
+
+.mf-dia-titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mf-dia-espacio {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-left: 4px solid var(--mf-exito, #1b6b3a);
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.08);
+}
+
+.mf-dia-espacio[draggable='true'] {
+  cursor: grab;
+}
+
+.mf-dia-espacio--excede {
+  border-left-color: var(--mf-error, #b3261e);
+}
+
+.mf-dia-espacio--moviendo {
+  outline: 2px dashed var(--mf-borde);
+}
+
+.mf-dia-tiempo {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+.mf-dia-marca {
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+/* Lista de compras (HU-28): un producto por fila con lo que hay que comprar. */
+.mf-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mf-lista-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mf-borde);
+}
+
+/* Producto comprado o que ya se tiene: tachado en la lista (HU-30). */
+.mf-tachado {
+  text-decoration: line-through;
+  color: var(--mf-texto-suave, #5f6b64);
+}
+
+.mf-lista-nombre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mf-lista-nombre input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+}

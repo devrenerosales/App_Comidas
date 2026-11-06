@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-11 Gestionar platillos (S1) · HU-12 Ingredientes por porciones base (S1) · HU-13 Catálogo de productos (S1) · HU-14 Calificar platillo (S3, pendiente) |
+| Historias | HU-11 Gestionar platillos (S1) · HU-12 Ingredientes por porciones base (S1) · HU-13 Catálogo de productos (S1) · HU-14 Calificar platillo (S3) · HU-35 Vincular con supermercados (S5) |
 | Versión de la app | Sprint 1 (rama `feature/HU-11-13-catalogo-platillos`) |
-| Estado del capítulo | Parcial: falta "Calificar platillos" (HU-14, Sprint 3) y las capturas |
+| Estado del capítulo | Parcial: falta la captura de pantalla de cada sección; las estrellas se califican hoy desde Historial (el plan semanal llega con HU-21) |
 
 Los **platillos** son las comidas que tu familia acostumbra preparar: de ellos sale el menú que la app te sugiere cada semana. Cada platillo tiene sus **ingredientes**, que se eligen del **catálogo de productos** (el mismo para todos los hogares) y sirven para armar la lista de compras y estimar el costo.
 
@@ -134,6 +134,38 @@ Puedes hacerlo aquí con **Nuevo producto** o, mientras agregas ingredientes, co
 
 El administrador del sistema ve **Inactivar** junto a cada producto. Un producto inactivo deja de aparecer en el buscador de ingredientes; los platillos que lo usan lo conservan y muestran **Ingrediente inactivo: …** para que los revises. Con **Ver inactivos** se puede **Reactivar**.
 
-## 4.7 Calificar platillos (próximamente)
+## 4.6b Vincular un producto con los supermercados
 
-La calificación de 1 a 5 estrellas de un platillo después de comerlo llega en el **Sprint 3 (HU-14)**. Se hará desde el plan semanal y el promedio aparecerá en esta pestaña.
+Para comparar precios, cada producto se vincula con su equivalente en cada supermercado: el nombre con que aparece en la tienda, su marca y la presentación en que lo venden. Cualquier miembro puede hacerlo y el vínculo sirve para todos los hogares.
+
+1. En **Productos**, toca **Supermercados** junto al producto (por ejemplo "Arroz · bolsa 2 lb"). Arriba verás la presentación de compra del producto y los vínculos que ya tiene.
+2. En **Vincular supermercado** elige el **Supermercado**.
+3. Escribe el **Nombre en la tienda** y, si quieres, la **Marca**.
+4. Indica la **Cantidad de la presentación** y su **Unidad**. Si Paiz solo vende la bolsa de 5 lb y tu producto es de 2 lb, escribe 5 y libra: la app te dice "Esa presentación equivale a 2.5 veces la tuya" y con ese factor ajusta los precios para compararlos.
+5. En Walmart y Paiz, que se consultan automáticamente, escribe también la **URL del producto** o su **SKU**. En Super Fresh, Mercado y La Torre no hace falta.
+6. Toca **Vincular**. Verás "Vínculo guardado."
+
+Cada producto tiene un solo vínculo activo por supermercado. Si ya existe, la app te lo muestra y te pregunta si quieres **Reemplazar**: el anterior queda inactivo, marcado "(reemplazado)", y conserva su historial de precios.
+
+**Editar.** En un vínculo activo toca **Editar** para cambiar el nombre en la tienda, la marca, la URL o el SKU. La presentación no se edita: si cambió, crea un vínculo nuevo y reemplaza el anterior.
+
+| Mensaje | Qué hacer |
+|---|---|
+| La unidad de la presentación no es convertible a libras | Elige una unidad de la misma clase que la de tu producto (peso con peso, líquido con líquido). |
+| Para Walmart indica la URL o el SKU del producto | Walmart y Paiz piden la URL o el SKU para poder consultar su precio. |
+| La URL no pertenece a … | Pega la dirección del producto en el sitio del supermercado elegido. |
+
+[Captura 4.6b: pantalla Supermercados de un producto]
+
+
+
+Después de comer un platillo puedes calificarlo de 1 a 5 estrellas. Con esas calificaciones el motor sugiere más seguido lo que le gusta a tu familia. Por ahora se califica desde **Historial**; cuando exista el plan semanal también se hará desde allí.
+
+1. Abre **Historial** y toca **Ver platillos de la semana** en la semana que quieras.
+2. Junto a cada comida con platillo verás cinco estrellas. Toca la estrella que corresponda (por ejemplo, 4 estrellas).
+3. La app muestra "Calificación guardada: 4 de 5 para Pollo en crema. Promedio: 4.00."
+4. Para cambiarla, toca otra estrella: la nueva calificación reemplaza a la anterior y el promedio se recalcula.
+
+El **promedio** de cada platillo aparece como "★ 4.50" en la pestaña **Platillos** y en el detalle del platillo; si todavía no tiene calificaciones no se muestra.
+
+No se pueden calificar comidas futuras: las estrellas solo aparecen para comidas de hoy o anteriores. Cualquier miembro del hogar puede calificar y la última calificación registrada de esa comida es la que cuenta.

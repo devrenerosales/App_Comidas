@@ -17,5 +17,6 @@ import { SoloAdminGuard } from './solo-admin.guard';
     SoloAdminGuard,
     { provide: RELOJ_CONFIGURACION, useValue: () => new Date() },
   ],
+  exports: [ConfiguracionService],
 })
 export class ConfiguracionModule {}

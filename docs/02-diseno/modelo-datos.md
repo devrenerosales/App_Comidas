@@ -511,7 +511,7 @@ erDiagram
 
     SUPERMERCADO {
         uuid id PK
-        string codigo UK "WALMART PAIZ LA_TORRE SUPER_FRESH"
+        string codigo UK "WALMART PAIZ LA_TORRE SUPER_FRESH MERCADO"
         string dominio
         boolean soportaExtraccion
         boolean habilitado "fase"
@@ -1084,7 +1084,7 @@ Columnas: **Campo** (propiedad Drizzle) · **Columna** (PostgreSQL) · **Tipo** 
 | Campo | Columna | Tipo | Nulo | Defecto | Regla / origen |
 |---|---|---|---|---|---|
 | `id` | `id` | uuid | No | uuid | PK uuid v4 generado por la BD (`gen_random_uuid()`) |
-| `codigo` | `codigo` | varchar(20) | No | — | UK: WALMART, PAIZ, LA_TORRE, SUPER_FRESH |
+| `codigo` | `codigo` | varchar(20) | No | — | UK: WALMART, PAIZ, LA_TORRE, SUPER_FRESH, MERCADO |
 | `nombre` | `nombre` | varchar(40) | No | — | Nombre visible; desempate alfabético (CU-07.4 3a) |
 | `dominio` | `dominio` | varchar(100) | Sí | — | Valida URLs de vínculos (CU-08.2 E2) |
 | `soportaExtraccion` | `soporta_extraccion` | boolean | No | false | Existe extractor Playwright |
@@ -1525,6 +1525,7 @@ Módulo [`packages/db/src/semilla.ts`](../../packages/db/src/semilla.ts) idempot
 | `PAIZ` | Paiz | por confirmar en S5 | true | true | **false** (D-07) |
 | `LA_TORRE` | La Torre | por confirmar en S5 | false | false | false (fase 2) |
 | `SUPER_FRESH` | Super Fresh | — | false | false | false (solo manual o ticket) |
+| `MERCADO` | Mercado | — | false | false | false (solo manual o ticket) |
 
 Los dominios se registran al revisar los términos de uso (PA-02); hasta entonces no se validan URLs.
 

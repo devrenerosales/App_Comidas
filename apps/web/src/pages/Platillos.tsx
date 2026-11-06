@@ -156,6 +156,14 @@ export default function Platillos() {
                   </span>
                 </span>
                 <span className="mf-chips">
+                  {p.calificacionPromedio !== null && (
+                    <span
+                      className="mf-chip"
+                      aria-label={`Calificación promedio ${p.calificacionPromedio}`}
+                    >
+                      ★ {p.calificacionPromedio}
+                    </span>
+                  )}
                   {p.incompleto && (
                     <span className="mf-chip mf-chip--incompleto">
                       {MENSAJES_CATALOGO.incompleto}
