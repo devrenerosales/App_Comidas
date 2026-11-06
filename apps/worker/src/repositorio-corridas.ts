@@ -14,7 +14,7 @@ import {
 import { precioDeVinculo } from '@menu/shared';
 import type { VinculoConsulta } from './adaptador.js';
 import type {
-  AvisoBloqueo,
+  AvisoCorrida,
   EstadoCorrida,
   EstadoSitio,
   RepositorioCorridas,
@@ -170,13 +170,13 @@ export class RepositorioCorridasPg implements RepositorioCorridas {
       .where(eq(corrida.id, corridaId));
   }
 
-  async avisarBloqueo(corridaId: string, a: AvisoBloqueo): Promise<void> {
+  async avisar(corridaId: string, a: AvisoCorrida): Promise<void> {
     const hogares = await this.db.select({ id: hogar.id }).from(hogar);
     if (hogares.length === 0) return;
     await this.db.insert(aviso).values(
       hogares.map((h) => ({
         hogarId: h.id,
-        tipo: 'SITIO_BLOQUEADO' as const,
+        tipo: a.tipo,
         titulo: a.titulo,
         mensaje: a.mensaje,
         datos: a.datos,

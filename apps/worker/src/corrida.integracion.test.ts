@@ -22,7 +22,7 @@ import {
   unidad,
   type BaseTemporal,
 } from '@menu/db';
-import type { AdaptadorSitio, VinculoConsulta } from './adaptador.js';
+import { ErrorExtraccion, type AdaptadorSitio, type VinculoConsulta } from './adaptador.js';
 import { ejecutarCorrida, type DependenciasCorrida } from './corrida.js';
 import { RepositorioRecalculoPg, recalcularCorrida } from './recalculo.js';
 import { fechaLocal } from './red.js';
@@ -212,6 +212,64 @@ conBd('HU-33 Corrida automática (integración)', () => {
       mensaje: 'Paiz bloqueado: registra precios manualmente',
     });
     expect(recalculos).toEqual([]);
+  });
+
+  it('CA-38.1 y CA-38.4 si falla la consulta se conserva el último precio válido con su fecha', async () => {
+    await permitir('PAIZ');
+    const arroz = await vincular('Arroz', 'PAIZ');
+    const aceite = await vincular('Aceite', 'PAIZ');
+    const [h] = await db().insert(hogar).values({ nombre: 'Familia Uno' }).returning();
+    // Precios anteriores: Arroz Q13.00 del 18/10 y Aceite Q26.50 del 04/10 (ya desactualizado).
+    await db()
+      .insert(corrida)
+      .values({ programadaPara: new Date('2026-10-18T03:00:00Z'), estado: 'COMPLETADA' });
+    const [anterior] = await db().select().from(corrida);
+    await db()
+      .insert(precio)
+      .values([
+        {
+          productoSupermercadoId: arroz,
+          origen: 'AUTOMATICO',
+          corridaId: anterior!.id,
+          precio: '13.00',
+          precioNormalizado: '13.00',
+          fechaPrecio: '2026-10-18',
+        },
+        {
+          productoSupermercadoId: aceite,
+          origen: 'AUTOMATICO',
+          corridaId: anterior!.id,
+          precio: '26.50',
+          precioNormalizado: '26.50',
+          fechaPrecio: '2026-10-04',
+        },
+      ]);
+    const paiz = simulado('PAIZ', () => {
+      throw new ErrorExtraccion('TIEMPO_AGOTADO', 'Tiempo agotado');
+    });
+    const { deps } = dependencias([paiz]);
+
+    const r = await ejecutarCorrida(deps);
+
+    expect(r.estado).toBe('FALLIDA');
+    // Nada nuevo: los dos precios anteriores siguen intactos, con su fecha original.
+    const precios = await db().select().from(precio);
+    expect(precios.map((p) => [p.precioNormalizado, p.fechaPrecio]).sort()).toEqual([
+      ['13.00', '2026-10-18'],
+      ['26.50', '2026-10-04'],
+    ]);
+    const errores = await db().select().from(corridaError);
+    expect(errores.map((e) => [e.tipo, e.intentos])).toEqual([
+      ['TIEMPO_AGOTADO', 3],
+      ['TIEMPO_AGOTADO', 3],
+    ]);
+    const [a] = await db().select().from(aviso);
+    expect(a).toMatchObject({
+      hogarId: h!.id,
+      tipo: 'CORRIDA_FALLIDA',
+      mensaje: 'Paiz: 2 productos sin actualizar',
+    });
+    expect(a!.corridaId).toBe(r.corridaId);
   });
 
   it('D-07 con los permisos por defecto (apagados) no se consulta ningún sitio', async () => {

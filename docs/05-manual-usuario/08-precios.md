@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) · HU-36 Costo con mediana y precio mínimo (S5) · HU-37 Histórico y variación de precios (S5) |
+| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) · HU-36 Costo con mediana y precio mínimo (S5) · HU-37 Histórico y variación de precios (S5) · HU-33 Corrida automática de precios (S5, sitios apagados) · HU-38 Conservar el último precio válido (S5) |
 | Versión de la app | Sprint 5 (rama `feature/HU-34-registrar-precios`) |
-| Estado del capítulo | Parcial: registrar un precio a mano, costo estimado y compra sugerida, historial de precios; faltan el ticket con foto y las capturas |
+| Estado del capítulo | Parcial: registrar un precio a mano, costo estimado y compra sugerida, historial de precios, último precio válido y avisos; faltan el ticket con foto, los precios automáticos y las capturas |
 
 > **Capturas:** los recuadros `[Captura …]` marcan dónde irá la imagen de la pantalla real (teléfono 390 × 844, carpeta `docs/05-manual-usuario/img/`).
 
@@ -67,6 +67,18 @@ Los montos son por la presentación de compra del producto, para que sean compar
 
 [Captura 8.3: historial de precios con gráfico y variaciones]
 
-## 8.4 Escanear un ticket — próximamente (HU-34, segunda parte)
+## 8.4 Cuando un precio no se puede actualizar
+
+Los precios de Walmart y Paiz están pensados para actualizarse solos cada sábado y domingo a las 21:00. Hoy esa función está apagada hasta revisar los términos de uso de cada sitio, pero la app ya sabe qué hacer cuando una consulta falla:
+
+- **El último precio válido se conserva.** Si la consulta de un producto falla (la página no responde, cambió o devuelve algo que no es un precio), la app no guarda nada nuevo y sigue usando el último precio bueno, con su fecha. En **Supermercados y marcas** y en la lista verás, por ejemplo, "Q13.00 · Precio del 18/10/2026".
+- **Desactualizado.** Si ese último precio tiene más de 14 días, además aparece la advertencia **Desactualizado**. Registra un precio nuevo a mano (8.1) para actualizarlo.
+- **Producto sin precio.** Si nunca tuvo precio, sigue diciendo "Sin precio".
+
+**Avisos para el administrador.** Si eres administrador, en **Configuración → Avisos de precios** ves qué pasó en la última corrida, por ejemplo "Paiz: 50 productos sin actualizar" o "Paiz bloqueado: registra precios manualmente". Cada aviso muestra su fecha y un botón **Marcar como leído**; los leídos quedan en la lista con la marca "Leído". Los miembros que no son administradores no ven esta pantalla. Abajo hay un enlace para ir a registrar a mano los precios que faltan.
+
+[Captura 8.4: avisos de precios]
+
+## 8.5 Escanear un ticket — próximamente (HU-34, segunda parte)
 
 Se completará cuando se implemente la lectura de tickets con foto.

@@ -10,7 +10,7 @@ import type {
 } from '../api/supermercados';
 import { Cargando } from '../auth/Cargando';
 import { PaginaBase } from './PaginaBase';
-import { textoPrecio } from './supermercados';
+import { estaDesactualizado, textoPrecio } from './supermercados';
 import './acceso.css';
 import './catalogo.css';
 import './hogar.css';
@@ -303,6 +303,13 @@ export default function ConfiguracionSupermercados() {
                                 <li key={`${p.supermercado}-${p.presentacion}`}>
                                   {p.supermercado} · {p.presentacion} ·{' '}
                                   {textoPrecio(p.ultimoPrecio, hoy)}
+                                  {p.ultimoPrecio &&
+                                    estaDesactualizado(p.ultimoPrecio.fecha, hoy) && (
+                                      <>
+                                        {' · '}
+                                        <strong>Desactualizado</strong>
+                                      </>
+                                    )}
                                 </li>
                               ))}
                             </ul>

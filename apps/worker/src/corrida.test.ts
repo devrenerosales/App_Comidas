@@ -8,7 +8,7 @@ import {
 import {
   ejecutarCorrida,
   INTENTOS_POR_PRODUCTO,
-  type AvisoBloqueo,
+  type AvisoCorrida,
   type DependenciasCorrida,
   type EstadoSitio,
   type RepositorioCorridas,
@@ -29,7 +29,7 @@ class RepoMemoria implements RepositorioCorridas {
   cierres: { id: string; totales: TotalesSitio }[] = [];
   precios: { vinculoId: string; precio: string; fecha: string }[] = [];
   errores: { vinculoId: string | null; tipo: string; mensaje: string; intentos: number }[] = [];
-  avisos: AvisoBloqueo[] = [];
+  avisos: AvisoCorrida[] = [];
   falla = false;
 
   constructor(
@@ -79,7 +79,7 @@ class RepoMemoria implements RepositorioCorridas {
     c.totales = totales;
     this.enCurso = false;
   }
-  async avisarBloqueo(_c: string, aviso: AvisoBloqueo) {
+  async avisar(_c: string, aviso: AvisoCorrida) {
     this.avisos.push(aviso);
   }
   cierreDe(codigo: string) {
@@ -390,7 +390,7 @@ describe('ejecutarCorrida (HU-33)', () => {
       expect(encolarRecalculo).not.toHaveBeenCalled();
     });
 
-    it('un precio no interpretable no se guarda ni se reintenta', async () => {
+    it('CA-38.3 un precio no interpretable se descarta tras 3 intentos y no se guarda', async () => {
       const repo = new RepoMemoria([sitio('WALMART')], {
         'id-WALMART': vinculos('WALMART', 3),
       });
@@ -405,14 +405,69 @@ describe('ejecutarCorrida (HU-33)', () => {
       };
       const { deps } = dependencias(repo, [envuelto]);
       const r = await ejecutarCorrida(deps);
-      expect(walmart.llamadas.filter((id) => id === 'WALMART-1')).toHaveLength(1);
+      expect(walmart.llamadas.filter((id) => id === 'WALMART-1')).toHaveLength(3);
       expect(repo.precios.map((p) => p.vinculoId)).toEqual(['WALMART-0', 'WALMART-2']);
       expect(repo.errores[0]).toMatchObject({
         vinculoId: 'WALMART-1',
         tipo: 'PRECIO_INVALIDO',
-        intentos: 1,
+        intentos: 3,
       });
       expect(r.sitios[0]).toMatchObject({ estado: 'PARCIAL', ok: 2, fallidos: 1 });
+    });
+
+    it('CA-38.1 si un producto agota el tiempo 3 veces no guarda precio, queda Parcial y avisa', async () => {
+      const repo = new RepoMemoria([sitio('PAIZ')], { 'id-PAIZ': vinculos('PAIZ', 4) });
+      const paiz = adaptadorSimulado('PAIZ', (v) =>
+        v.id === 'PAIZ-2' ? new ErrorExtraccion('TIEMPO_AGOTADO', 'Tiempo agotado') : '13.00',
+      );
+      const { deps } = dependencias(repo, [paiz]);
+
+      const r = await ejecutarCorrida(deps);
+
+      expect(paiz.llamadas.filter((id) => id === 'PAIZ-2')).toHaveLength(3);
+      expect(repo.precios.map((p) => p.vinculoId)).not.toContain('PAIZ-2');
+      expect(repo.errores).toEqual([
+        { vinculoId: 'PAIZ-2', tipo: 'TIEMPO_AGOTADO', mensaje: 'Tiempo agotado', intentos: 3 },
+      ]);
+      expect(r.estado).toBe('PARCIAL');
+      expect(repo.avisos).toEqual([
+        expect.objectContaining({
+          tipo: 'CORRIDA_PARCIAL',
+          mensaje: 'Paiz: 1 producto sin actualizar',
+        }),
+      ]);
+    });
+
+    it('CA-38.2 si la página cambió, detiene Paiz y avisa "Paiz: 50 productos sin actualizar"', async () => {
+      const repo = new RepoMemoria([sitio('PAIZ')], { 'id-PAIZ': vinculos('PAIZ', 50) });
+      const paiz = adaptadorSimulado('PAIZ', (v) =>
+        Number(v.id.split('-')[1]) < 26
+          ? new ErrorExtraccion('ESTRUCTURA', 'No se encontró el precio')
+          : '13.00',
+      );
+      const { deps } = dependencias(repo, [paiz]);
+
+      const r = await ejecutarCorrida(deps);
+
+      expect(r.sitios[0]).toMatchObject({ estado: 'DETENIDO', ok: 0 });
+      expect(new Set(paiz.llamadas).size).toBeLessThan(50);
+      // No se guarda ni se borra nada: los precios anteriores de los 50 productos siguen ahí.
+      expect(repo.precios).toEqual([]);
+      expect(repo.avisos).toEqual([
+        expect.objectContaining({
+          tipo: 'CORRIDA_FALLIDA',
+          titulo: 'Paiz',
+          mensaje: 'Paiz: 50 productos sin actualizar',
+        }),
+      ]);
+      expect(r.estado).toBe('FALLIDA');
+    });
+
+    it('un sitio que termina bien no deja aviso', async () => {
+      const repo = new RepoMemoria([sitio('PAIZ')], { 'id-PAIZ': vinculos('PAIZ', 3) });
+      const { deps } = dependencias(repo, [adaptadorSimulado('PAIZ')]);
+      await ejecutarCorrida(deps);
+      expect(repo.avisos).toEqual([]);
     });
 
     it('un error que no es de extracción se registra como OTRO', async () => {

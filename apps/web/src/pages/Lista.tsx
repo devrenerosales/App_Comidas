@@ -198,7 +198,9 @@ function FilaItem({ item, editable, alMarcar, alQuitar, alPrecio, costo }: FilaP
       )}
       {referencia && <small className="mf-menu-costo">{referencia}</small>}
       {costo?.costo && <small className="mf-menu-costo">Q{costo.costo}</small>}
-      {costo?.advertencia && <small className="mf-dia-marca">{costo.advertencia}</small>}
+      {costo?.advertencia && (
+        <small className="mf-dia-marca">{costo.advertencia} · Desactualizado</small>
+      )}
       {item.sinConversion && <small className="mf-dia-marca">Sin conversión</small>}
       {ORIGEN_DESPENSA[item.origen] && (
         <small className="mf-dia-marca">{ORIGEN_DESPENSA[item.origen]}</small>

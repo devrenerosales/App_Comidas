@@ -14,6 +14,10 @@ export function diasDesde(fecha: string, hoy: Date): number {
   return Math.round((inicioHoy - Date.UTC(a, m - 1, d)) / 86_400_000);
 }
 
+/** El precio ya no es vigente (más de 14 días): se avisa "Desactualizado" (RN-08, CA-38.4). */
+export const estaDesactualizado = (fecha: string, hoy: Date): boolean =>
+  diasDesde(fecha, hoy) > DIAS_PRECIO_VIGENTE;
+
 /** "Q24.90", y con la fecha ("Q24.90 · Precio del 01/10/2026") cuando ya no es vigente (CA-09.4). */
 export function textoPrecio(ultimo: { precio: string; fecha: string } | null, hoy: Date): string {
   if (!ultimo) return 'Sin precio registrado';
