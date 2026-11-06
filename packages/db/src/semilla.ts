@@ -41,6 +41,13 @@ export const SUPERMERCADOS_SEMILLA = [
     habilitado: false,
     extraccionPermitida: false,
   },
+  {
+    codigo: 'MERCADO',
+    nombre: 'Mercado',
+    soportaExtraccion: false,
+    habilitado: false,
+    extraccionPermitida: false,
+  },
 ] as const satisfies readonly SupermercadoInsert[];
 
 /** §8.2 — Unidades con su factor a la unidad base de la magnitud (g, ml, unidad). */

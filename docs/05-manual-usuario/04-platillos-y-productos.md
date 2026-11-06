@@ -142,7 +142,7 @@ Para comparar precios, cada producto se vincula con su equivalente en cada super
 2. En **Vincular supermercado** elige el **Supermercado**.
 3. Escribe el **Nombre en la tienda** y, si quieres, la **Marca**.
 4. Indica la **Cantidad de la presentación** y su **Unidad**. Si Paiz solo vende la bolsa de 5 lb y tu producto es de 2 lb, escribe 5 y libra: la app te dice "Esa presentación equivale a 2.5 veces la tuya" y con ese factor ajusta los precios para compararlos.
-5. En Walmart y Paiz, que se consultan automáticamente, escribe también la **URL del producto** o su **SKU**. En Super Fresh y La Torre no hace falta.
+5. En Walmart y Paiz, que se consultan automáticamente, escribe también la **URL del producto** o su **SKU**. En Super Fresh, Mercado y La Torre no hace falta.
 6. Toca **Vincular**. Verás "Vínculo guardado."
 
 Cada producto tiene un solo vínculo activo por supermercado. Si ya existe, la app te lo muestra y te pregunta si quieres **Reemplazar**: el anterior queda inactivo, marcado "(reemplazado)", y conserva su historial de precios.

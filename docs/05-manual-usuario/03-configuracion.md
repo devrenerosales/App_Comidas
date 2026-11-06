@@ -118,7 +118,7 @@ Indica en qué supermercados compras y qué marca prefieres de cada producto. Cu
 
 ### Elegir los supermercados
 
-1. En **Dónde compras** verás los supermercados (La Torre, Paiz, Super Fresh y Walmart). Si nunca lo has configurado, todos aparecen marcados.
+1. En **Dónde compras** verás los supermercados (La Torre, Mercado, Paiz, Super Fresh y Walmart). Si nunca lo has configurado, todos aparecen marcados.
 2. Marca los que usas y desmarca los que no.
 3. Toca **Guardar supermercados**. Verás "Supermercados guardados."
 

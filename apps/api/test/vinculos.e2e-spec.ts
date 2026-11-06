@@ -282,6 +282,7 @@ describeConBd('HU-35 Vínculos producto ↔ supermercado (integración)', () => 
     const res = await http().get(`${API}/supermercados`).set(con(token)).expect(200);
     expect(res.body.map((s: { nombre: string }) => s.nombre)).toEqual([
       'La Torre',
+      'Mercado',
       'Paiz',
       'Super Fresh',
       'Walmart',
@@ -292,7 +293,13 @@ describeConBd('HU-35 Vínculos producto ↔ supermercado (integración)', () => 
         s.requiereEnlace,
       ]),
     );
-    expect(pide).toEqual({ 'La Torre': false, Paiz: true, 'Super Fresh': false, Walmart: true });
+    expect(pide).toEqual({
+      'La Torre': false,
+      Mercado: false,
+      Paiz: true,
+      'Super Fresh': false,
+      Walmart: true,
+    });
   });
 
   describe('otras validaciones', () => {
