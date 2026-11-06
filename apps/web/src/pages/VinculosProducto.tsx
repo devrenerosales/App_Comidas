@@ -302,6 +302,12 @@ export default function VinculosProducto() {
                 to={`/platillos/productos/${productoId}/precio`}
               >
                 Registrar precio
+              </Link>{' '}
+              <Link
+                className="mf-boton mf-boton--secundario"
+                to={`/platillos/productos/${productoId}/historial-precios`}
+              >
+                Historial de precios
               </Link>
             </p>
 
