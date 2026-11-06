@@ -4,7 +4,7 @@
 |---|---|
 | Fechas planificadas | 2027-01-04 → 2027-01-15 |
 | Objetivo | Tener precios por supermercado y usarlos: elegir dónde y qué marca comprar, registrar precios, ver el mínimo y agrupar la lista |
-| Estado | En curso. HU-09 implementada y validada por el PO el 2026-11-05. HU-35 implementada y validada por el PO el 2026-11-05. HU-34 en curso: la parte manual implementada y validada por el PO el 2026-11-05, falta el ticket con OCR. HU-36 implementada el 2026-11-05 y validada por el PO el 2026-11-06. HU-31 implementada el 2026-11-05 (pendiente la validación manual del PO) |
+| Estado | En curso. HU-09 implementada y validada por el PO el 2026-11-05. HU-35 implementada y validada por el PO el 2026-11-05. HU-34 en curso: la parte manual implementada y validada por el PO el 2026-11-05, falta el ticket con OCR. HU-36 implementada el 2026-11-05 y validada por el PO el 2026-11-06. HU-31 implementada el 2026-11-05 y validada por el PO el 2026-11-06 |
 
 ## Historias
 
