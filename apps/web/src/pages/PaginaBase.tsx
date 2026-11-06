@@ -11,7 +11,7 @@ export function PaginaBase({ titulo, children }: Props) {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar color="primary">
+        <IonToolbar>
           <IonTitle>{titulo}</IonTitle>
         </IonToolbar>
       </IonHeader>

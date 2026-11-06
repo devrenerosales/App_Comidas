@@ -1,7 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ORDEN_TIEMPOS, type TiempoComida } from '@menu/shared';
 import { fechaLocal } from '../configuracion/semanas';
 import { RELOJ_TABLERO } from './tablero.constants';
-import { TableroRepositorio, type SemanaTablero } from './tablero.repositorio';
+import {
+  TableroRepositorio,
+  type ComidaDeHoy,
+  type SemanaTablero,
+  type TiempoSemana,
+} from './tablero.repositorio';
 
 export interface VistaSemanaTablero {
   id: string;
@@ -21,10 +27,21 @@ export interface VistaTablero {
         comidasPlanificadas: number;
         comidasHastaHoy: number;
         costoEstimadoHastaHoy: string;
+        /** Comidas de hoy, desayuno primero. */
+        comidasDeHoy: ComidaDeHoy[];
+        /** Presupuesto y costo estimado por tiempo de comida. */
+        tiempos: TiempoSemana[];
       })
     | null;
   historial: VistaSemanaTablero[];
 }
+
+const porTiempo = <T extends { tiempo: string }>(filas: T[]): T[] =>
+  [...filas].sort(
+    (a, b) =>
+      ORDEN_TIEMPOS.indexOf(a.tiempo as TiempoComida) -
+      ORDEN_TIEMPOS.indexOf(b.tiempo as TiempoComida),
+  );
 
 const PERIODO_MAX = 26;
 const PERIODO_DEFECTO = 8;
@@ -53,7 +70,13 @@ export class TableroService {
       Number.isInteger(pedidas) && pedidas >= 1 ? Math.min(pedidas, PERIODO_MAX) : PERIODO_DEFECTO;
     const hoy = fechaLocal(this.reloj());
     const actual = await this.repo.semanaActual(hogarId, hoy);
-    const consumo = actual && (await this.repo.consumo(actual.id, hoy));
+    const [consumo, comidasDeHoy, tiempos] = actual
+      ? await Promise.all([
+          this.repo.consumo(actual.id, hoy),
+          this.repo.comidasDeHoy(actual.id, hoy),
+          this.repo.tiempos(actual.id),
+        ])
+      : [null, [], []];
     return {
       hoy,
       semanaActual:
@@ -63,6 +86,8 @@ export class TableroService {
               comidasPlanificadas: consumo.planificadas,
               comidasHastaHoy: consumo.hastaHoy,
               costoEstimadoHastaHoy: consumo.costoHastaHoy,
+              comidasDeHoy: porTiempo(comidasDeHoy),
+              tiempos: porTiempo(tiempos),
             }
           : null,
       historial: (await this.repo.historial(hogarId, limite)).map(vistaSemana),

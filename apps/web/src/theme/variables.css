@@ -1,37 +1,238 @@
-/* Tema Menú Familiar — color primario #2F6B4F, fuente Plus Jakarta Sans. */
+/*
+ * Tema Menú Familiar — "fresco": verde lima sobre fondos suaves.
+ * Los colores tienen un rol fijo (no se usan hex sueltos en las pantallas):
+ *   acento ........ acción principal y lo seleccionado (lima, siempre con texto oscuro encima)
+ *   verde ......... texto de marca, enlaces e iconos activos (verde profundo en claro, lima en oscuro)
+ *   exito ......... dentro del presupuesto, costo que cumple
+ *   advertencia ... precio desactualizado, platillo incompleto, aviso sin leer
+ *   error ......... exceso de presupuesto, errores
+ * Claro y oscuro: automático según el sistema; `data-tema="claro|oscuro"` en <html> lo fuerza.
+ */
 :root {
   --ion-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --ion-color-primary: #2f6b4f;
-  --ion-color-primary-rgb: 47, 107, 79;
+  /* Superficies */
+  --mf-fondo: #f4f8ef;
+  --mf-superficie: #ffffff;
+  --mf-superficie-2: #ebf2e4;
+  --mf-borde: #dbe5d1;
+  --mf-borde-fuerte: #c3d2b6;
+
+  /* Texto */
+  --mf-texto: #16221a;
+  --mf-texto-suave: #586a5c;
+
+  /* Marca y acción */
+  --mf-acento: #a3e635;
+  --mf-acento-fuerte: #8fd11f;
+  --mf-sobre-acento: #12200a;
+  --mf-verde: #3a7d0a;
+  --mf-verde-oscuro: #2a5c08;
+  --mf-chip-fondo: #e1f2cb;
+  --mf-foco: rgba(58, 125, 10, 0.4);
+
+  /* Estados */
+  --mf-exito: #2d8a34;
+  --mf-exito-fondo: #e0f4e3;
+  --mf-advertencia: #8a5a00;
+  --mf-advertencia-fondo: #fff4dc;
+  --mf-aviso-barra: #e3a008;
+  --mf-error: #c0362c;
+  --mf-error-fondo: #fdecea;
+
+  /* Forma y profundidad */
+  --mf-radio: 16px;
+  --mf-radio-grande: 22px;
+  --mf-sombra: 0 1px 2px rgba(22, 34, 26, 0.05), 0 10px 28px rgba(22, 34, 26, 0.07);
+  --mf-sombra-suave: 0 1px 2px rgba(22, 34, 26, 0.05);
+
+  /* Ionic */
+  --ion-background-color: var(--mf-fondo);
+  --ion-background-color-rgb: 244, 248, 239;
+  --ion-text-color: var(--mf-texto);
+  --ion-text-color-rgb: 22, 34, 26;
+  --ion-color-primary: #3a7d0a;
+  --ion-color-primary-rgb: 58, 125, 10;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #295e46;
-  --ion-color-primary-tint: #447a61;
-
-  --ion-color-secondary: #c9822b;
-  --ion-color-secondary-rgb: 201, 130, 43;
-  --ion-color-secondary-contrast: #000000;
-  --ion-color-secondary-contrast-rgb: 0, 0, 0;
-  --ion-color-secondary-shade: #b17226;
-  --ion-color-secondary-tint: #ce8f40;
-
-  /* RN-11: exceso de presupuesto en rojo */
-  --ion-color-danger: #c0392b;
-  --ion-color-danger-rgb: 192, 57, 43;
+  --ion-color-primary-shade: #337009;
+  --ion-color-primary-tint: #4e8b23;
+  --ion-color-medium: #586a5c;
+  --ion-color-danger: #c0362c;
+  --ion-color-danger-rgb: 192, 54, 44;
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #a93226;
-  --ion-color-danger-tint: #c64d40;
+  --ion-color-danger-shade: #a93026;
+  --ion-color-danger-tint: #c64b41;
+  --ion-toolbar-background: var(--mf-fondo);
+  --ion-toolbar-color: var(--mf-texto);
+  --ion-tab-bar-background: var(--mf-superficie);
+  --ion-tab-bar-color: var(--mf-texto-suave);
+  --ion-tab-bar-color-selected: var(--mf-verde);
+  --ion-border-color: var(--mf-borde);
+  color-scheme: light;
 }
 
+/* Oscuro: automático con el sistema, salvo que se haya forzado "claro". */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --ion-color-primary: #5fa583;
-    --ion-color-primary-rgb: 95, 165, 131;
-    --ion-color-primary-contrast: #000000;
-    --ion-color-primary-contrast-rgb: 0, 0, 0;
-    --ion-color-primary-shade: #549173;
-    --ion-color-primary-tint: #6fae8f;
+  :root:not([data-tema='claro']) {
+    --mf-fondo: #0f1412;
+    --mf-superficie: #18201c;
+    --mf-superficie-2: #1f2924;
+    --mf-borde: #2a372f;
+    --mf-borde-fuerte: #3a4a40;
+    --mf-texto: #f1f5f2;
+    --mf-texto-suave: #9fafa5;
+    --mf-acento: #a3e635;
+    --mf-acento-fuerte: #b6f04f;
+    --mf-sobre-acento: #0f1a06;
+    --mf-verde: #a3e635;
+    --mf-verde-oscuro: #c6f28a;
+    --mf-chip-fondo: #26361a;
+    --mf-foco: rgba(163, 230, 53, 0.55);
+    --mf-exito: #4ade80;
+    --mf-exito-fondo: #17301f;
+    --mf-advertencia: #fbbf24;
+    --mf-advertencia-fondo: #3a2f12;
+    --mf-aviso-barra: #fbbf24;
+    --mf-error: #f87171;
+    --mf-error-fondo: #3a1f1f;
+    --mf-sombra: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+    --mf-sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --ion-background-color-rgb: 15, 20, 18;
+    --ion-text-color-rgb: 241, 245, 242;
+    --ion-color-primary: #a3e635;
+    --ion-color-primary-rgb: 163, 230, 53;
+    --ion-color-primary-contrast: #0f1a06;
+    --ion-color-primary-contrast-rgb: 15, 26, 6;
+    --ion-color-primary-shade: #90ca2f;
+    --ion-color-primary-tint: #addf49;
+    --ion-color-medium: #9fafa5;
+    color-scheme: dark;
+  }
+}
+
+/* Oscuro forzado desde Configuración → Apariencia. */
+:root[data-tema='oscuro'] {
+  --mf-fondo: #0f1412;
+  --mf-superficie: #18201c;
+  --mf-superficie-2: #1f2924;
+  --mf-borde: #2a372f;
+  --mf-borde-fuerte: #3a4a40;
+  --mf-texto: #f1f5f2;
+  --mf-texto-suave: #9fafa5;
+  --mf-acento: #a3e635;
+  --mf-acento-fuerte: #b6f04f;
+  --mf-sobre-acento: #0f1a06;
+  --mf-verde: #a3e635;
+  --mf-verde-oscuro: #c6f28a;
+  --mf-chip-fondo: #26361a;
+  --mf-foco: rgba(163, 230, 53, 0.55);
+  --mf-exito: #4ade80;
+  --mf-exito-fondo: #17301f;
+  --mf-advertencia: #fbbf24;
+  --mf-advertencia-fondo: #3a2f12;
+  --mf-aviso-barra: #fbbf24;
+  --mf-error: #f87171;
+  --mf-error-fondo: #3a1f1f;
+  --mf-sombra: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --mf-sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ion-background-color-rgb: 15, 20, 18;
+  --ion-text-color-rgb: 241, 245, 242;
+  --ion-color-primary: #a3e635;
+  --ion-color-primary-rgb: 163, 230, 53;
+  --ion-color-primary-contrast: #0f1a06;
+  --ion-color-primary-contrast-rgb: 15, 26, 6;
+  --ion-color-primary-shade: #90ca2f;
+  --ion-color-primary-tint: #addf49;
+  --ion-color-medium: #9fafa5;
+  color-scheme: dark;
+}
+
+/* ---------- Estructura común: encabezado y barra inferior ---------- */
+body {
+  background: var(--mf-fondo);
+  color: var(--mf-texto);
+}
+
+ion-content {
+  --background: var(--mf-fondo);
+  --color: var(--mf-texto);
+}
+
+ion-header ion-toolbar {
+  --background: var(--mf-fondo);
+  --color: var(--mf-texto);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--mf-borde);
+  --min-height: 60px;
+}
+
+ion-header ion-toolbar ion-title {
+  padding-inline: 20px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-align: left;
+}
+
+ion-header::after {
+  display: none;
+}
+
+ion-tab-bar {
+  --background: var(--mf-superficie);
+  --border: 1px solid var(--mf-borde);
+  min-height: 64px;
+  padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 24px rgba(22, 34, 26, 0.05);
+}
+
+ion-tab-button {
+  --color: var(--mf-texto-suave);
+  --color-selected: var(--mf-verde);
+  --padding-top: 2px;
+  font-weight: 700;
+}
+
+ion-tab-button {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+}
+
+ion-tab-button ion-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.64rem;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+}
+
+ion-tab-button ion-icon {
+  box-sizing: content-box;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 22px;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+/* La pestaña activa se resalta con una "píldora" de acento detrás del icono. */
+ion-tab-button.tab-selected ion-icon {
+  background: var(--mf-acento);
+  color: var(--mf-sobre-acento);
+}
+
+ion-tab-button:focus-visible {
+  outline: 3px solid var(--mf-foco);
+  outline-offset: -3px;
+  border-radius: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ion-tab-button ion-icon {
+    transition: none;
   }
 }

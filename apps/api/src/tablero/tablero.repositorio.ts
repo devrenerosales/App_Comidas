@@ -1,5 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, lte, menuDetalle, menuSemanal, sql, type Db } from '@menu/db';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  lte,
+  menuDetalle,
+  menuSemanal,
+  menuTiempo,
+  platillo,
+  sql,
+  type Db,
+} from '@menu/db';
 import { DB } from '../database/database.constants';
 
 export interface SemanaTablero {
@@ -21,6 +34,19 @@ export interface ConsumoSemana {
   costoHastaHoy: string;
 }
 
+export interface ComidaDeHoy {
+  tiempo: string;
+  /** null = espacio "Sin sugerencia". */
+  platillo: string | null;
+  costoEstimado: string | null;
+}
+
+export interface TiempoSemana {
+  tiempo: string;
+  presupuesto: string;
+  costoEstimado: string | null;
+}
+
 /** M06 — lecturas del tablero de inicio (solo consulta). */
 @Injectable()
 export class TableroRepositorio {
@@ -36,6 +62,7 @@ export class TableroRepositorio {
           eq(menuSemanal.hogarId, hogarId),
           lte(menuSemanal.fechaInicio, hoy),
           sql`${menuSemanal.fechaFin} >= ${hoy}::date`,
+          inArray(menuSemanal.estado, ['APROBADO', 'HISTORICO']),
         ),
       )
       .limit(1);
@@ -55,6 +82,32 @@ export class TableroRepositorio {
       )
       .orderBy(desc(menuSemanal.fechaInicio))
       .limit(semanas);
+  }
+
+  /** Comidas del día con el nombre del platillo (el orden por tiempo lo da el servicio). */
+  comidasDeHoy(menuId: string, hoy: string): Promise<ComidaDeHoy[]> {
+    return this.db
+      .select({
+        tiempo: menuDetalle.tiempo,
+        platillo: platillo.nombre,
+        costoEstimado: menuDetalle.costoEstimado,
+      })
+      .from(menuDetalle)
+      .leftJoin(platillo, eq(platillo.id, menuDetalle.platilloId))
+      .where(and(eq(menuDetalle.menuId, menuId), sql`${menuDetalle.fecha} = ${hoy}::date`));
+  }
+
+  /** Presupuesto y costo estimado por tiempo de comida de la semana. */
+  tiempos(menuId: string): Promise<TiempoSemana[]> {
+    return this.db
+      .select({
+        tiempo: menuTiempo.tiempo,
+        presupuesto: menuTiempo.presupuesto,
+        costoEstimado: menuTiempo.costoEstimado,
+      })
+      .from(menuTiempo)
+      .where(eq(menuTiempo.menuId, menuId))
+      .orderBy(asc(menuTiempo.tiempo));
   }
 
   async consumo(menuId: string, hoy: string): Promise<ConsumoSemana> {

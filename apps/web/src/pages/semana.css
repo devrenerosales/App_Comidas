@@ -109,7 +109,9 @@
   gap: 6px;
   padding: 10px;
   border: 1px solid var(--mf-borde);
-  border-radius: 12px;
+  border-radius: var(--mf-radio);
+  background: var(--mf-superficie);
+  box-shadow: var(--mf-sombra-suave);
 }
 
 .mf-dia-titulo {
@@ -124,7 +126,7 @@
   padding: 6px 8px;
   border-left: 4px solid var(--mf-exito, #1b6b3a);
   border-radius: 4px;
-  background: rgba(127, 127, 127, 0.08);
+  background: var(--mf-superficie-2);
 }
 
 .mf-dia-espacio[draggable='true'] {

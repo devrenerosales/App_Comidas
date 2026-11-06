@@ -174,3 +174,7 @@ ingrediente excluido: Chile pimiento". Puedes guardarlo, pero no se sugerirá mi
 exista; la exclusión pesa más que el favorito. Al quitar la exclusión, el platillo vuelve a poder
 sugerirse. Solo se pueden agregar ingredientes y platillos activos. Si asignas a mano un platillo
 excluido al editar un menú, la app te lo permite.
+
+## Apariencia
+
+En **Configuración → Apariencia** eliges el tema de la app: **Automático** (sigue al de tu teléfono), **Claro** u **Oscuro**. La elección se recuerda en ese dispositivo.

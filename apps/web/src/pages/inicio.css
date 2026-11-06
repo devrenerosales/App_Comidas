@@ -1,0 +1,358 @@
+/* Inicio: tablero de la semana. Solo usa tokens del tema (claro y oscuro). */
+.mf-inicio {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+  color: var(--mf-texto);
+}
+
+.mf-inicio h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* ---- Cifra principal ---- */
+.mf-hero {
+  padding: 22px 20px 20px;
+  border: 1px solid var(--mf-borde);
+  border-radius: var(--mf-radio-grande);
+  background: var(--mf-superficie);
+  box-shadow: var(--mf-sombra);
+}
+
+.mf-inicio .mf-hero__etiqueta {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-texto-suave);
+}
+
+.mf-hero__fechas {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--mf-texto-suave);
+}
+
+/* Cifra de la vista: una sola, grande y con cifras proporcionales. */
+.mf-hero__valor {
+  margin: 6px 0 2px;
+  font-size: clamp(2.75rem, 12vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.mf-hero__sub {
+  margin: 0 0 14px;
+  color: var(--mf-texto-suave);
+}
+
+.mf-hero__estado {
+  margin: 10px 0 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--mf-texto);
+}
+
+.mf-hero__estado::before {
+  display: inline-block;
+  margin-right: 8px;
+  content: '●';
+  color: var(--mf-exito);
+}
+
+.mf-hero__estado--cerca::before {
+  color: var(--mf-aviso-barra);
+}
+
+.mf-hero__estado--excede::before {
+  color: var(--mf-error);
+}
+
+/* ---- Medidor: la pista es un tono más claro del mismo color ---- */
+.mf-medidor {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--mf-superficie-2);
+}
+
+.mf-medidor--fino {
+  height: 8px;
+}
+
+.mf-medidor__relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mf-verde);
+  transition: width 0.4s ease;
+}
+
+.mf-medidor--cerca .mf-medidor__relleno {
+  background: var(--mf-aviso-barra);
+}
+
+.mf-medidor--excede .mf-medidor__relleno {
+  background: var(--mf-error);
+}
+
+/* ---- Tarjetas de cifras ---- */
+.mf-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.mf-kpi:nth-child(3):last-child {
+  grid-column: 1 / -1;
+}
+
+.mf-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--mf-borde);
+  border-radius: var(--mf-radio);
+  background: var(--mf-superficie);
+  box-shadow: var(--mf-sombra-suave);
+}
+
+.mf-kpi dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--mf-texto-suave);
+}
+
+.mf-kpi dd {
+  margin: 0;
+}
+
+.mf-kpi__valor {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.mf-kpi__valor--error {
+  color: var(--mf-error);
+}
+
+.mf-kpi__nota {
+  font-size: 0.8rem;
+  color: var(--mf-texto-suave);
+}
+
+/* ---- Secciones ---- */
+.mf-seccion {
+  margin: 0;
+}
+
+.mf-seccion__pie {
+  margin: 14px 0 8px;
+  font-size: 0.9rem;
+}
+
+.mf-seccion__subtitulo {
+  margin: 18px 0 4px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--mf-texto-suave);
+}
+
+.mf-hoy,
+.mf-tiempos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mf-hoy li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--mf-borde);
+}
+
+.mf-hoy li:last-child {
+  border-bottom: none;
+}
+
+.mf-tiempos li + li {
+  margin-top: 14px;
+}
+
+.mf-tiempos__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.mf-tiempos__fila span {
+  color: var(--mf-texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.mf-resultado {
+  color: var(--mf-texto-suave);
+}
+
+.mf-resultado--excede {
+  color: var(--mf-error);
+  font-weight: 700;
+}
+
+/* Detalle por semana: alineado a la izquierda (hogar.css centra las filas de otras listas). */
+.mf-inicio .mf-lista li {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  min-height: 0;
+  padding: 10px 0;
+}
+
+/* ---- Gráfica de columnas ---- */
+.mf-grafica {
+  margin: 0;
+}
+
+.mf-grafica__svg {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  height: auto;
+  overflow: visible;
+}
+
+.mf-grafica__rejilla {
+  stroke: var(--mf-borde);
+  stroke-width: 1;
+}
+
+.mf-grafica__eje {
+  fill: var(--mf-texto-suave);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mf-grafica__valor {
+  fill: var(--mf-texto);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Semanas anteriores: tono de contexto; la actual, el de énfasis; las excedidas, el de error. */
+.mf-grafica__columna {
+  fill: color-mix(in srgb, var(--mf-verde) 38%, var(--mf-superficie));
+}
+
+.mf-grafica__columna--actual {
+  fill: var(--mf-verde);
+}
+
+.mf-grafica__columna--excede {
+  fill: var(--mf-error);
+}
+
+.mf-grafica__presupuesto {
+  stroke: var(--mf-texto);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mf-grafica g:focus-visible {
+  outline: 2px solid var(--mf-foco);
+  outline-offset: 2px;
+}
+
+.mf-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--mf-texto-suave);
+}
+
+.mf-leyenda__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mf-leyenda__muestra {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.mf-leyenda__muestra--gasto {
+  background: var(--mf-verde);
+}
+
+.mf-leyenda__muestra--presupuesto {
+  height: 2px;
+  width: 16px;
+  border-radius: 1px;
+  background: var(--mf-texto);
+}
+
+.mf-leyenda__muestra--excede {
+  background: var(--mf-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-medidor__relleno {
+    transition: none;
+  }
+}
+
+/* Configuración: cada sección es una tarjeta con su título, su ayuda y su botón. */
+.mf-menu-config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mf-menu-config section {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--mf-borde);
+  border-radius: var(--mf-radio);
+  background: var(--mf-superficie);
+  box-shadow: var(--mf-sombra-suave);
+}
+
+.mf-menu-config section + section {
+  margin-top: 0;
+}
+
+.mf-menu-config h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.mf-menu-config p {
+  margin: 0 0 12px;
+  color: var(--mf-texto-suave);
+}
+
+.mf-menu-config .mf-boton {
+  width: 100%;
+}

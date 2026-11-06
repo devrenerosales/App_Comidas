@@ -104,11 +104,13 @@ Si no solicitaste el correo, puedes ignorarlo: solicitar un enlace no cambia la 
 
 ## 1.6 Tu pantalla de Inicio
 
-Al entrar, **Inicio** te muestra cómo va la semana:
+Al entrar, **Inicio** te muestra cómo va la semana, de arriba abajo:
 
-- **Gasto actual:** lo que registraste como gasto real frente al presupuesto semanal, con una barra de avance. Si todavía no lo registras, muestra el costo estimado del menú y un enlace para registrarlo.
-- **Comidas al día de hoy:** cuántas de las comidas planificadas de la semana ya pasaron (por ejemplo "12 de 21") y su costo estimado. La app no sabe qué comieron en realidad: cuenta lo que planificaste hasta hoy.
-- **Historial de presupuesto:** las últimas 8 semanas aprobadas, con presupuesto, gasto y si quedaste "Dentro del presupuesto" o "Excede por Q__". Las semanas sin gasto registrado dicen "Sin gasto registrado".
+- **Gasto de la semana:** la cifra grande es lo que registraste como gasto real, con una barra frente al presupuesto y un aviso: *Vas dentro del presupuesto*, *Estás cerca del límite* (desde el 85 %) o *Superaste el presupuesto*. Si todavía no registras el gasto, muestra el **costo estimado del menú** y un enlace para registrarlo.
+- **Te quedan, Por día y Ahorro acumulado:** lo que queda del presupuesto, cuánto puedes gastar por día en los días que faltan (contando hoy) y lo que has ahorrado sumando las semanas con presupuesto y gasto registrados.
+- **Hoy:** las comidas de hoy con su platillo y su costo, y cuántas comidas de la semana ya pasaron (por ejemplo "12 de 21"). La app no sabe qué comieron en realidad: cuenta lo que planificaste.
+- **Costo por tiempo de comida:** una barra por desayuno, almuerzo y cena con el costo estimado frente a su presupuesto; en rojo si lo pasa.
+- **Historial de presupuesto:** una gráfica de columnas con el gasto de las últimas 8 semanas. La semana más reciente va resaltada, las que excedieron el presupuesto van en rojo y la raya negra de cada columna marca el presupuesto. Debajo, el **Detalle por semana** repite los datos en lista.
 
 Si la semana todavía no tiene menú aprobado, Inicio te lo dice y te lleva a **Semana**.
 

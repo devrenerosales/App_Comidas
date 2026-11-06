@@ -4,7 +4,7 @@
  */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { menuDetalle, menuSemanal, platillo } from '@menu/db';
+import { menuDetalle, menuSemanal, menuTiempo, platillo } from '@menu/db';
 import { RELOJ_TABLERO } from '../src/tablero/tablero.constants';
 import { crearAppConBd, describeConBd, usarBaseDePruebas } from './utils/base-datos';
 
@@ -102,8 +102,32 @@ describeConBd('Tablero del Inicio (integración)', () => {
       { fecha: '2026-11-06', tiempo: 'CENA', costo: null, sinPlatillo: true },
     ]);
 
+    await bd.db.insert(menuTiempo).values([
+      {
+        menuId,
+        tiempo: 'CENA',
+        porcentaje: '40.00',
+        presupuesto: '100.00',
+        costoEstimado: '90.00',
+      },
+      {
+        menuId,
+        tiempo: 'DESAYUNO',
+        porcentaje: '20.00',
+        presupuesto: '50.00',
+        costoEstimado: '20.00',
+      },
+    ]);
+
     const res = await http().get(`${API}/tablero`).set(con(token)).expect(200);
 
+    expect(res.body.semanaActual.comidasDeHoy).toEqual([
+      { tiempo: 'CENA', platillo: `Plato ${menuId}`, costoEstimado: '15.50' },
+    ]);
+    expect(res.body.semanaActual.tiempos).toEqual([
+      { tiempo: 'DESAYUNO', presupuesto: '50.00', costoEstimado: '20.00' },
+      { tiempo: 'CENA', presupuesto: '100.00', costoEstimado: '90.00' },
+    ]);
     expect(res.body.hoy).toBe('2026-11-04');
     expect(res.body.semanaActual).toMatchObject({
       presupuesto: '250.00',
@@ -122,6 +146,19 @@ describeConBd('Tablero del Inicio (integración)', () => {
 
     expect(res.body.semanaActual).toBeNull();
     expect(res.body.historial).toHaveLength(1);
+  });
+
+  it('un borrador en la semana en curso no cuenta como semana actual', async () => {
+    const { token, hogarId } = await hogarDe('Rene');
+    await semana(hogarId, '2026-11-01', '2026-11-07', {
+      estado: 'BORRADOR',
+      aprobadoEn: null,
+      gastoReal: null,
+    });
+
+    const res = await http().get(`${API}/tablero`).set(con(token)).expect(200);
+
+    expect(res.body.semanaActual).toBeNull();
   });
 
   it('el historial va de la más reciente a la más antigua, sin borradores y respeta ?semanas', async () => {
