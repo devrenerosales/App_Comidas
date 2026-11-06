@@ -21,6 +21,11 @@ RF-33 pide precios de Walmart y Paiz sáb y dom 21:00 (La Torre en fase 2). Los 
 | Identificación | User-agent identificable con contacto del PO |
 | Alternativa siempre disponible | Captura manual y por ticket (RF-34) |
 
+## Estado de implementación (2026-11-06, HU-33)
+- Hecho: programador, corrida con estados y totales, robots.txt, 1 solicitud/s por sitio, reintentos, corte por fallas, avisos de bloqueo y recálculo, probados con un sitio simulado.
+- Variaciones: el límite de tasa es un limitador por sitio dentro de la corrida (no una cola BullMQ por sitio) y el interruptor por sitio usa `supermercado.habilitado` y `extraccionPermitida` más una variable de entorno; no existe `terminosRevisadosEn`.
+- Pendiente: los adaptadores de Walmart y Paiz (`crearAdaptadores()` está vacío) y el navegador (Playwright) en el contenedor, hasta revisar los términos de uso (PA-02).
+
 ## Alternativas
 | Opción | Por qué no |
 |---|---|
