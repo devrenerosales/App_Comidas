@@ -18,6 +18,7 @@ import { ImportacionesModule } from './importaciones/importaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
 import { SupermercadosModule } from './supermercados/supermercados.module';
 import { AvisosModule } from './avisos/avisos.module';
+import { TableroModule } from './tablero/tablero.module';
 import { PreciosModule } from './precios/precios.module';
 import { VinculosModule } from './vinculos/vinculos.module';
 import { DespensaModule } from './despensa/despensa.module';
@@ -66,6 +67,7 @@ import { CalificacionesModule } from './calificaciones/calificaciones.module';
     SupermercadosModule,
     PreciosModule,
     AvisosModule,
+    TableroModule,
     VinculosModule,
     CalificacionesModule,
     MenusModule,
