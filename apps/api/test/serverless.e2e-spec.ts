@@ -58,4 +58,27 @@ describeConBd('Despliegue serverless (integración)', () => {
       .expect(201);
     expect(hogar.body.hogar.nombre).toBe('Familia Rene');
   });
+
+  it('una lista con el ?path= que agrega la reescritura de Vercel no se rechaza', async () => {
+    const registro = await request(servidor)
+      .post(`${API}/auth/registro`)
+      .send({ nombre: 'Ana', correo: 'ana@correo.com', contrasena: 'Almuerzo2026' })
+      .expect(201);
+    const hogar = await request(servidor)
+      .post(`${API}/hogares`)
+      .set('Authorization', `Bearer ${registro.body.accessToken}`)
+      .send({ nombre: 'Familia Ana' })
+      .expect(201);
+    const token = hogar.body.accessToken as string;
+
+    const sin = await request(servidor)
+      .get(`${API}/productos?q=arroz`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const con = await request(servidor)
+      .get(`${API}/productos?path=productos&q=arroz`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(con.body).toEqual(sin.body);
+  });
 });

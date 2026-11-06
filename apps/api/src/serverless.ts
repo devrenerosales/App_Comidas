@@ -5,6 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { configurarApp } from './app.setup';
+import { limpiarUrl } from './serverless.url';
 
 /** Servidor Express de la API (el que Nest monta por dentro), sin escuchar en ningún puerto. */
 export type Servidor = (req: IncomingMessage, res: ServerResponse) => void;
@@ -48,6 +49,8 @@ export async function cerrarServidor(): Promise<void> {
 export default async function manejador(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const servidor = await obtenerServidor();
+    // Quita el `?path=…` que Vercel agrega por la reescritura (ver serverless.url.ts).
+    req.url = limpiarUrl(req.url ?? '/');
     servidor(req, res);
   } catch (error) {
     console.error('La API no pudo iniciar', error);
