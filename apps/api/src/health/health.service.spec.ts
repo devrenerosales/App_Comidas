@@ -60,4 +60,12 @@ describe('HealthService', () => {
     await expect(pendiente).resolves.toMatchObject({ status: 'down', error: 'timeout 2000 ms' });
     jest.useRealTimers();
   });
+
+  it('sin Redis configurado lo reporta "disabled" y no degrada el estado', async () => {
+    const db = { execute: jest.fn().mockResolvedValue({ rows: [] }) };
+    const servicio = new HealthService(db as unknown as Db, null);
+    const reporte = await servicio.reporte();
+    expect(reporte.checks.redis).toEqual({ status: 'disabled', latencyMs: 0 });
+    expect(reporte.status).toBe('ok');
+  });
 });

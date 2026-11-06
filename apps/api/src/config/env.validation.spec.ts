@@ -55,4 +55,17 @@ describe('validarEntorno', () => {
   it('rechaza un APP_URL que no es URL', () => {
     expect(() => validarEntorno({ ...base, APP_URL: 'menu-familiar' })).toThrow(/APP_URL/);
   });
+
+  it('despliegue sin servidor: REDIS_URL es opcional y se leen DB_POOL_MAX y TRUST_PROXY', () => {
+    const { REDIS_URL: _omit, ...sinRedis } = base;
+    const env = validarEntorno({ ...sinRedis, DB_POOL_MAX: '1', TRUST_PROXY: '1' });
+    expect(env.REDIS_URL).toBeUndefined();
+    expect(env.DB_POOL_MAX).toBe(1);
+    expect(env.TRUST_PROXY).toBe('1');
+    expect(validarEntorno(base).DB_POOL_MAX).toBe(10);
+  });
+
+  it('rechaza un DB_POOL_MAX fuera de rango', () => {
+    expect(() => validarEntorno({ ...base, DB_POOL_MAX: '0' })).toThrow(/DB_POOL_MAX/);
+  });
 });

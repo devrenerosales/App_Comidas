@@ -4,7 +4,8 @@ import type Redis from 'ioredis';
 import { DB } from '../database/database.constants';
 import { REDIS_CLIENT } from '../redis/redis.constants';
 
-export type EstadoDependencia = 'up' | 'down';
+/** `disabled`: la dependencia no está configurada en este despliegue (no degrada el estado). */
+export type EstadoDependencia = 'up' | 'down' | 'disabled';
 
 export interface ChequeoDependencia {
   status: EstadoDependencia;
@@ -37,12 +38,12 @@ function conTimeout<T>(promesa: Promise<T>, ms: number): Promise<T> {
 export class HealthService {
   constructor(
     @Inject(DB) private readonly db: Db,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis | null,
   ) {}
 
   async reporte(): Promise<ReporteSalud> {
     const [database, redis] = await Promise.all([this.chequearBd(), this.chequearRedis()]);
-    const todoArriba = database.status === 'up' && redis.status === 'up';
+    const todoArriba = database.status === 'up' && redis.status !== 'down';
     return {
       status: todoArriba ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
@@ -58,11 +59,13 @@ export class HealthService {
   }
 
   chequearRedis(): Promise<ChequeoDependencia> {
+    const redis = this.redis;
+    if (!redis) return Promise.resolve({ status: 'disabled', latencyMs: 0 });
     return this.medir(async () => {
-      if (this.redis.status === 'wait' || this.redis.status === 'end') {
-        await this.redis.connect();
+      if (redis.status === 'wait' || redis.status === 'end') {
+        await redis.connect();
       }
-      return this.redis.ping();
+      return redis.ping();
     });
   }
 

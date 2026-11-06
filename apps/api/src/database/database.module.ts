@@ -6,7 +6,7 @@ import { DB, PG_POOL, TIMEOUT_CONSULTA_MS } from './database.constants';
 /** Crea el pool de PostgreSQL. Perezoso: no conecta hasta la primera consulta. */
 export function crearPoolDesdeConfig(config: ConfigService): Pool {
   const pool = crearPool(config.getOrThrow<string>('DATABASE_URL'), {
-    max: 10,
+    max: config.get<number>('DB_POOL_MAX', 10),
     connectionTimeoutMillis: TIMEOUT_CONSULTA_MS,
     idleTimeoutMillis: 30_000,
     application_name: 'menu-api',

@@ -36,9 +36,24 @@ export class VariablesEntorno {
   @MinLength(1)
   DATABASE_URL!: string;
 
+  /** Opcional: solo lo usa el health check (y el worker). Sin él, la API no depende de Redis. */
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  REDIS_URL!: string;
+  REDIS_URL?: string;
+
+  /** Conexiones máximas del pool de PostgreSQL (en serverless, 1 a 3 con el pooler de Supabase). */
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  DB_POOL_MAX: number = 10;
+
+  /**
+   * Proxies de confianza para `req.ip` (opción `trust proxy` de Express): un número de saltos
+   * ("1" en Vercel) o una lista de rangos. Sin definir: solo las redes privadas (Caddy en Docker).
+   */
+  @IsOptional()
+  @IsString()
+  TRUST_PROXY?: string;
 
   @IsString()
   @MinLength(32)

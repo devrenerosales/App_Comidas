@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { configurarApp, PREFIJO_API } from './app.setup';
+import { configurarApp, confianzaProxy, PREFIJO_API } from './app.setup';
 
 @Controller('ping')
 class PingController {
@@ -18,7 +18,11 @@ describe('configurarApp', () => {
       providers: [
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('http://a.test, http://b.test') },
+          useValue: {
+            get: jest.fn((clave: string) =>
+              clave === 'CORS_ORIGIN' ? 'http://a.test, http://b.test' : undefined,
+            ),
+          },
         },
       ],
       controllers: [PingController],
@@ -39,4 +43,17 @@ describe('configurarApp', () => {
     }
     // Usa HTTP real: mismo margen de arranque que las pruebas de integración.
   }, 30_000);
+});
+
+describe('confianzaProxy', () => {
+  it.each([
+    [undefined, 'loopback, linklocal, uniquelocal'],
+    ['', 'loopback, linklocal, uniquelocal'],
+    ['1', 1],
+    ['true', true],
+    ['false', false],
+    ['10.0.0.0/8, loopback', '10.0.0.0/8, loopback'],
+  ])('TRUST_PROXY=%j → %j', (entrada, esperado) => {
+    expect(confianzaProxy(entrada)).toBe(esperado);
+  });
 });

@@ -17,7 +17,10 @@ async function crearModulo(url = 'postgresql://u:p@127.0.0.1:1/nada') {
     ],
   })
     .overrideProvider(ConfigService)
-    .useValue({ getOrThrow: () => url })
+    .useValue({
+      getOrThrow: () => url,
+      get: (_clave: string, porDefecto: unknown) => porDefecto,
+    })
     .compile();
   return moduleRef;
 }

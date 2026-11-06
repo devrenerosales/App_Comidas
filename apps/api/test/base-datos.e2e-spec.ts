@@ -24,9 +24,9 @@ describeConBd('Base de pruebas aislada (integración)', () => {
     await app?.close();
   });
 
-  it('la base está migrada y sembrada (4 supermercados con extracción apagada)', async () => {
+  it('la base está migrada y sembrada (5 supermercados con extracción apagada)', async () => {
     const filas = await bd.db.select().from(supermercado);
-    expect(filas).toHaveLength(4);
+    expect(filas).toHaveLength(5);
     expect(filas.every((s) => !s.extraccionPermitida)).toBe(true);
   });
 
@@ -38,7 +38,7 @@ describeConBd('Base de pruebas aislada (integración)', () => {
 
   it('truncarEntrePruebas deja las tablas vacías salvo la semilla', async () => {
     expect(await bd.db.select().from(hogar)).toHaveLength(0);
-    expect(await bd.db.select().from(supermercado)).toHaveLength(4);
+    expect(await bd.db.select().from(supermercado)).toHaveLength(5);
   });
 
   it('enTransaccionRevertida no deja datos', async () => {

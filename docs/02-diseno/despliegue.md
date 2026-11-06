@@ -1,5 +1,7 @@
 # Despliegue en Oracle Cloud Always Free ARM — Menú Familiar
 
+> Alternativa sin costo para pruebas: [Vercel + Supabase](despliegue-vercel-supabase.md).
+
 | Campo | Valor |
 |---|---|
 | Documento | DEP-MF-001 |
