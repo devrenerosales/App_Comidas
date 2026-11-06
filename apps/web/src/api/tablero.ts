@@ -12,6 +12,19 @@ export interface SemanaTablero {
   gastoReal: string | null;
 }
 
+export interface ComidaDeHoy {
+  tiempo: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | string;
+  /** null = espacio "Sin sugerencia". */
+  platillo: string | null;
+  costoEstimado: string | null;
+}
+
+export interface TiempoSemana {
+  tiempo: 'DESAYUNO' | 'ALMUERZO' | 'CENA' | string;
+  presupuesto: string;
+  costoEstimado: string | null;
+}
+
 export interface Tablero {
   hoy: string;
   semanaActual:
@@ -19,6 +32,10 @@ export interface Tablero {
         comidasPlanificadas: number;
         comidasHastaHoy: number;
         costoEstimadoHastaHoy: string;
+        /** Comidas de hoy, desayuno primero. */
+        comidasDeHoy: ComidaDeHoy[];
+        /** Presupuesto y costo estimado por tiempo de comida. */
+        tiempos: TiempoSemana[];
       })
     | null;
   historial: SemanaTablero[];

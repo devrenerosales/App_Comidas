@@ -17,11 +17,14 @@ import { Cargando } from '../auth/Cargando';
 import { AvanceComidas } from './AvanceComidas';
 import { CompartirLista } from './CompartirLista';
 import { GastoReal } from './GastoReal';
+import { Medidor } from './Medidor';
 import { PaginaBase } from './PaginaBase';
 import { etiquetaSemana, sumarDiasFecha } from './fechas';
 import { useListaSincronizada, type ListaSincronizada } from './useListaSincronizada';
 import './acceso.css';
 import './hogar.css';
+import './inicio.css';
+import './lista.css';
 import './semana.css';
 
 /** Semanas que se ofrecen a partir de la que sigue al último menú aprobado: las ya aprobadas y las próximas. */
@@ -270,7 +273,11 @@ function ListaPorSupermercado({
       {grupos.map((g) => {
         const nombre = g.supermercado?.nombre ?? GRUPO_SIN_PRECIO;
         return (
-          <section key={g.supermercado?.id ?? 'sin-precio'} aria-label={nombre}>
+          <section
+            key={g.supermercado?.id ?? 'sin-precio'}
+            aria-label={nombre}
+            className="mf-grupo-super"
+          >
             <h3>
               {nombre}
               {g.subtotal !== null && <small> · Subtotal Q{g.subtotal}</small>}
@@ -296,7 +303,7 @@ function ListaPorSupermercado({
           </section>
         );
       })}
-      <p>
+      <p className="mf-total-lista">
         <strong>Total estimado: Q{total}</strong>
       </p>
       <p className="mf-texto-suave">
@@ -490,9 +497,14 @@ export default function Lista() {
                 {aviso}
               </p>
             )}
-            <p>
+            <p className="mf-avance-compra">
               {lista.comprados} / {lista.total} comprados
             </p>
+            <Medidor
+              etiqueta="Avance de la compra"
+              valor={lista.comprados}
+              maximo={Math.max(lista.total, 1)}
+            />
             {lista.sinConversion > 0 && (
               <p className="mf-texto-suave">
                 Hay productos sin conversión de unidades: revisa cuánto comprar de ellos.

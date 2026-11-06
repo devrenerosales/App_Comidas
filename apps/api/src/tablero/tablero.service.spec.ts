@@ -19,6 +19,14 @@ function crear(actual: SemanaTablero | null, historial: SemanaTablero[] = []) {
     consumo: jest
       .fn()
       .mockResolvedValue({ planificadas: 21, hastaHoy: 12, costoHastaHoy: '131.25' }),
+    comidasDeHoy: jest.fn().mockResolvedValue([
+      { tiempo: 'CENA', platillo: 'Pepián', costoEstimado: '30.00' },
+      { tiempo: 'DESAYUNO', platillo: null, costoEstimado: null },
+    ]),
+    tiempos: jest.fn().mockResolvedValue([
+      { tiempo: 'CENA', presupuesto: '80.00', costoEstimado: '70.00' },
+      { tiempo: 'DESAYUNO', presupuesto: '50.00', costoEstimado: '45.00' },
+    ]),
   };
   // 2026-11-04 15:00 UTC = 09:00 en Guatemala.
   const servicio = new TableroService(
@@ -41,6 +49,9 @@ describe('TableroService', () => {
       costoEstimadoHastaHoy: '131.25',
     });
     expect(t.historial).toHaveLength(1);
+    // Desayuno primero, aunque la base los devuelva en otro orden.
+    expect(t.semanaActual?.comidasDeHoy.map((c) => c.tiempo)).toEqual(['DESAYUNO', 'CENA']);
+    expect(t.semanaActual?.tiempos.map((c) => c.tiempo)).toEqual(['DESAYUNO', 'CENA']);
     expect(repo.consumo).toHaveBeenCalledWith('m1', '2026-11-04');
   });
 
@@ -49,6 +60,7 @@ describe('TableroService', () => {
     const t = await servicio.obtener('h1');
     expect(t.semanaActual).toBeNull();
     expect(repo.consumo).not.toHaveBeenCalled();
+    expect(repo.comidasDeHoy).not.toHaveBeenCalled();
   });
 
   it.each([

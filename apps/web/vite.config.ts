@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const COLOR_TEMA = '#2F6B4F';
+const COLOR_TEMA = '#F4F8EF';
 
 export default defineConfig(({ mode }) => {
   // El proxy sigue el PORT de la API del .env de la raíz (3000 si no está definido).
@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
           display: 'standalone',
           orientation: 'portrait',
           theme_color: COLOR_TEMA,
-          background_color: '#FFFFFF',
+          background_color: '#F4F8EF',
           categories: ['food', 'lifestyle', 'productivity'],
           icons: [
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

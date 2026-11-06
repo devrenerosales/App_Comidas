@@ -1,15 +1,5 @@
 /* Catálogo: platillos, ingredientes y productos (HU-11..13) — estilo del prototipo. */
 .mf-catalogo {
-  --mf-verde: var(--ion-color-primary, #2f6b4f);
-  --mf-verde-oscuro: #1f4d38;
-  --mf-fondo: #f7f4ee;
-  --mf-borde: #e4ded3;
-  --mf-texto: #1e2a23;
-  --mf-texto-suave: #5b665f;
-  --mf-error: #b42318;
-  --mf-error-fondo: #fdecea;
-  --mf-advertencia: #8a5a00;
-  --mf-advertencia-fondo: #fff4dc;
   box-sizing: border-box;
   max-width: 720px;
   margin: 0 auto;
@@ -44,12 +34,12 @@
   font: inherit;
   font-size: 1rem;
   color: var(--mf-texto);
-  background: #ffffff;
+  background: var(--mf-superficie);
 }
 
 .mf-catalogo select:focus-visible,
 .mf-opcion input:focus-visible {
-  outline: 3px solid rgba(47, 107, 79, 0.35);
+  outline: 3px solid var(--mf-foco);
 }
 
 .mf-fieldset {
@@ -78,7 +68,7 @@
   padding: 0 14px;
   border: 1px solid var(--mf-borde);
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--mf-superficie);
   cursor: pointer;
 }
 
@@ -103,8 +93,9 @@
 }
 
 .mf-segmentos .mf-boton[aria-pressed='true'] {
-  background: var(--mf-verde);
-  color: #ffffff;
+  background: var(--mf-acento);
+  color: var(--mf-sobre-acento);
+  border-color: var(--mf-acento-fuerte);
 }
 
 .mf-item-catalogo {
@@ -143,7 +134,7 @@
 .mf-chip {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #e8f1ec;
+  background: var(--mf-chip-fondo);
   color: var(--mf-verde-oscuro);
   font-size: 0.8rem;
   font-weight: 700;
@@ -155,7 +146,7 @@
 }
 
 .mf-chip--inactivo {
-  background: #efece6;
+  background: var(--mf-superficie-2);
   color: var(--mf-texto-suave);
 }
 

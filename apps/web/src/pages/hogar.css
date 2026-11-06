@@ -27,8 +27,8 @@
 .mf-aviso {
   margin: 0 0 16px;
   padding: 12px 14px;
-  border-radius: 12px;
-  background: #e8f1ec;
+  border-radius: var(--mf-radio);
+  background: var(--mf-chip-fondo);
   color: var(--mf-verde-oscuro);
   font-weight: 600;
 }
@@ -77,14 +77,14 @@
   flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #e8f1ec;
+  background: var(--mf-chip-fondo);
   color: var(--mf-verde-oscuro);
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .mf-etiqueta--miembro {
-  background: #efece6;
+  background: var(--mf-superficie-2);
   color: var(--mf-texto-suave);
 }
 
@@ -112,7 +112,7 @@
 
 .mf-boton--peligro {
   min-height: 44px;
-  background: #ffffff;
+  background: var(--mf-superficie);
   color: var(--mf-error);
   border-color: var(--mf-error);
 }

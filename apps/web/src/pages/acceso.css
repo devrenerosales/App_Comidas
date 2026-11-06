@@ -1,14 +1,6 @@
 /* Pantallas de acceso (HU-01) — estilo del prototipo (docs/02-diseno/pantallas.md). */
 .mf-acceso,
 .mf-hogar {
-  --mf-verde: var(--ion-color-primary, #2f6b4f);
-  --mf-verde-oscuro: #1f4d38;
-  --mf-fondo: #f7f4ee;
-  --mf-borde: #e4ded3;
-  --mf-texto: #1e2a23;
-  --mf-texto-suave: #5b665f;
-  --mf-error: #b42318;
-  --mf-error-fondo: #fdecea;
   --background: var(--mf-fondo);
   color: var(--mf-texto);
 }
@@ -42,10 +34,11 @@
 }
 
 .mf-tarjeta {
-  background: #ffffff;
+  background: var(--mf-superficie);
   border: 1px solid var(--mf-borde);
-  border-radius: 16px;
+  border-radius: var(--mf-radio-grande);
   padding: 20px;
+  box-shadow: var(--mf-sombra);
 }
 
 .mf-campo {
@@ -71,12 +64,12 @@
   font: inherit;
   font-size: 1rem;
   color: var(--mf-texto);
-  background: #ffffff;
+  background: var(--mf-superficie);
 }
 
 .mf-campo input:focus-visible,
 .mf-campo select:focus-visible {
-  outline: 3px solid rgba(47, 107, 79, 0.35);
+  outline: 3px solid var(--mf-foco);
   border-color: var(--mf-verde);
 }
 
@@ -121,10 +114,13 @@
   min-height: 46px;
   min-width: 44px;
   padding: 0 18px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid transparent;
   font: inherit;
   font-weight: 700;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
   font-size: 1rem;
   text-decoration: none;
   cursor: pointer;
@@ -132,12 +128,18 @@
 
 .mf-boton--primario {
   width: 100%;
-  background: var(--mf-verde);
-  color: #ffffff;
+  background: var(--mf-acento);
+  color: var(--mf-sobre-acento);
+  border-color: var(--mf-acento-fuerte);
+  box-shadow: var(--mf-sombra-suave);
 }
 
 .mf-boton--primario:hover {
-  background: var(--mf-verde-oscuro);
+  background: var(--mf-acento-fuerte);
+}
+
+.mf-boton:active {
+  transform: scale(0.98);
 }
 
 .mf-boton--primario[disabled] {
@@ -146,13 +148,13 @@
 }
 
 .mf-boton--secundario {
-  background: #ffffff;
+  background: var(--mf-superficie);
   color: var(--mf-verde);
   border-color: var(--mf-verde);
 }
 
 .mf-boton:focus-visible {
-  outline: 3px solid rgba(47, 107, 79, 0.45);
+  outline: 3px solid var(--mf-foco);
   outline-offset: 2px;
 }
 
@@ -184,4 +186,24 @@
   margin: 16px 0 0;
   color: var(--mf-texto-suave);
   font-size: 0.95rem;
+}
+
+/* Grupo de botones tipo "segmentos": uno activo a la vez (aria-pressed). */
+.mf-segmentos {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mf-segmentos .mf-boton {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 0.95rem;
+}
+
+.mf-segmentos .mf-boton[aria-pressed='true'] {
+  background: var(--mf-acento);
+  color: var(--mf-sobre-acento);
+  border-color: var(--mf-acento-fuerte);
 }

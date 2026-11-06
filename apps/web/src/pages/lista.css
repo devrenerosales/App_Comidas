@@ -1,0 +1,131 @@
+/* Lista de compras: selector de vista, avance, grupos por supermercado y filas. Solo tokens del tema. */
+.mf-avance-compra {
+  margin: 0 0 8px;
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.mf-avance-compra + .mf-medidor {
+  margin-bottom: 16px;
+}
+
+/* Selector de vista: control segmentado en forma de píldora. */
+.mf-selector-vista {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 16px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--mf-superficie-2);
+}
+
+.mf-selector-vista .mf-boton {
+  flex: 1;
+  width: auto;
+  min-height: 40px;
+  padding: 0 8px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--mf-texto-suave);
+  font-size: 0.85rem;
+}
+
+.mf-selector-vista .mf-boton--primario {
+  border-color: var(--mf-acento-fuerte);
+  background: var(--mf-acento);
+  color: var(--mf-sobre-acento);
+  box-shadow: var(--mf-sombra-suave);
+}
+
+/* Grupo por supermercado: una tarjeta por tienda con su subtotal. */
+.mf-grupo-super {
+  margin: 0 0 14px;
+  padding: 14px 16px 6px;
+  border: 1px solid var(--mf-borde);
+  border-radius: var(--mf-radio);
+  background: var(--mf-superficie-2);
+}
+
+.mf-grupo-super h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.mf-grupo-super h3 small {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--mf-chip-fondo);
+  color: var(--mf-verde-oscuro);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.mf-grupo-super h4 {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-texto-suave);
+}
+
+.mf-total-lista {
+  margin: 16px 0 8px;
+  padding: 14px 16px;
+  border-radius: var(--mf-radio);
+  background: var(--mf-chip-fondo);
+  color: var(--mf-verde-oscuro);
+  font-size: 1.1rem;
+}
+
+/* Filas: casilla grande y de color de marca; lo comprado se atenúa. */
+.mf-lista-nombre {
+  gap: 12px;
+}
+
+.mf-lista-nombre input[type='checkbox'] {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  accent-color: var(--mf-verde);
+}
+
+.mf-lista-item .mf-menu-costo {
+  font-size: 0.85rem;
+}
+
+.mf-lista-item .mf-dia-marca {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mf-superficie-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.mf-tachado {
+  opacity: 0.6;
+}
+
+/* Textos de estado de la lista. */
+.mf-exceso {
+  color: var(--mf-error);
+}
+
+.mf-advertencia {
+  padding: 10px 14px;
+  border-radius: var(--mf-radio);
+  background: var(--mf-advertencia-fondo);
+  color: var(--mf-advertencia);
+  font-weight: 700;
+}

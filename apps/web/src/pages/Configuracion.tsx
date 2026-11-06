@@ -3,14 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/contexto';
 import { BotonCerrarSesion } from './BotonCerrarSesion';
 import { PaginaBase } from './PaginaBase';
+import { SelectorTema } from './SelectorTema';
 import './acceso.css';
 import './hogar.css';
+import './inicio.css';
 
 export default function Configuracion() {
   const { usuario, hogar } = useAuth();
   return (
     <PaginaBase titulo="Configuración">
-      <div className="mf-hogar">
+      <div className="mf-hogar mf-menu-config">
         {hogar && (
           <section aria-labelledby="titulo-hogar">
             <h2 id="titulo-hogar">Tu hogar</h2>
@@ -76,6 +78,11 @@ export default function Configuracion() {
             </Link>
           </section>
         )}
+        <section aria-labelledby="titulo-apariencia">
+          <h2 id="titulo-apariencia">Apariencia</h2>
+          <p>Elige el tema claro, el oscuro o que siga al de tu teléfono.</p>
+          <SelectorTema />
+        </section>
         <section aria-labelledby="titulo-cuenta">
           <h2 id="titulo-cuenta">Tu cuenta</h2>
           {usuario && (

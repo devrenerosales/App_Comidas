@@ -28,7 +28,7 @@
   padding: 10px 14px;
   border: 1px solid var(--mf-borde);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--mf-superficie);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -47,7 +47,7 @@ label.mf-config__opcion,
 
 .mf-config__opcion--elegida {
   border: 2px solid var(--mf-verde);
-  background: #e6f0ea;
+  background: var(--mf-chip-fondo);
   color: var(--mf-verde-oscuro);
 }
 
@@ -71,9 +71,9 @@ label.mf-config__opcion,
   box-sizing: border-box;
   min-height: 44px;
   padding: 0 10px;
-  border: 1px solid #cfc7b8;
+  border: 1px solid var(--mf-borde-fuerte);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--mf-superficie);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,8 +104,8 @@ label.mf-config__opcion,
 .mf-config__sin-guardar {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #8a5a00;
-  background: #fcf1dc;
+  color: var(--mf-advertencia);
+  background: var(--mf-advertencia-fondo);
   padding: 4px 8px;
   border-radius: 8px;
 }
@@ -116,7 +116,7 @@ label.mf-config__opcion,
   overflow: hidden;
   display: flex;
   margin-bottom: 12px;
-  background: #efeae1;
+  background: var(--mf-superficie-2);
 }
 
 .mf-config__tabla {
@@ -128,7 +128,7 @@ label.mf-config__opcion,
 .mf-config__tabla td {
   padding: 8px 4px;
   text-align: left;
-  border-bottom: 1px solid #efeae1;
+  border-bottom: 1px solid var(--mf-borde);
   font-size: 0.95rem;
 }
 
@@ -164,7 +164,7 @@ label.mf-config__opcion,
   width: 76px;
   height: 44px;
   padding: 0 10px;
-  border: 1px solid #cfc7b8;
+  border: 1px solid var(--mf-borde-fuerte);
   border-radius: 12px;
   font: inherit;
   font-size: 1rem;
