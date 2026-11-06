@@ -81,7 +81,7 @@ describe.skipIf(!URL_PRUEBAS)('PostgreSQL real: migraciones, semilla y reglas', 
     expect(await contar('SELECT count(*) AS n FROM drizzle.__drizzle_migrations')).toBe(3);
   });
 
-  it('siembra 4 supermercados, 12 unidades y 9 categorías, y es idempotente', async () => {
+  it('siembra 5 supermercados, 12 unidades y 9 categorías, y es idempotente', async () => {
     await base.db
       .update(supermercado)
       .set({ extraccionPermitida: true })
