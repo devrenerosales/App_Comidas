@@ -51,6 +51,9 @@ export default async function manejador(req: IncomingMessage, res: ServerRespons
     const servidor = await obtenerServidor();
     // Quita el `?path=…` que Vercel agrega por la reescritura (ver serverless.url.ts).
     req.url = limpiarUrl(req.url ?? '/');
+    // Los ayudantes de Vercel dejan `req.query` ya calculado (con ese `path`) y Express solo lo
+    // calcula si no existe: se descarta para que se vuelva a leer de la dirección limpia.
+    delete (req as { query?: unknown }).query;
     servidor(req, res);
   } catch (error) {
     console.error('La API no pudo iniciar', error);
