@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   and,
+  asc,
   desc,
   eq,
   hogarSupermercado,
@@ -23,6 +24,15 @@ export interface FilaPrecioDeProducto {
   supermercado: string;
   precio: string;
   fecha: string;
+}
+
+/** Un precio del histórico de un producto (HU-37). */
+export interface FilaHistoricoPrecio {
+  supermercadoId: string;
+  supermercado: string;
+  precio: string;
+  fecha: string;
+  origen: 'AUTOMATICO' | 'MANUAL' | 'TICKET';
 }
 
 export interface ResumenGuardado extends ResumenPrecios {
@@ -59,6 +69,32 @@ export class ResumenPreciosRepositorio {
         ),
       )
       .orderBy(desc(precio.fechaPrecio), desc(precio.createdAt));
+  }
+
+  /**
+   * Todos los precios normalizados del producto que ve el hogar (automáticos y los propios) con su
+   * origen, del más antiguo al más reciente (HU-37). Solo vínculos activos, como el resumen.
+   */
+  async historico(hogarId: string, productoId: string): Promise<FilaHistoricoPrecio[]> {
+    return this.db
+      .select({
+        supermercadoId: supermercado.id,
+        supermercado: supermercado.nombre,
+        precio: precio.precioNormalizado,
+        fecha: precio.fechaPrecio,
+        origen: precio.origen,
+      })
+      .from(precio)
+      .innerJoin(productoSupermercado, eq(productoSupermercado.id, precio.productoSupermercadoId))
+      .innerJoin(supermercado, eq(supermercado.id, productoSupermercado.supermercadoId))
+      .where(
+        and(
+          eq(productoSupermercado.activo, true),
+          eq(productoSupermercado.productoId, productoId),
+          or(isNull(precio.hogarId), eq(precio.hogarId, hogarId)),
+        ),
+      )
+      .orderBy(asc(precio.fechaPrecio), asc(precio.createdAt));
   }
 
   /** Supermercados preferidos del hogar; `null` si todavía no eligió (valen todos, HU-09). */

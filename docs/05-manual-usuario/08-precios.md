@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |---|---|
-| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) · HU-36 Costo con mediana y precio mínimo (S5) |
+| Historias | HU-34 Registrar precios a mano o por ticket (S5, parte manual) · HU-36 Costo con mediana y precio mínimo (S5) · HU-37 Histórico y variación de precios (S5) |
 | Versión de la app | Sprint 5 (rama `feature/HU-34-registrar-precios`) |
-| Estado del capítulo | Parcial: registrar un precio a mano, costo estimado y compra sugerida; faltan el ticket con foto, el histórico y las capturas |
+| Estado del capítulo | Parcial: registrar un precio a mano, costo estimado y compra sugerida, historial de precios; faltan el ticket con foto y las capturas |
 
 > **Capturas:** los recuadros `[Captura …]` marcan dónde irá la imagen de la pantalla real (teléfono 390 × 844, carpeta `docs/05-manual-usuario/img/`).
 
@@ -50,6 +50,23 @@ El resumen se actualiza solo cuando registras un precio, cuando cambias tus supe
 
 [Captura 8.2: recuadro Resumen de precios]
 
-## 8.3 Escanear un ticket — próximamente (HU-34, segunda parte)
+## 8.3 Ver el historial de precios
+
+Para ver cómo ha cambiado el precio de un producto, entra a **Productos**, toca **Supermercados** en el producto y luego **Historial de precios**.
+
+1. Arriba eliges el **Periodo**: **12 semanas** (el que abre por defecto) o **4 semanas**.
+2. El **gráfico** dibuja una línea por supermercado, con su nombre en la leyenda.
+3. Debajo, cada supermercado muestra dos variaciones:
+   - **Vs. anterior:** cuánto cambió el último precio respecto al anterior. Por ejemplo, de Q21.00 a Q22.00 es **+4.8 %** ▲ Subió.
+   - **En el periodo:** cuánto cambió el último precio respecto al primero del periodo. De Q20.00 a Q22.00 es **+10.0 %**.
+4. La **tabla** lista cada precio con su fecha, supermercado, monto y origen: **Automático** (lo trajo la app), **Manual** (lo registraste tú o alguien de tu hogar) o **Ticket**.
+
+Una baja se muestra con signo menos y ▼ Bajó, por ejemplo **−10.0 %**. Si un supermercado tiene un solo precio en el periodo, sus variaciones aparecen como **—** porque no hay con qué comparar. Si el producto no tiene ningún precio en el periodo, la app dice "Aún no hay precios para este producto".
+
+Los montos son por la presentación de compra del producto, para que sean comparables. Solo ves los precios automáticos y los que registró tu hogar: los de otros hogares nunca aparecen. Los precios de un vínculo que reemplazaste ya no se muestran.
+
+[Captura 8.3: historial de precios con gráfico y variaciones]
+
+## 8.4 Escanear un ticket — próximamente (HU-34, segunda parte)
 
 Se completará cuando se implemente la lectura de tickets con foto.

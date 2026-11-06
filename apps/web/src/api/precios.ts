@@ -1,4 +1,5 @@
 /** Endpoints de precios (M08 · HU-34, api-contrato §2.8). */
+import type { PeriodoSemanas, SeriePrecios } from '@menu/shared';
 import type { ClienteHttp } from './cliente';
 import { ProblemaApi } from './problema';
 import type { Vinculo } from './vinculos';
@@ -41,6 +42,14 @@ export interface ResumenPrecio {
   calculadoEn: string;
 }
 
+/** GET /productos/{id}/precios (HU-37): series por supermercado con sus variaciones. */
+export interface HistoricoPrecios {
+  productoId: string;
+  semanas: PeriodoSemanas;
+  /** Vacía si el producto no tiene precios en el periodo. */
+  series: SeriePrecios[];
+}
+
 export function crearApiPrecios(cliente: Pick<ClienteHttp, 'peticion'>) {
   return {
     /** `null` si el producto no tiene ningún precio ("Sin precio", E1). */
@@ -52,6 +61,8 @@ export function crearApiPrecios(cliente: Pick<ClienteHttp, 'peticion'>) {
         throw e;
       }
     },
+    historico: (productoId: string, semanas: PeriodoSemanas = 12) =>
+      cliente.peticion<HistoricoPrecios>(`/productos/${productoId}/precios?semanas=${semanas}`),
     registrar: (datos: DatosPrecio) =>
       cliente.peticion<PrecioRegistrado>('/precios', { metodo: 'POST', cuerpo: datos }),
   };
