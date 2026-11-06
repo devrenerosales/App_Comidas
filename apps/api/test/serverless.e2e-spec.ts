@@ -12,6 +12,8 @@ const API = '/api/v1';
 describeConBd('Despliegue serverless (integración)', () => {
   const bd = usarBaseDePruebas({ suite: 'serverless', sembrar: true });
   let servidor: Server;
+  /** Simula los ayudantes de Vercel: `req.query` llega calculado, con el `path` de la reescritura. */
+  let servidorVercel: Server;
   let manejador: typeof import('../src/serverless');
   const entornoAnterior = { ...process.env };
 
@@ -25,10 +27,23 @@ describeConBd('Despliegue serverless (integración)', () => {
     jest.resetModules();
     manejador = await import('../src/serverless');
     servidor = createServer((req, res) => void manejador.default(req, res));
+    servidorVercel = createServer((req, res) => {
+      const consulta = Object.fromEntries(
+        new URL(req.url ?? '/', 'http://localhost').searchParams.entries(),
+      );
+      Object.defineProperty(req, 'query', {
+        value: { path: 'productos', ...consulta },
+        configurable: true,
+        enumerable: true,
+        writable: true,
+      });
+      void manejador.default(req, res);
+    });
   });
 
   afterAll(async () => {
     servidor?.close();
+    servidorVercel?.close();
     await manejador?.cerrarServidor();
     process.env = entornoAnterior;
   });
@@ -80,5 +95,12 @@ describeConBd('Despliegue serverless (integración)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(con.body).toEqual(sin.body);
+
+    // Con `req.query` ya calculado por Vercel (incluye `path`) tampoco se rechaza.
+    const vercel = await request(servidorVercel)
+      .get(`${API}/productos?q=arroz`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(vercel.body).toEqual(sin.body);
   });
 });
