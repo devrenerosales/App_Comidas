@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ApiConfiguracion } from '../api/configuracion';
 import { ContextoApiConfiguracion } from '../api/contexto-configuracion';
+import { ContextoApiTablero } from '../api/contexto-tablero';
+import type { ApiTablero } from '../api/tablero';
 import { ContextoAuth, type ValorAuth } from '../auth/contexto';
 import Configuracion from './Configuracion';
 import Inicio from './Inicio';
@@ -14,6 +16,8 @@ import Semana from './Semana';
 const configuracionPendiente = {
   obtenerSemana: () => new Promise(() => undefined),
 } as unknown as ApiConfiguracion;
+
+const tableroPendiente = { obtener: () => new Promise(() => undefined) } as unknown as ApiTablero;
 
 describe.each([
   [Inicio, 'Inicio'],
@@ -28,9 +32,11 @@ describe.each([
       <IonApp>
         <ContextoAuth.Provider value={auth}>
           <ContextoApiConfiguracion.Provider value={configuracionPendiente}>
-            <MemoryRouter>
-              <Pagina />
-            </MemoryRouter>
+            <ContextoApiTablero.Provider value={tableroPendiente}>
+              <MemoryRouter>
+                <Pagina />
+              </MemoryRouter>
+            </ContextoApiTablero.Provider>
           </ContextoApiConfiguracion.Provider>
         </ContextoAuth.Provider>
       </IonApp>,
