@@ -105,6 +105,54 @@ describe('HU-19 Sugerir menú', () => {
     expect(selector).toHaveValue('2026-11-01');
   });
 
+  describe('semana en curso', () => {
+    const calendario = (hoy: string) => ({
+      obtenerSemana: vi.fn().mockResolvedValue({
+        hoy,
+        semanaActual: { desde: '2026-11-08', hasta: '2026-11-14' },
+        proximaSemana: { desde: '2026-11-15', hasta: '2026-11-21' },
+      }),
+    });
+
+    it('el día que empieza la semana se ofrece y se abre esa semana, marcada "en curso"', async () => {
+      abrir({}, calendario('2026-11-08'));
+      const selector = await screen.findByLabelText('Semana');
+      expect(
+        within(selector)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual([
+        '08/11 al 14/11 (en curso)',
+        '15/11 al 21/11',
+        '22/11 al 28/11',
+        '29/11 al 05/12',
+        '06/12 al 12/12',
+      ]);
+      expect(selector).toHaveValue('2026-11-08');
+    });
+
+    it('entre semana abre la próxima, pero la semana en curso sigue disponible', async () => {
+      abrir({}, calendario('2026-11-11'));
+      const selector = await screen.findByLabelText('Semana');
+      expect(selector).toHaveValue('2026-11-15');
+      expect(
+        within(selector).getByRole('option', { name: '08/11 al 14/11 (en curso)' }),
+      ).toBeInTheDocument();
+    });
+
+    it('sugiere el menú de la semana que empezó hoy', async () => {
+      const { menus, user } = abrir({}, calendario('2026-11-08'));
+      await user.click(await screen.findByRole('button', { name: 'Sugerir menú' }));
+      expect(menus.generar).toHaveBeenCalledWith({ semana: '2026-11-08' });
+    });
+
+    it('si el servidor no informa la semana en curso, ofrece solo las futuras', async () => {
+      abrir();
+      const selector = await screen.findByLabelText('Semana');
+      expect(within(selector).getAllByRole('option')).toHaveLength(4);
+    });
+  });
+
   it('CA-19.1 muestra la grilla de 7 almuerzos de domingo a sábado con el presupuesto', async () => {
     const { menus, user } = abrir();
     await user.click(await screen.findByRole('button', { name: 'Sugerir menú' }));

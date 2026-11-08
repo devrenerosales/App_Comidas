@@ -191,3 +191,5 @@ Cuando el menú ya está **aprobado**, debajo del recuadro **Costo del menú** a
 También puedes registrarlo desde **Lista**, debajo de la lista de compras, con la misma pantalla.
 
 [Captura 6.10: recuadro Gasto real con las comparaciones]
+
+> **Semana en curso.** En **Semana → Sugerir menú**, la lista de semanas incluye la semana en curso (marcada «en curso») además de las próximas. El día en que empieza la semana se abre esa semana por defecto; los demás días se abre la próxima. Así puedes sugerir el menú aunque no lo hayas planeado antes de que empezara.
