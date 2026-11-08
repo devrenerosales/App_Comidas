@@ -104,6 +104,8 @@ export default function Semana() {
   const [moviendo, setMoviendo] = useState<string | null>(null);
   const [pendiente, setPendiente] = useState<Pendiente | null>(null);
   const [aprobada, setAprobada] = useState(false);
+  /** Se cambió un platillo de un menú aprobado: su lista de compras se ajustó sola. */
+  const [listaAjustada, setListaAjustada] = useState(false);
   const [motivo, setMotivo] = useState<DetalleMenu | null>(null);
   const [baratas, setBaratas] = useState<BarataDelDia[]>([]);
   const [vista, setVista] = useState<VistaSemana>(vistaGuardada);
@@ -145,6 +147,7 @@ export default function Semana() {
     setMoviendo(null);
     setPendiente(null);
     setAprobada(false);
+    setListaAjustada(false);
     setMotivo(null);
     setBaratas([]);
     menus
@@ -193,7 +196,9 @@ export default function Semana() {
     setOcupado(true);
     setError(null);
     try {
-      setMenu(await accion(confirmado));
+      const cambiado = await accion(confirmado);
+      setMenu(cambiado);
+      setListaAjustada(cambiado.estado === 'APROBADO');
       setBaratas([]);
       setEditando(null);
       setMoviendo(null);
@@ -236,7 +241,9 @@ export default function Semana() {
     }
   }
 
-  const editable = menu?.estado === 'BORRADOR';
+  // El Borrador y el menú aprobado se pueden cambiar; el histórico solo se consulta.
+  const editable = menu?.estado === 'BORRADOR' || menu?.estado === 'APROBADO';
+  const esBorrador = menu?.estado === 'BORRADOR';
   const mover = (origenDetalleId: string, destinoDetalleId: string) =>
     void cambiar((c) =>
       menus.mover(menu!.id, {
@@ -336,13 +343,18 @@ export default function Semana() {
               <p role="status">
                 {aprobada
                   ? 'Menú aprobado. La lista de compras de la semana quedó creada.'
-                  : 'Este menú está aprobado: solo se puede consultar.'}
+                  : 'Este menú está aprobado. Si cambias un platillo, la lista de compras se actualiza sola: lo pendiente se ajusta y lo que ya compraste se conserva.'}
                 {menu.aprobadoPor && menu.aprobadoEn && (
                   <>
                     {' '}
                     Aprobado por {menu.aprobadoPor.nombre} el {fechaHoraGuatemala(menu.aprobadoEn)}.
                   </>
                 )}
+              </p>
+            )}
+            {listaAjustada && (
+              <p role="status" className="mf-aviso">
+                Cambio guardado. La lista de compras se actualizó.
               </p>
             )}
             {menu.estado === 'HISTORICO' && (
@@ -520,7 +532,7 @@ export default function Semana() {
                 </ul>
               </section>
             )}
-            {editable && (
+            {esBorrador && (
               <button
                 type="button"
                 className="mf-boton mf-boton--primario"

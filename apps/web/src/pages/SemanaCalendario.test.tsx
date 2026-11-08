@@ -239,8 +239,13 @@ describe('Calendario del menú', () => {
     });
   });
 
-  it('en un menú aprobado es de solo lectura: sin botones de cambio y sin arrastre', async () => {
+  it('en un menú aprobado se puede cambiar: hay botones de cambio', async () => {
     await abrir(menu({ estado: 'APROBADO' }));
+    expect(screen.getAllByRole('button', { name: /^Cambiar/ }).length).toBeGreaterThan(0);
+  });
+
+  it('en un menú histórico es de solo lectura: sin botones de cambio y sin arrastre', async () => {
+    await abrir(menu({ estado: 'HISTORICO' }));
     expect(screen.queryByRole('button', { name: /^Cambiar/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Fijar/ })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^¿Por qué/ })).toHaveLength(7);

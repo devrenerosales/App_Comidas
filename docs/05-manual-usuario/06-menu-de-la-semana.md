@@ -52,7 +52,7 @@ La app aún no conoce los precios de los ingredientes (llegan en una versión po
 
 ## 6.2 Cambiar, mover y fijar platillos
 
-Mientras el menú es un **borrador** puedes adaptarlo a los planes reales de la semana. Cada espacio de la tabla tiene sus botones. Cualquier miembro del hogar puede hacerlo. Un menú aprobado es de solo lectura (ver 6.4).
+Mientras el menú es un **borrador** puedes adaptarlo a los planes reales de la semana. Cada espacio de la tabla tiene sus botones. Cualquier miembro del hogar puede hacerlo. También puedes cambiar un menú ya aprobado (ver 6.4).
 
 ### Cambiar un platillo
 
@@ -94,7 +94,7 @@ Cuando el borrador te convence, toca **Aprobar menú** (abajo de la tabla). Cual
 
 1. Revisa que no queden espacios con "Sin sugerencia". Si falta alguno, la app no aprueba y te dice cuáles: por ejemplo "Asigna un platillo a: viernes cena". Elige un platillo con **Cambiar** y vuelve a intentarlo.
 2. Toca **Aprobar menú**. La app guarda quién lo aprobó y cuándo, congela el presupuesto y los tiempos con que se aprobó, y crea la lista de compras de esa semana.
-3. El menú queda en solo lectura. Verás "Menú aprobado. La lista de compras de la semana quedó creada." y "Aprobado por <nombre> el <día/mes hora>".
+3. El menú queda aprobado (se puede seguir cambiando, ver 6.4). Verás "Menú aprobado. La lista de compras de la semana quedó creada." y "Aprobado por <nombre> el <día/mes hora>".
 
 **Si el costo pasa del presupuesto** de algún tiempo de comida, lo ves en rojo ("Excede por Q17.00") antes de aprobar. Puedes aprobar igual; el exceso queda registrado y se sigue mostrando en rojo en el menú aprobado.
 
@@ -102,11 +102,23 @@ Cuando el borrador te convence, toca **Aprobar menú** (abajo de la tabla). Cual
 
 Por ahora la lista de compras se crea vacía: sus ingredientes se consolidan en una etapa posterior. Mientras no haya precios, el costo aparece como incompleto y no se puede comprobar el exceso.
 
-## 6.4 Menús aprobados y del historial
+## 6.4 Cambiar un menú ya aprobado y semanas del historial
 
-Un menú **aprobado** o una semana del **historial** se muestran en solo lectura: la tabla no tiene botones de cambiar, fijar ni mover, y la app avisa "Este menú está aprobado: solo se puede consultar."
+Un menú **aprobado** se puede seguir cambiando: la tabla y el calendario conservan los botones **Cambiar**, **Otra opción**, **Fijar** y **Mover**. Sirve para cuando el plan de la semana cambia después de aprobar. La app avisa: "Este menú está aprobado. Si cambias un platillo, la lista de compras se actualiza sola: lo pendiente se ajusta y lo que ya compraste se conserva." Al guardar un cambio verás "Cambio guardado. La lista de compras se actualizó."
 
-Cuando eliges una semana, la app abre su menú si ya existe; solo si no hay uno puedes pedir **Sugerir menú**. Si dos personas cambian el mismo espacio, gana el último guardado y la otra persona verá el valor actualizado al recargar.
+**Qué pasa con la lista de compras al cambiar un platillo**
+
+- **Cantidades:** los productos que siguen haciendo falta se recalculan con los platillos nuevos.
+- **Productos nuevos:** se agregan a la lista como pendientes.
+- **Productos que ya no hacen falta:** se quitan si siguen pendientes. Si ya los marcaste como comprados, se quedan en la lista.
+- **Más cantidad de lo ya comprado:** si ahora necesitas más de lo que ya compraste de un producto, vuelve a quedar pendiente con la cantidad nueva (se borra el precio que habías anotado de ese producto).
+- **Lo que quitaste a mano** sigue quitado mientras el menú lo necesite, y lo que agregaste a mano no se toca.
+- **Despensa:** sus productos conservan su cantidad.
+- Las comidas que originan cada producto (la vista **Por comida**) quedan al día.
+
+Las reglas del menú se mantienen: si el cambio repite proteína en días seguidos o repite un platillo en la semana, la app pide confirmarlo igual que en un borrador. Aprobar no se repite y el presupuesto aprobado no se recalcula; el costo estimado del menú sí se actualiza.
+
+Una semana del **historial** se muestra en solo lectura: sin botones de cambiar, fijar ni mover.
 
 ## 6.5 Entender por qué se sugirió un platillo
 
@@ -172,7 +184,7 @@ Arriba de la tabla hay dos botones, **Tabla** y **Calendario**. Elige cómo quie
 - **Tabla:** una fila por día y una columna por tiempo de comida, como siempre.
 - **Calendario:** una tarjeta por día, de domingo a sábado, que se acomodan según el ancho de la pantalla. Cada tarjeta muestra el platillo de cada tiempo de comida, su costo, y las marcas **Fijado** y **Ajustado al presupuesto** cuando corresponden. El borde de cada espacio es verde si su tiempo de comida cumple el presupuesto y rojo si lo excede.
 
-En el calendario tienes las mismas acciones que en la tabla: **¿Por qué?**, **Cambiar**, **Otra opción**, **Fijar**, **Mover** y arrastrar un platillo a otro día. En un menú aprobado o del historial solo se puede consultar. El recuadro **Costo del menú** (6.8) se ve igual en las dos vistas.
+En el calendario tienes las mismas acciones que en la tabla: **¿Por qué?**, **Cambiar**, **Otra opción**, **Fijar**, **Mover** y arrastrar un platillo a otro día. En un menú aprobado puedes cambiar igual que en un borrador (la lista de compras se ajusta sola); el historial solo se consulta. El recuadro **Costo del menú** (6.8) se ve igual en las dos vistas.
 
 ## 6.10 Registrar lo que gastaste en la semana
 

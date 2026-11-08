@@ -160,9 +160,14 @@ describe('HU-23 Pedir otra opción para un día', () => {
     expect(await screen.findByText('Pollo en crema')).toBeVisible();
   });
 
-  it('en un menú aprobado o histórico la opción no está disponible', async () => {
-    await abrir(menu('APROBADO'));
+  it('en un menú histórico la opción no está disponible', async () => {
+    await abrir(menu('HISTORICO'));
     expect(screen.queryByRole('button', { name: /Otra opción/ })).not.toBeInTheDocument();
+  });
+
+  it('en un menú aprobado la opción sigue disponible', async () => {
+    await abrir(menu('APROBADO'));
+    expect(screen.getAllByRole('button', { name: /Otra opción/ }).length).toBeGreaterThan(0);
   });
 
   it('mientras se pide una alternativa no se puede pedir otra', async () => {

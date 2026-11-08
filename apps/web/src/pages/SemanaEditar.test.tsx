@@ -384,16 +384,57 @@ describe('HU-24 Elegir y fijar platillos', () => {
   });
 });
 
-describe('HU-24 Menú de solo lectura', () => {
-  it('CA-24.4 un menú aprobado no ofrece cambiar, fijar ni mover', async () => {
-    const mover = vi.fn();
-    const { menus } = await abrir(menu('APROBADO'), { mover });
+describe('Editar un menú aprobado', () => {
+  it('un menú aprobado ofrece cambiar, fijar y mover, y avisa que la lista se ajusta', async () => {
+    await abrir(menu('APROBADO'));
     expect(
       screen.getByRole('heading', { name: 'Menú aprobado del 01/11 al 07/11' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Este menú está aprobado: solo se puede consultar.'),
+      screen.getByText(/Este menú está aprobado\. Si cambias un platillo, la lista de compras/),
     ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Cambiar / }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /^Fijar / }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /^Mover / }).length).toBeGreaterThan(0);
+    // Y no se vuelve a aprobar.
+    expect(screen.queryByRole('button', { name: 'Aprobar menú' })).not.toBeInTheDocument();
+  });
+
+  it('al cambiar un platillo de un menú aprobado confirma que la lista de compras se actualizó', async () => {
+    const editar = vi.fn().mockResolvedValue(conPlatillo(menu('APROBADO'), 'mar', 'Chile relleno'));
+    const { menus, user } = await abrir(menu('APROBADO'), { editar });
+    await user.click(screen.getByRole('button', { name: 'Cambiar Martes 03/11 almuerzo' }));
+    const panel = screen.getByRole('region', {
+      name: 'Elegir platillo para Martes 03/11 almuerzo',
+    });
+    await user.type(within(panel).getByLabelText('Buscar platillo'), 'chi');
+    await user.click(await within(panel).findByRole('button', { name: 'Elegir Chile relleno' }));
+    await waitFor(() =>
+      expect(menus.editar).toHaveBeenCalledWith('m1', 'mar', { platilloId: 'chile' }),
+    );
+    expect(
+      await screen.findByText('Cambio guardado. La lista de compras se actualizó.'),
+    ).toBeVisible();
+  });
+
+  it('en un borrador un cambio no habla de la lista de compras', async () => {
+    const editar = vi.fn().mockResolvedValue(conPlatillo(menu(), 'mar', 'Chile relleno'));
+    const { user } = await abrir(menu(), { editar });
+    await user.click(screen.getByRole('button', { name: 'Cambiar Martes 03/11 almuerzo' }));
+    const panel = screen.getByRole('region', {
+      name: 'Elegir platillo para Martes 03/11 almuerzo',
+    });
+    await user.type(within(panel).getByLabelText('Buscar platillo'), 'chi');
+    await user.click(await within(panel).findByRole('button', { name: 'Elegir Chile relleno' }));
+    await waitFor(() => expect(editar).toHaveBeenCalled());
+    expect(screen.queryByText(/La lista de compras se actualizó/)).not.toBeInTheDocument();
+  });
+});
+
+describe('HU-24 Menú de solo lectura', () => {
+  it('CA-24.4 un menú histórico no ofrece cambiar, fijar ni mover', async () => {
+    const mover = vi.fn();
+    const { menus } = await abrir(menu('HISTORICO'), { mover });
     expect(screen.queryByRole('button', { name: /^Cambiar / })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Fijar / })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Mover / })).not.toBeInTheDocument();

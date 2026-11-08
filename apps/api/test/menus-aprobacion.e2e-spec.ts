@@ -160,7 +160,7 @@ describeConBd('HU-25 Aprobar menú (integración)', () => {
     expect(guardado!.aprobadoPorId).not.toBeNull();
   });
 
-  it('CA-25.1 la grilla queda en solo lectura: editar responde MENU_APROBADO', async () => {
+  it('CA-25.1 el menú aprobado sigue editable: cambiar un platillo responde 200 y sigue aprobado', async () => {
     const { token, hogarId } = await hogarDe('Rene');
     const m = await menuCompleto(hogarId);
     await aprobar(token, m.menuId, { version: m.version }).expect(200);
@@ -169,11 +169,15 @@ describeConBd('HU-25 Aprobar menú (integración)', () => {
     const res = await http()
       .patch(`${API}/menus/${m.menuId}/detalles/${m.detalle(DIAS.lunes)}`)
       .set(con(token))
-      .send({ platilloId: pollo })
-      .expect(409);
-    expect(res.body.codigo).toBe('MENU_APROBADO');
+      .send({ platilloId: pollo, confirmar: true })
+      .expect(200);
+    expect(res.body).toMatchObject({ estado: 'APROBADO', aprobadoPor: { nombre: 'Rene' } });
     const lectura = await http().get(`${API}/menus/${m.menuId}`).set(con(token)).expect(200);
     expect(lectura.body).toMatchObject({ estado: 'APROBADO', aprobadoPor: { nombre: 'Rene' } });
+    const lunes = (lectura.body.detalles as { fecha: string; platillo: { nombre: string } }[]).find(
+      (d) => d.fecha === DIAS.lunes,
+    );
+    expect(lunes!.platillo.nombre).toBe('Chile relleno');
   });
 
   it('CA-25.2 aprobar con presupuesto excedido no pide confirmación y registra el exceso', async () => {

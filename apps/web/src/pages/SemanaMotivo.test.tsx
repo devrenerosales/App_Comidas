@@ -164,9 +164,8 @@ describe('HU-22 Ver el motivo de la sugerencia', () => {
     expect(porQue()).toHaveLength(2);
   });
 
-  it('también está disponible en un menú aprobado, que es de solo lectura', async () => {
+  it('también está disponible en un menú aprobado', async () => {
     const { user } = await abrir(menu('APROBADO'));
-    expect(screen.queryByRole('button', { name: /Cambiar|Fijar|Mover/ })).toBeNull();
     await user.click(porQue()[0]!);
     expect(await screen.findByText('Costo estimado Q28.00')).toBeVisible();
   });

@@ -320,7 +320,7 @@ describeConBd('HU-24 Editar, mover y fijar platillos (integración)', () => {
     expect(bloqueado.body.codigo).toBe('TIEMPO_NO_APLICABLE');
   });
 
-  it('CA-24.4 un menú aprobado es de solo lectura', async () => {
+  it('CA-24.4 un menú aprobado también se puede cambiar', async () => {
     const { token, hogarId } = await hogarDe('Rene');
     await configurar(hogarId, { ALMUERZO: '100.00' });
     const pollo = await crearPlatillo(hogarId, 'Pollo en crema', 'POLLO');
@@ -329,21 +329,16 @@ describeConBd('HU-24 Editar, mover y fijar platillos (integración)', () => {
       [SEMANA, 'ALMUERZO', pollo],
       [DIAS.lunes, 'ALMUERZO', otro],
     ]);
-    const bloqueos = [
-      await editar(token, m.menuId, m.id(SEMANA), { platilloId: otro }),
-      await mover(token, m.menuId, {
-        origenDetalleId: m.id(SEMANA),
-        destinoDetalleId: m.id(DIAS.lunes),
-      }),
-      await fijar(token, m.menuId, m.id(SEMANA), { fijado: true }),
-    ];
-    for (const r of bloqueos) {
-      expect(r.status).toBe(409);
-      expect(r.body.codigo).toBe('MENU_APROBADO');
-    }
+    const cambio = await editar(token, m.menuId, m.id(SEMANA), {
+      platilloId: otro,
+      confirmar: true,
+    });
+    expect(cambio.status).toBe(200);
+    const fijado = await fijar(token, m.menuId, m.id(SEMANA), { fijado: false });
+    expect(fijado.status).toBe(200);
     const lectura = await http().get(`${API}/menus/${m.menuId}`).set(con(token)).expect(200);
     expect(lectura.body.estado).toBe('APROBADO');
-    expect(dia(lectura.body, SEMANA).platillo!.nombre).toBe('Pollo en crema');
+    expect(dia(lectura.body, SEMANA).platillo!.nombre).toBe('Tortitas');
     expect(dia(lectura.body, SEMANA).fijado).toBe(false);
   });
 

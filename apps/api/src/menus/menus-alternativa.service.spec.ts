@@ -214,12 +214,18 @@ describe('MenusAlternativaService (CU-05.5, HU-23)', () => {
     expect(repo.aplicarCambios).not.toHaveBeenCalled();
   });
 
-  it('un menú aprobado o histórico no admite alternativas (E3)', async () => {
-    repo.cargar.mockResolvedValue(completo({}, { estado: 'APROBADO' }));
-    expect(await problema(pedir())).toMatchObject({ codigo: 'MENU_APROBADO' });
+  it('un menú histórico no admite alternativas (E3)', async () => {
     repo.cargar.mockResolvedValue(completo({}, { estado: 'HISTORICO' }));
     expect(await problema(pedir())).toMatchObject({ codigo: 'SEMANA_HISTORICA' });
     expect(repo.aplicarCambios).not.toHaveBeenCalled();
+  });
+
+  it('un menú aprobado sí admite alternativas: el repositorio ajusta también su lista', async () => {
+    repo.cargar.mockResolvedValue(completo({}, { estado: 'APROBADO' }));
+    await pedir();
+    expect(repo.aplicarCambios).toHaveBeenCalledTimes(1);
+    // El último argumento es la hora de los cambios (marca de la lista sincronizada).
+    expect(repo.aplicarCambios.mock.calls[0]?.[3]).toBe(AHORA);
   });
 
   it('un menú o un espacio inexistente es 404', async () => {

@@ -43,6 +43,7 @@ import {
 import { esViolacionUnicidad } from '../comun/postgres';
 import { DB } from '../database/database.constants';
 import { promediosDeCompra } from '../listas/promedio-compra.consulta';
+import { itemsDelMenu } from './menus.lista';
 
 /** Ya existe un menú de esa semana para el hogar (índice único hogar + inicio). */
 export class MenuDuplicadoError extends Error {
@@ -394,12 +395,16 @@ export class MenusRepositorio {
   }
 
   /** Ingredientes con producto, unidades y presentación de compra para consolidar la lista (HU-28). */
-  async ingredientesParaLista(platilloIds: string[]): Promise<Map<string, DatosListaPlatillo>> {
+  async ingredientesParaLista(
+    platilloIds: string[],
+    // Dentro de una transacción se usa la misma conexión (con el pool de 1 de Vercel, otra se colgaría).
+    ejecutor: Pick<Db, 'select'> = this.db,
+  ): Promise<Map<string, DatosListaPlatillo>> {
     const mapa = new Map<string, DatosListaPlatillo>();
     if (platilloIds.length === 0) return mapa;
     const usada = alias(unidad, 'usada');
     const presentacion = alias(unidad, 'presentacion');
-    const filas = await this.db
+    const filas = await ejecutor
       .select({
         platilloId: platilloIngrediente.platilloId,
         porcionesBase: platillo.porcionesBase,
@@ -678,6 +683,7 @@ export class MenusRepositorio {
     menuId: string,
     cambios: { id: string; cambio: CambioDetalle }[],
     mostradas: { detalleId: string; platilloId: string }[] = [],
+    ahora: Date = new Date(),
   ): Promise<void> {
     await this.db.transaction(async (tx) => {
       for (const { id, cambio } of cambios) {
@@ -693,7 +699,137 @@ export class MenusRepositorio {
           .onConflictDoNothing();
       }
       await this.recalcularCostos(tx, menuId);
+      // Un menú aprobado ya tiene lista de compras: se ajusta en la misma transacción.
+      // Solo si cambió algún platillo: fijar o desfijar un espacio no toca la lista.
+      if (cambios.some((c) => 'platilloId' in c.cambio)) {
+        await this.sincronizarLista(tx, menuId, ahora);
+      }
     });
+  }
+
+  /**
+   * Ajusta la lista de compras de un menú aprobado después de cambiar sus platillos. Calcula los
+   * ítems como al aprobar y los compara con los de la lista, por producto:
+   * - los que ya estaban se actualizan; un ítem ya comprado vuelve a pendiente solo si ahora hace
+   *   falta más cantidad;
+   * - los nuevos se agregan pendientes;
+   * - los que ya no hacen falta se quitan si siguen pendientes (lo ya comprado se conserva);
+   * - lo que la persona quitó a mano sigue quitado, y lo agregado a mano no se toca.
+   * Los productos de despensa son los que ya entraron en esa lista al aprobar.
+   */
+  private async sincronizarLista(
+    tx: Pick<Db, 'select' | 'update' | 'insert' | 'delete'>,
+    menuId: string,
+    ahora: Date,
+  ): Promise<void> {
+    const [menu] = await tx
+      .select({ estado: menuSemanal.estado, suma: menuSemanal.sumaFactoresPorcion })
+      .from(menuSemanal)
+      .where(eq(menuSemanal.id, menuId));
+    if (menu?.estado !== 'APROBADO') return;
+    const [lista] = await tx
+      .select({ id: listaCompras.id })
+      .from(listaCompras)
+      .where(eq(listaCompras.menuId, menuId));
+    if (!lista) return;
+
+    const detalles = await tx
+      .select({ id: menuDetalle.id, platilloId: menuDetalle.platilloId })
+      .from(menuDetalle)
+      .where(eq(menuDetalle.menuId, menuId));
+    const ids = [...new Set(detalles.flatMap((d) => (d.platilloId ? [d.platilloId] : [])))];
+    const platillos = await this.ingredientesParaLista(ids, tx);
+    const despensa = await tx
+      .select({ productoId: despensaItem.productoId, cantidad: despensaItem.cantidad })
+      .from(despensaItem)
+      .where(eq(despensaItem.ultimaInclusionListaId, lista.id));
+    const nuevos = itemsDelMenu(detalles, platillos, Number(menu.suma ?? 0), despensa);
+
+    const existentes = await tx
+      .select()
+      .from(listaItem)
+      .where(and(eq(listaItem.listaId, lista.id), isNotNull(listaItem.productoId)));
+    const porProducto = new Map(existentes.map((e) => [e.productoId as string, e]));
+    const delMenu = existentes.filter((e) => e.origen !== 'MANUAL');
+    const conOrigen = new Set<string>();
+    if (delMenu.length > 0) {
+      const idsItems = delMenu.map((e) => e.id);
+      const previos = await tx
+        .select({ itemId: listaItemOrigen.listaItemId })
+        .from(listaItemOrigen)
+        .where(inArray(listaItemOrigen.listaItemId, idsItems));
+      for (const previo of previos) conOrigen.add(previo.itemId);
+      await tx.delete(listaItemOrigen).where(inArray(listaItemOrigen.listaItemId, idsItems));
+    }
+
+    const agregar: ItemDeLista[] = [];
+    const necesarios = new Set<string>();
+    for (const n of nuevos) {
+      const e = porProducto.get(n.productoId);
+      if (e?.origen === 'MANUAL') continue; // lo que la persona agregó a mano no se toca
+      necesarios.add(n.productoId);
+      if (!e) {
+        agregar.push(n);
+        continue;
+      }
+      // Quitado a mano mientras hacía falta: sigue quitado. Quitado por un cambio anterior: vuelve.
+      const resucita = e.eliminado && n.origen !== 'DESPENSA' && !conOrigen.has(e.id);
+      if (e.eliminado && !resucita) continue;
+      const hacenFalta = Number(n.cantidadComprar) > Number(e.cantidadComprar);
+      const reabrir = e.estado !== 'PENDIENTE' && hacenFalta;
+      await tx
+        .update(listaItem)
+        .set({
+          origen: n.origen,
+          cantidadRequerida: n.cantidadRequerida === null ? null : String(n.cantidadRequerida),
+          unidadRequeridaId: n.unidadRequeridaId,
+          cantidadComprar: String(n.cantidadComprar),
+          sinConversion: n.sinConversion,
+          eliminado: false,
+          ...(resucita || reabrir
+            ? {
+                estado: 'PENDIENTE' as const,
+                compradoEn: null,
+                compradoPorId: null,
+                precioReal: null,
+                contenidoComprado: null,
+                precioNormalizado: null,
+              }
+            : {}),
+          modificadoEnDispositivo: ahora,
+          version: sql`${listaItem.version} + 1`,
+        })
+        .where(eq(listaItem.id, e.id));
+      if (n.origenes.length > 0) {
+        await tx.insert(listaItemOrigen).values(
+          n.origenes.map((o) => ({
+            listaItemId: e.id,
+            menuDetalleId: o.menuDetalleId,
+            cantidadRequerida: o.cantidadRequerida === null ? null : String(o.cantidadRequerida),
+          })),
+        );
+      }
+    }
+
+    // Lo que ya no hace falta se quita si sigue pendiente; lo ya comprado se conserva.
+    for (const e of delMenu) {
+      if (necesarios.has(e.productoId as string) || e.eliminado || e.estado === 'COMPRADO') {
+        continue;
+      }
+      await tx
+        .update(listaItem)
+        .set({
+          eliminado: true,
+          modificadoEnDispositivo: ahora,
+          version: sql`${listaItem.version} + 1`,
+        })
+        .where(eq(listaItem.id, e.id));
+    }
+    await this.insertarItems(tx, lista.id, agregar, ahora);
+    await tx
+      .update(listaCompras)
+      .set({ version: sql`${listaCompras.version} + 1` })
+      .where(eq(listaCompras.id, lista.id));
   }
 
   /**
