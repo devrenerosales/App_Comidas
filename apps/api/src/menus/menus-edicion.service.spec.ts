@@ -186,13 +186,18 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
       ]);
     });
 
-    it('CA-24.4 un menú aprobado es de solo lectura (409) y uno histórico también', async () => {
-      repo.cargar.mockResolvedValue(completo('APROBADO'));
-      const p = await problema(editar());
-      expect([p.getStatus(), p.codigo]).toEqual([409, 'MENU_APROBADO']);
+    it('un menú histórico es de solo lectura (409)', async () => {
       repo.cargar.mockResolvedValue(completo('HISTORICO'));
-      expect((await problema(editar())).codigo).toBe('SEMANA_HISTORICA');
+      const p = await problema(editar());
+      expect([p.getStatus(), p.codigo]).toEqual([409, 'SEMANA_HISTORICA']);
       expect(repo.aplicarCambios).not.toHaveBeenCalled();
+    });
+
+    it('un menú aprobado se puede cambiar: aplica el cambio con la hora del servicio', async () => {
+      repo.cargar.mockResolvedValue(completo('APROBADO'));
+      await editar();
+      expect(repo.aplicarCambios).toHaveBeenCalledTimes(1);
+      expect(repo.aplicarCambios.mock.calls[0]?.[3]).toBe(AHORA);
     });
 
     it('menú, comida o platillo inexistentes son 404 y un platillo inactivo es 422', async () => {
@@ -345,8 +350,15 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
       expect((await problema(mover('lun', 'lun'))).codigo).toBe('MOVIMIENTO_INVALIDO');
       expect((await problema(mover('sab', 'lun'))).codigo).toBe('SIN_PLATILLO');
       expect((await problema(mover('lun', 'nada'))).getStatus()).toBe(404);
+      repo.cargar.mockResolvedValue(completo('HISTORICO'));
+      expect((await problema(mover('lun', 'jue'))).codigo).toBe('SEMANA_HISTORICA');
+    });
+
+    it('un menú aprobado admite mover un platillo', async () => {
+      aplican();
       repo.cargar.mockResolvedValue(completo('APROBADO'));
-      expect((await problema(mover('lun', 'jue'))).codigo).toBe('MENU_APROBADO');
+      await mover('lun', 'jue', true);
+      expect(repo.aplicarCambios).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -361,14 +373,14 @@ describe('MenusEdicionService (CU-06.1, HU-24)', () => {
       expect(cambios()[0]!.cambio.fijado).toBe(false);
     });
 
-    it('un espacio sin platillo no se puede fijar y un menú aprobado tampoco', async () => {
+    it('un espacio sin platillo no se puede fijar y un menú histórico tampoco', async () => {
       expect(
         (await problema(servicio.fijar('h1', 'u1', 'm1', 'sab', { fijado: true }))).codigo,
       ).toBe('SIN_PLATILLO');
-      repo.cargar.mockResolvedValue(completo('APROBADO'));
+      repo.cargar.mockResolvedValue(completo('HISTORICO'));
       expect(
         (await problema(servicio.fijar('h1', 'u1', 'm1', 'lun', { fijado: true }))).codigo,
-      ).toBe('MENU_APROBADO');
+      ).toBe('SEMANA_HISTORICA');
     });
   });
 

@@ -14,7 +14,7 @@ import {
 import { Problema } from '../comun/problema';
 import type { EditarDetalleDto, FijarDetalleDto, MoverDetalleDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
-import { exigirBorrador } from './menus.guardas';
+import { exigirEditable } from './menus.guardas';
 import {
   MenusRepositorio,
   type CambioDetalle,
@@ -167,12 +167,17 @@ export class MenusEdicionService {
     ]);
     const advertencias = this.advertencias(completo, contenido, [detalle], dto.confirmar);
     const costos = await this.costosDeEspacios(hogarId, completo, [elegido.id]);
-    await this.repo.aplicarCambios(menuId, [
-      {
-        id: detalle.id,
-        cambio: this.delUsuario(usuarioId, contenido.get(detalle.id)!, advertencias, costos),
-      },
-    ]);
+    await this.repo.aplicarCambios(
+      menuId,
+      [
+        {
+          id: detalle.id,
+          cambio: this.delUsuario(usuarioId, contenido.get(detalle.id)!, advertencias, costos),
+        },
+      ],
+      [],
+      this.reloj(),
+    );
     return this.obtener(hogarId, menuId);
   }
 
@@ -224,7 +229,7 @@ export class MenusEdicionService {
           : this.vacio(usuarioId),
       };
     });
-    await this.repo.aplicarCambios(menuId, cambios);
+    await this.repo.aplicarCambios(menuId, cambios, [], this.reloj());
     return this.obtener(hogarId, menuId);
   }
 
@@ -250,11 +255,11 @@ export class MenusEdicionService {
     return this.obtener(hogarId, menuId);
   }
 
-  /** E2: solo el Borrador se puede cambiar; aprobado o histórico es de solo lectura. */
+  /** E2: el Borrador y el menú aprobado se pueden cambiar; el histórico es de solo lectura. */
   private async editable(hogarId: string, menuId: string): Promise<MenuCompleto> {
     const completo = await this.repo.cargar(hogarId, menuId);
     if (!completo) throw noEncontrado();
-    exigirBorrador(completo.menu);
+    exigirEditable(completo.menu);
     return completo;
   }
 

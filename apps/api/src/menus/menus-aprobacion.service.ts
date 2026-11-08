@@ -2,10 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   NOMBRE_TIEMPO,
   aCentavos,
-  consolidarLista,
   deCentavos,
   despensaToca,
-  fusionarDespensa,
   nombreDiaSemana,
   type ItemDeLista,
 } from '@menu/shared';
@@ -13,6 +11,7 @@ import { Problema } from '../comun/problema';
 import type { AprobarMenuDto } from './dto/menus.dto';
 import { RELOJ_MENUS } from './menus.constants';
 import { MenusRepositorio, type MenuCompleto } from './menus.repositorio';
+import { itemsDelMenu } from './menus.lista';
 import { vistaMenu, type VistaMenu } from './menus.vista';
 
 /** Respuesta de `POST /menus/{id}/aprobar` (api-contrato §3.2). */
@@ -100,20 +99,11 @@ export class MenusAprobacionService {
   ): Promise<{ items: ItemDeLista[]; despensaIncluida: string[] }> {
     const ids = [...new Set(detalles.flatMap((d) => (d.platilloId ? [d.platilloId] : [])))];
     const platillos = await this.repo.ingredientesParaLista(ids);
-    const ingredientes = detalles.flatMap((d) =>
-      (d.platilloId ? (platillos.get(d.platilloId)?.ingredientes ?? []) : []).map((i) => ({
-        ...i,
-        menuDetalleId: d.id,
-      })),
-    );
     const queTocan = (await this.repo.despensaDelHogar(hogarId)).filter((d) =>
       despensaToca(d.ultimaInclusionSemana, menu.fechaInicio, d.frecuencia),
     );
     return {
-      items: fusionarDespensa(
-        consolidarLista(ingredientes, menu.sumaFactoresPorcion ?? 0),
-        queTocan,
-      ),
+      items: itemsDelMenu(detalles, platillos, Number(menu.sumaFactoresPorcion ?? 0), queTocan),
       despensaIncluida: queTocan.map((d) => d.id),
     };
   }

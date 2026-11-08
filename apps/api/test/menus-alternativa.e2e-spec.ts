@@ -189,18 +189,17 @@ describeConBd('HU-23 Alternativa para un día (integración)', () => {
     await alternativa(token, m.menuId, m.id(MARTES)).expect(200);
   });
 
-  it('un menú aprobado no admite alternativas y no cambia', async () => {
+  it('un menú aprobado también admite alternativas', async () => {
     const { token, hogarId } = await hogarDe('Rene');
     const m = await crearMenu(hogarId, 'APROBADO');
 
-    const res = await alternativa(token, m.menuId, m.id(MARTES)).expect(409);
+    await alternativa(token, m.menuId, m.id(MARTES)).expect(200);
 
-    expect(res.body.codigo).toBe('MENU_APROBADO');
     const [martes] = await bd.db
       .select()
       .from(menuDetalle)
       .where(eq(menuDetalle.id, m.id(MARTES)));
-    expect(martes!.origen).toBe('MOTOR');
+    expect(martes!.origen).toBe('ALTERNATIVA');
   });
 
   it('el menú o el espacio de otro hogar, o un id mal formado, es 404 (RNF-06)', async () => {

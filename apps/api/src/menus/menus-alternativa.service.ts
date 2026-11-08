@@ -8,7 +8,7 @@ import {
 import { Problema } from '../comun/problema';
 import { PreferenciasRepositorio } from '../preferencias/preferencias.repositorio';
 import { RELOJ_MENUS } from './menus.constants';
-import { exigirBorrador } from './menus.guardas';
+import { exigirEditable } from './menus.guardas';
 import { construirCandidatos, costosPorPlatillo, ultimaFechaHistorial } from './menus.motor';
 import { MenusRepositorio } from './menus.repositorio';
 import { vistaMenu, type VistaMenu } from './menus.vista';
@@ -32,7 +32,7 @@ export class MenusAlternativaService {
   ): Promise<VistaMenu> {
     const completo = await this.repo.cargar(hogarId, menuId);
     if (!completo) throw new Problema(404, 'NO_ENCONTRADO', 'El menú no existe.');
-    exigirBorrador(completo.menu);
+    exigirEditable(completo.menu);
     const espacio = completo.detalles.find((d) => d.id === detalleId);
     if (!espacio) throw new Problema(404, 'NO_ENCONTRADO', 'La comida no existe.');
     if (espacio.fijado) {
@@ -121,6 +121,7 @@ export class MenusAlternativaService {
         detalleId: espacio.id,
         platilloId,
       })),
+      this.reloj(),
     );
     return vistaMenu((await this.repo.cargar(hogarId, menuId))!);
   }

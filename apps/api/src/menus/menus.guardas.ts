@@ -1,11 +1,11 @@
 import type { MenuSemanal } from '@menu/db';
 import { Problema } from '../comun/problema';
 
-/** Solo el Borrador se puede cambiar; aprobado o histórico es de solo lectura. */
-export function exigirBorrador(menu: Pick<MenuSemanal, 'estado'>): void {
-  if (menu.estado === 'APROBADO') {
-    throw new Problema(409, 'MENU_APROBADO', 'El menú ya está aprobado y no se puede cambiar.');
-  }
+/**
+ * Se puede cambiar el Borrador y también el menú Aprobado (los cambios actualizan su lista de
+ * compras); el histórico es de solo lectura.
+ */
+export function exigirEditable(menu: Pick<MenuSemanal, 'estado'>): void {
   if (menu.estado === 'HISTORICO') {
     throw new Problema(
       409,

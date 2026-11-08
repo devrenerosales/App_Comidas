@@ -104,7 +104,7 @@ async function abrir(inicial: MenuGenerado, aprobar = vi.fn()) {
 const botonAprobar = () => screen.queryByRole('button', { name: 'Aprobar menú' });
 
 describe('HU-25 Aprobar el menú de la semana', () => {
-  it('CA-25.1 aprobar envía la versión vista y deja la grilla en solo lectura', async () => {
+  it('CA-25.1 aprobar envía la versión vista y la grilla sigue editable', async () => {
     const aprobar = vi.fn().mockResolvedValue(respuesta(aprobado()));
     const { user } = await abrir(borrador(), aprobar);
 
@@ -117,7 +117,8 @@ describe('HU-25 Aprobar el menú de la semana', () => {
     expect(screen.getByText(/Aprobado por Ana el 02\/11 09:10\./)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Menú aprobado del 01/11 al 07/11' })).toBeVisible();
     expect(botonAprobar()).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Cambiar|Mover|Fijar/ })).not.toBeInTheDocument();
+    // Aprobado se puede seguir cambiando: la lista de compras se ajusta sola.
+    expect(screen.getAllByRole('button', { name: /^Cambiar / }).length).toBeGreaterThan(0);
   });
 
   it('CA-25.2 con exceso muestra "Excede por Q" en rojo y aprueba sin pedir confirmación', async () => {
@@ -215,9 +216,11 @@ describe('HU-25 Aprobar el menú de la semana', () => {
     expect(screen.getByRole('heading', { name: 'Borrador del 01/11 al 07/11' })).toBeVisible();
   });
 
-  it('un menú ya aprobado abre en solo lectura con quién y cuándo, sin botón de aprobar', async () => {
+  it('un menú ya aprobado abre con quién y cuándo, sin botón de aprobar y avisa de la lista', async () => {
     await abrir(aprobado());
-    expect(screen.getByText(/Este menú está aprobado: solo se puede consultar\./)).toBeVisible();
+    expect(
+      screen.getByText(/Este menú está aprobado\. Si cambias un platillo, la lista de compras/),
+    ).toBeVisible();
     expect(screen.getByText(/Aprobado por Ana el 02\/11 09:10\./)).toBeVisible();
     expect(botonAprobar()).not.toBeInTheDocument();
   });
