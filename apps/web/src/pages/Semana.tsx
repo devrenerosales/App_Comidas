@@ -92,6 +92,8 @@ export default function Semana() {
   const menus = useApiMenus();
   const [semanas, setSemanas] = useState<string[] | null>(null);
   const [semana, setSemana] = useState('');
+  /** Inicio de la semana en curso, si se ofrece como opción además de las futuras. */
+  const [enCurso, setEnCurso] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuGenerado | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,10 +116,17 @@ export default function Semana() {
       .then((c) => {
         if (!activo) return;
         const desde = c.proximaSemana.desde;
-        setSemanas(
-          Array.from({ length: SEMANAS_OFRECIDAS }, (_, i) => sumarDiasFecha(desde, i * 7)),
+        const futuras = Array.from({ length: SEMANAS_OFRECIDAS }, (_, i) =>
+          sumarDiasFecha(desde, i * 7),
         );
-        setSemana(desde);
+        // La semana en curso también se puede sugerir: si no se planeó antes de que empezara,
+        // sigue siendo útil un menú para lo que queda.
+        const actual = c.semanaActual?.desde;
+        const ofrecerActual = actual !== undefined && actual < desde;
+        setEnCurso(ofrecerActual ? actual : null);
+        setSemanas(ofrecerActual ? [actual, ...futuras] : futuras);
+        // El día de inicio se abre la semana que empieza hoy; los demás días, la próxima.
+        setSemana(ofrecerActual && c.hoy === actual ? actual : desde);
       })
       .catch((e: unknown) => {
         if (activo) setError(mensajeDeError(e));
@@ -280,6 +289,7 @@ export default function Semana() {
                 {semanas.map((s) => (
                   <option key={s} value={s}>
                     {etiquetaSemana(s)}
+                    {s === enCurso ? ' (en curso)' : ''}
                   </option>
                 ))}
               </select>

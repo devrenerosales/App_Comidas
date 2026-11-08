@@ -2,6 +2,7 @@ import {
   aplicaDesde,
   fechaLocal,
   inicioProximaSemana,
+  inicioSemanaActual,
   sumarDias,
   calendarioSemana,
   DIAS_SEMANA,
@@ -10,6 +11,8 @@ import {
 describe('semanas (America/Guatemala, CU-02.3 paso 3)', () => {
   it('CA-08.1 domingo por defecto y planificación sábado', () => {
     expect(calendarioSemana('2026-10-22', 'DOMINGO', 'SABADO', [])).toEqual({
+      hoy: '2026-10-22',
+      semanaActual: { desde: '2026-10-18', hasta: '2026-10-24' },
       proximaSemana: { desde: '2026-10-25', hasta: '2026-10-31' },
       semanaTransicion: null,
       proximaPlanificacion: '2026-10-24',
@@ -22,10 +25,31 @@ describe('semanas (America/Guatemala, CU-02.3 paso 3)', () => {
         { fechaInicio: '2026-10-18', fechaFin: '2026-10-24' },
       ]),
     ).toEqual({
+      hoy: '2026-10-22',
+      semanaActual: { desde: '2026-10-19', hasta: '2026-10-25' },
       proximaSemana: { desde: '2026-10-26', hasta: '2026-11-01' },
       semanaTransicion: { desde: '2026-10-25', hasta: '2026-10-25' },
       proximaPlanificacion: '2026-10-24',
     });
+  });
+
+  it('el día de inicio la semana en curso es la que empieza hoy y la próxima es la siguiente', () => {
+    // Domingo 2026-11-08 con inicio domingo: la semana del 8 al 14 acaba de empezar.
+    const c = calendarioSemana('2026-11-08', 'DOMINGO', 'DOMINGO', []);
+    expect(c.semanaActual).toEqual({ desde: '2026-11-08', hasta: '2026-11-14' });
+    expect(c.proximaSemana).toEqual({ desde: '2026-11-15', hasta: '2026-11-21' });
+  });
+
+  it.each([
+    ['2026-11-07', 'DOMINGO', '2026-11-01'],
+    ['2026-11-08', 'DOMINGO', '2026-11-08'],
+    ['2026-11-11', 'DOMINGO', '2026-11-08'],
+    ['2026-11-14', 'DOMINGO', '2026-11-08'],
+    ['2026-11-08', 'LUNES', '2026-11-02'],
+    ['2026-11-09', 'LUNES', '2026-11-09'],
+    ['2026-11-08', 'OTRO', '2026-11-08'],
+  ])('inicioSemanaActual: %s con inicio %s → %s', (hoy, dia, esperado) => {
+    expect(inicioSemanaActual(hoy, dia)).toBe(esperado);
   });
 
   it.each(DIAS_SEMANA)('transición de cero a seis días al cambiar a %s', (dia) => {

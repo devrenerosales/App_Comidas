@@ -20,6 +20,10 @@ export interface RangoSemana {
   hasta: string;
 }
 export interface CalendarioSemana {
+  /** Fecha local de hoy (el cliente no depende del reloj del teléfono). */
+  hoy: string;
+  /** La semana que contiene hoy: empieza en el último día de inicio, hoy incluido. */
+  semanaActual: RangoSemana;
   proximaSemana: RangoSemana;
   semanaTransicion: RangoSemana | null;
   /** Fecha local de la siguiente planificación; la hora está en la configuración. */
@@ -44,7 +48,10 @@ export function calendarioSemana(
       ? siguiente
       : inicioProximaSemana(ultimoFin!, inicio)
     : inicioProximaSemana(hoy, inicio);
+  const actual = inicioSemanaActual(hoy, inicio);
   return {
+    hoy,
+    semanaActual: { desde: actual, hasta: sumarDias(actual, 6) },
     proximaSemana: { desde, hasta: sumarDias(desde, 6) },
     semanaTransicion:
       siguiente && siguiente < desde ? { desde: siguiente, hasta: sumarDias(desde, -1) } : null,
@@ -80,6 +87,16 @@ export function inicioProximaSemana(hoy: string, diaInicio: string): string {
   const actual = new Date(`${hoy}T00:00:00.000Z`).getUTCDay();
   const delta = (objetivo - actual + 7) % 7 || 7;
   return sumarDias(hoy, delta);
+}
+
+/**
+ * Inicio de la semana en curso: el último `diaInicio` hasta hoy, hoy incluido. El domingo 2026-11-08
+ * con inicio domingo es 2026-11-08 (la semana que acaba de empezar), no 2026-11-01.
+ */
+export function inicioSemanaActual(hoy: string, diaInicio: string): string {
+  const objetivo = Math.max(0, DIAS_SEMANA.indexOf(diaInicio as (typeof DIAS_SEMANA)[number]));
+  const actual = new Date(`${hoy}T00:00:00.000Z`).getUTCDay();
+  return sumarDias(hoy, -((actual - objetivo + 7) % 7));
 }
 
 /**

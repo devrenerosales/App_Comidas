@@ -34,6 +34,10 @@ export interface RangoSemana {
   hasta: string;
 }
 export interface CalendarioSemana {
+  /** Fecha local de hoy según el servidor. */
+  hoy?: string;
+  /** La semana que contiene hoy (con el día de inicio configurado). */
+  semanaActual?: RangoSemana;
   proximaSemana: RangoSemana;
   semanaTransicion: RangoSemana | null;
   proximaPlanificacion: string;
